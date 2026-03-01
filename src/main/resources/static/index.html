@@ -1,9 +1,604 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Shinkateki (進化的)</title>
+    <meta
+      name="description"
+      content="Shinkateki (進化的) - Adaptive Japanese Learning System"
+    />
+    <title>Shinkateki (進化的) - Adaptive Learning</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
   </head>
-  <body></body>
+  <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+      <div class="navbar-container">
+        <div class="navbar-brand">
+          <i class="fas fa-graduation-cap"></i>
+          <span class="brand-text">Shinkateki</span>
+          <span class="brand-jp">進化的</span>
+        </div>
+        <div class="navbar-menu" id="navbarMenu">
+          <ul class="nav-links">
+            <li>
+              <a
+                href="#dashboard"
+                class="nav-link active"
+                data-section="dashboard"
+                >Dashboard</a
+              >
+            </li>
+            <li>
+              <a href="#quiz" class="nav-link" data-section="quiz">Quiz</a>
+            </li>
+            <li>
+              <a href="#stats" class="nav-link" data-section="stats"
+                >Statistics</a
+              >
+            </li>
+            <li>
+              <a href="#profile" class="nav-link" data-section="profile"
+                >Profile</a
+              >
+            </li>
+          </ul>
+          <div class="user-actions">
+            <span id="userGreeting" class="user-greeting">Welcome</span>
+            <button id="logoutBtn" class="btn btn-logout">Logout</button>
+          </div>
+        </div>
+        <div class="hamburger" id="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal modal-active">
+      <div class="modal-content auth-modal">
+        <div class="auth-container">
+          <!-- Login Form -->
+          <div id="loginForm" class="auth-form auth-form-active">
+            <h2>Welcome Back</h2>
+            <p class="auth-subtitle">
+              Sign in to continue your learning journey
+            </p>
+            <form class="form">
+              <div class="form-group">
+                <label for="loginEmail">Email or Username</label>
+                <input
+                  type="text"
+                  id="loginEmail"
+                  placeholder="Enter your email or username"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="loginPassword">Password</label>
+                <input
+                  type="password"
+                  id="loginPassword"
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+              <div class="form-checkbox">
+                <input type="checkbox" id="rememberMe" />
+                <label for="rememberMe">Remember me</label>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                Sign In
+              </button>
+            </form>
+            <p class="auth-toggle">
+              Don't have an account?
+              <a href="#" id="toggleRegister">Create one</a>
+            </p>
+          </div>
+
+          <!-- Register Form -->
+          <div id="registerForm" class="auth-form">
+            <h2>Start Learning Today</h2>
+            <p class="auth-subtitle">
+              Join thousands of learners improving their Japanese
+            </p>
+            <form class="form">
+              <div class="form-group">
+                <label for="registerUsername">Username</label>
+                <input
+                  type="text"
+                  id="registerUsername"
+                  placeholder="Choose a username"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="registerEmail">Email</label>
+                <input
+                  type="email"
+                  id="registerEmail"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="registerPassword">Password</label>
+                <input
+                  type="password"
+                  id="registerPassword"
+                  placeholder="Create a strong password"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="registerConfirm">Confirm Password</label>
+                <input
+                  type="password"
+                  id="registerConfirm"
+                  placeholder="Confirm your password"
+                  required
+                />
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                Create Account
+              </button>
+            </form>
+            <p class="auth-toggle">
+              Already have an account? <a href="#" id="toggleLogin">Sign in</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent" style="display: none">
+      <!-- Dashboard Section -->
+      <section id="dashboard" class="section section-active">
+        <div class="container">
+          <h1>Your Learning Dashboard</h1>
+
+          <!-- Quick Stats -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon streak">
+                <i class="fas fa-fire"></i>
+              </div>
+              <div class="stat-content">
+                <h3>Current Streak</h3>
+                <p class="stat-value" id="streakValue">0</p>
+                <p class="stat-label">days</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon accuracy">
+                <i class="fas fa-bullseye"></i>
+              </div>
+              <div class="stat-content">
+                <h3>Accuracy</h3>
+                <p class="stat-value" id="accuracyValue">0%</p>
+                <p class="stat-label">overall</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon characters">
+                <i class="fas fa-book"></i>
+              </div>
+              <div class="stat-content">
+                <h3>Characters Learned</h3>
+                <p class="stat-value" id="charactersValue">0</p>
+                <p class="stat-label">total</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon time">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="stat-content">
+                <h3>Total Study Time</h3>
+                <p class="stat-value" id="timeValue">0h</p>
+                <p class="stat-label">this week</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Cards -->
+          <div class="action-section">
+            <h2>What would you like to do?</h2>
+            <div class="action-grid">
+              <div class="action-card" id="startQuizBtn">
+                <div class="action-icon">
+                  <i class="fas fa-pencil-alt"></i>
+                </div>
+                <h3>Start Quiz</h3>
+                <p>Take a personalized quiz based on your weaknesses</p>
+                <span class="action-arrow"
+                  ><i class="fas fa-arrow-right"></i
+                ></span>
+              </div>
+              <div class="action-card" id="reviewWeakBtn">
+                <div class="action-icon">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3>Review Weak Areas</h3>
+                <p>Focus on characters you struggle with most</p>
+                <span class="action-arrow"
+                  ><i class="fas fa-arrow-right"></i
+                ></span>
+              </div>
+              <div class="action-card" id="practiceBtn">
+                <div class="action-icon">
+                  <i class="fas fa-dumbbell"></i>
+                </div>
+                <h3>Practice</h3>
+                <p>Regular drilling for spaced repetition</p>
+                <span class="action-arrow"
+                  ><i class="fas fa-arrow-right"></i
+                ></span>
+              </div>
+              <div class="action-card" id="viewStatsBtn">
+                <div class="action-icon">
+                  <i class="fas fa-chart-bar"></i>
+                </div>
+                <h3>View Statistics</h3>
+                <p>Analyze your learning performance and patterns</p>
+                <span class="action-arrow"
+                  ><i class="fas fa-arrow-right"></i
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress Overview -->
+          <div class="progress-section">
+            <h2>Your Progress</h2>
+            <div class="progress-overview">
+              <div class="progress-item">
+                <div class="progress-header">
+                  <span>Hiragana</span>
+                  <span id="hiraganaPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="hiraganaFill"></div>
+                </div>
+              </div>
+              <div class="progress-item">
+                <div class="progress-header">
+                  <span>Katakana</span>
+                  <span id="katakanaPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="katakanaFill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quiz Section -->
+      <section id="quiz" class="section">
+        <div class="container">
+          <div class="quiz-container">
+            <!-- Quiz Intro -->
+            <div id="quizIntro" class="quiz-intro">
+              <h1>Adaptive Quiz</h1>
+              <p class="quiz-description">
+                This quiz is personalized based on your learning patterns and
+                weak areas.
+              </p>
+              <div class="quiz-info-grid">
+                <div class="quiz-info">
+                  <i class="fas fa-chart-pie"></i>
+                  <h4>Smart Selection</h4>
+                  <p>70% weak, 20% medium, 10% strong</p>
+                </div>
+                <div class="quiz-info">
+                  <i class="fas fa-hourglass-half"></i>
+                  <h4>Time Tracked</h4>
+                  <p>Your response time matters</p>
+                </div>
+                <div class="quiz-info">
+                  <i class="fas fa-brain"></i>
+                  <h4>Adaptive</h4>
+                  <p>Difficulty adjusts automatically</p>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-large" id="startQuizActualBtn">
+                Start Quiz Now
+              </button>
+            </div>
+
+            <!-- Quiz Question -->
+            <div id="quizQuestion" class="quiz-question" style="display: none">
+              <div class="quiz-header">
+                <div class="quiz-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill" id="quizProgressFill"></div>
+                  </div>
+                  <span id="questionNumber">1</span>/<span id="totalQuestions"
+                    >10</span
+                  >
+                </div>
+                <button class="btn btn-ghost" id="quitQuizBtn">
+                  <i class="fas fa-times"></i> Quit
+                </button>
+              </div>
+
+              <div class="question-content">
+                <div class="timer-display" id="timerDisplay">
+                  <div class="timer-circle">
+                    <span id="timerValue">30</span>s
+                  </div>
+                </div>
+
+                <div class="character-display">
+                  <h2 id="characterQuestion">あ</h2>
+                </div>
+
+                <div class="options-grid" id="optionsContainer">
+                  <!-- Options will be generated here -->
+                </div>
+
+                <div class="question-hint">
+                  <i class="fas fa-lightbulb"></i>
+                  <span id="hintText">Choose the correct romanization</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quiz Result -->
+            <div id="quizResult" class="quiz-result" style="display: none">
+              <div class="result-feedback" id="resultFeedback"></div>
+              <button
+                class="btn btn-primary"
+                id="nextQuestionBtn"
+                style="display: none"
+              >
+                Next Question
+              </button>
+              <div id="quizSummary" style="display: none">
+                <h2>Quiz Completed</h2>
+                <div class="result-stats">
+                  <div class="result-stat">
+                    <h3 id="finalScore">0/10</h3>
+                    <p>Correct Answers</p>
+                  </div>
+                  <div class="result-stat">
+                    <h3 id="finalAccuracy">0%</h3>
+                    <p>Accuracy</p>
+                  </div>
+                  <div class="result-stat">
+                    <h3 id="avgTime">0s</h3>
+                    <p>Avg Response Time</p>
+                  </div>
+                </div>
+                <button class="btn btn-primary" id="retakeQuizBtn">
+                  Retake Quiz
+                </button>
+                <button class="btn btn-secondary" id="backToDashboardBtn">
+                  Back to Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Statistics Section -->
+      <section id="stats" class="section">
+        <div class="container">
+          <h1>Your Statistics</h1>
+
+          <div class="stats-section">
+            <!-- Overall Stats -->
+            <div class="stats-overview">
+              <h2>Overall Performance</h2>
+              <div class="stats-grid">
+                <div class="stat-box">
+                  <h4>Total Attempts</h4>
+                  <p class="big-number" id="totalAttempts">0</p>
+                </div>
+                <div class="stat-box">
+                  <h4>Average Accuracy</h4>
+                  <p class="big-number" id="avgAccuracy">0%</p>
+                </div>
+                <div class="stat-box">
+                  <h4>Average Response Time</h4>
+                  <p class="big-number" id="avgResponseTime">0ms</p>
+                </div>
+                <div class="stat-box">
+                  <h4>Characters Mastered</h4>
+                  <p class="big-number" id="charactersMastered">0</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="charts-section">
+              <div class="chart-container">
+                <h3>Weekly Accuracy</h3>
+                <div class="chart-placeholder">
+                  <p>
+                    <i class="fas fa-chart-line"></i><br />Chart coming soon
+                  </p>
+                </div>
+              </div>
+              <div class="chart-container">
+                <h3>Response Time Trend</h3>
+                <div class="chart-placeholder">
+                  <p>
+                    <i class="fas fa-chart-line"></i><br />Chart coming soon
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Weakest Characters -->
+            <div class="weakest-section">
+              <h2>Characters You Struggle With</h2>
+              <div class="weakness-list">
+                <div class="weakness-item">
+                  <div class="weakness-char">ゆ</div>
+                  <div class="weakness-info">
+                    <h4>ゆ (yu)</h4>
+                    <div class="weakness-bar">
+                      <div class="weakness-fill" style="width: 85%"></div>
+                    </div>
+                    <span class="weakness-score">Weakness: 8.5/10</span>
+                  </div>
+                </div>
+                <div class="weakness-item">
+                  <div class="weakness-char">れ</div>
+                  <div class="weakness-info">
+                    <h4>れ (re)</h4>
+                    <div class="weakness-bar">
+                      <div class="weakness-fill" style="width: 72%"></div>
+                    </div>
+                    <span class="weakness-score">Weakness: 7.2/10</span>
+                  </div>
+                </div>
+                <div class="weakness-item">
+                  <div class="weakness-char">を</div>
+                  <div class="weakness-info">
+                    <h4>を (wo)</h4>
+                    <div class="weakness-bar">
+                      <div class="weakness-fill" style="width: 68%"></div>
+                    </div>
+                    <span class="weakness-score">Weakness: 6.8/10</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Performance by Time of Day -->
+            <div class="time-analysis">
+              <h2>Performance by Time of Day</h2>
+              <div class="time-grid">
+                <div class="time-card">
+                  <i class="fas fa-sun"></i>
+                  <h4>Morning (6-12)</h4>
+                  <p class="accuracy-badge">92% accuracy</p>
+                  <p class="meta">Best Time</p>
+                </div>
+                <div class="time-card">
+                  <i class="fas fa-cloud-sun"></i>
+                  <h4>Afternoon (12-18)</h4>
+                  <p class="accuracy-badge">85% accuracy</p>
+                  <p class="meta">Good</p>
+                </div>
+                <div class="time-card">
+                  <i class="fas fa-moon"></i>
+                  <h4>Evening (18-24)</h4>
+                  <p class="accuracy-badge">78% accuracy</p>
+                  <p class="meta">Needs focus</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Profile Section -->
+      <section id="profile" class="section">
+        <div class="container">
+          <h1>Your Profile</h1>
+
+          <div class="profile-container">
+            <!-- Profile Header -->
+            <div class="profile-header">
+              <div class="profile-avatar">
+                <i class="fas fa-user-circle"></i>
+              </div>
+              <div class="profile-info">
+                <h2 id="profileUsername">username</h2>
+                <p id="profileEmail">email@example.com</p>
+                <p class="profile-level">
+                  <i class="fas fa-graduation-cap"></i>
+                  Level: <span id="profileLevel">Beginner</span>
+                </p>
+              </div>
+              <button class="btn btn-secondary" id="editProfileBtn">
+                <i class="fas fa-edit"></i> Edit Profile
+              </button>
+            </div>
+
+            <!-- Settings -->
+            <div class="settings-section">
+              <h2>Settings & Preferences</h2>
+              <div class="settings-list">
+                <div class="setting-item">
+                  <div class="setting-info">
+                    <h4>Email Notifications</h4>
+                    <p>Receive reminders and progress updates</p>
+                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="setting-item">
+                  <div class="setting-info">
+                    <h4>Daily Goal</h4>
+                    <p>Set your daily learning target</p>
+                  </div>
+                  <select class="select-input">
+                    <option>10 minutes</option>
+                    <option selected>30 minutes</option>
+                    <option>60 minutes</option>
+                    <option>90 minutes</option>
+                  </select>
+                </div>
+                <div class="setting-item">
+                  <div class="setting-info">
+                    <h4>Sound Effects</h4>
+                    <p>Enable pronunciation audio and feedback sounds</p>
+                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="setting-item">
+                  <div class="setting-info">
+                    <h4>Dark Mode</h4>
+                    <p>Use dark theme for the app</p>
+                  </div>
+                  <label class="toggle">
+                    <input type="checkbox" id="darkModeToggle" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Account Actions -->
+            <div class="account-section">
+              <h2>Account</h2>
+              <div class="account-actions">
+                <button class="btn btn-secondary">
+                  <i class="fas fa-key"></i> Change Password
+                </button>
+                <button class="btn btn-secondary">
+                  <i class="fas fa-download"></i> Download Data
+                </button>
+                <button class="btn btn-danger">
+                  <i class="fas fa-trash"></i> Delete Account
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="js/script.js"></script>
+  </body>
 </html>
