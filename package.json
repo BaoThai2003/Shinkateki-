@@ -1,0 +1,20 @@
+{
+  "name": "shinkateki",
+  "version": "1.0.0",
+  "description": "> *Shinkateki (進化的) means \"evolutionary\" in Japanese.*   > A full-stack adaptive learning platform that analyzes your behaviour   > and dynamically adjusts every quiz to make you stronger, faster.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.20.0"
+  }
+}

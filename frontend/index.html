@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>進化的 Shinkateki — Adaptive Japanese Learning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Zen+Antique&family=IBM+Plex+Mono:wght@400;600&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       LOADING SCREEN
+  ═══════════════════════════════════════════ -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loading-kanji">進化的</div>
+    <div class="loading-label">shinkateki</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       AUTH SCREEN
+  ═══════════════════════════════════════════ -->
+  <div id="auth-screen" class="screen hidden">
+    <div class="auth-bg-decoration">
+      <span class="bg-char" style="top:8%;left:5%;font-size:12rem;opacity:.035;">あ</span>
+      <span class="bg-char" style="top:60%;left:2%;font-size:8rem;opacity:.04;">か</span>
+      <span class="bg-char" style="top:20%;right:4%;font-size:10rem;opacity:.03;">ア</span>
+      <span class="bg-char" style="top:70%;right:6%;font-size:14rem;opacity:.025;">の</span>
+    </div>
+
+    <div class="auth-container">
+      <div class="auth-header">
+        <div class="auth-logo">進化的</div>
+        <div class="auth-subtitle">Shinkateki · Adaptive Japanese</div>
+      </div>
+
+      <!-- Login form -->
+      <div id="login-form" class="auth-form">
+        <h2 class="form-title">Sign In</h2>
+        <div class="input-group">
+          <label>Username</label>
+          <input type="text" id="login-username" placeholder="your username" autocomplete="username" />
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <div class="form-error hidden" id="login-error"></div>
+        <button class="btn-primary" id="btn-login">Enter →</button>
+        <p class="form-switch">No account? <a href="#" id="show-register">Create one</a></p>
+      </div>
+
+      <!-- Register form -->
+      <div id="register-form" class="auth-form hidden">
+        <h2 class="form-title">Create Account</h2>
+        <div class="input-group">
+          <label>Username</label>
+          <input type="text" id="reg-username" placeholder="choose a username" />
+        </div>
+        <div class="input-group">
+          <label>Email</label>
+          <input type="email" id="reg-email" placeholder="you@example.com" />
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input type="password" id="reg-password" placeholder="min 6 characters" />
+        </div>
+        <div class="form-error hidden" id="reg-error"></div>
+        <button class="btn-primary" id="btn-register">Begin Journey →</button>
+        <p class="form-switch">Already have one? <a href="#" id="show-login">Sign in</a></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN APP (post-login)
+  ═══════════════════════════════════════════ -->
+  <div id="app-screen" class="screen hidden">
+
+    <!-- NAV -->
+    <nav class="main-nav">
+      <div class="nav-brand">
+        <span class="nav-kanji">進化的</span>
+        <span class="nav-name">Shinkateki</span>
+      </div>
+      <div class="nav-links">
+        <button class="nav-btn active" data-view="home">Home</button>
+        <button class="nav-btn" data-view="quiz">Quiz</button>
+        <button class="nav-btn" data-view="stats">Stats</button>
+      </div>
+      <div class="nav-user">
+        <span class="nav-score" id="nav-score">0 pts</span>
+        <span class="nav-username" id="nav-username">—</span>
+        <button class="nav-logout" id="btn-logout" title="Log out">⏻</button>
+      </div>
+    </nav>
+
+    <!-- ── HOME VIEW ─────────────────────────────── -->
+    <div id="view-home" class="view">
+      <div class="home-hero">
+        <div class="hero-greeting" id="hero-greeting">こんにちは</div>
+        <div class="hero-username" id="hero-username">Learner</div>
+        <div class="hero-tagline">Your adaptive Japanese guide</div>
+      </div>
+
+      <div class="home-grid">
+        <div class="home-card card-quiz">
+          <div class="card-icon">練</div>
+          <h3>Start Quiz</h3>
+          <p>Adaptive questions built around your current weaknesses.</p>
+          <div class="quiz-options">
+            <label class="radio-opt">
+              <input type="radio" name="quiz-type" value="" checked /> Both
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="quiz-type" value="hiragana" /> Hiragana
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="quiz-type" value="katakana" /> Katakana
+            </label>
+          </div>
+          <button class="btn-primary" id="btn-start-quiz">Start →</button>
+        </div>
+
+        <div class="home-card card-stats-mini">
+          <div class="card-icon">析</div>
+          <h3>Your Progress</h3>
+          <div class="mini-stats" id="mini-stats">
+            <div class="mini-stat">
+              <span class="mini-val" id="ms-accuracy">—</span>
+              <span class="mini-lbl">Accuracy</span>
+            </div>
+            <div class="mini-stat">
+              <span class="mini-val" id="ms-mastered">—</span>
+              <span class="mini-lbl">Mastered</span>
+            </div>
+            <div class="mini-stat">
+              <span class="mini-val" id="ms-attempts">—</span>
+              <span class="mini-lbl">Attempts</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-card card-review">
+          <div class="card-icon">時</div>
+          <h3>Optimal Study Time</h3>
+          <div id="optimal-time-display" class="optimal-time">
+            <span class="ot-label">Study more to unlock</span>
+          </div>
+          <div id="recommendations-list" class="rec-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── QUIZ VIEW ──────────────────────────────── -->
+    <div id="view-quiz" class="view hidden">
+
+      <!-- Quiz lobby -->
+      <div id="quiz-lobby" class="quiz-section">
+        <h2 class="section-title">Practice Session</h2>
+        <p class="section-subtitle">The engine will adapt questions to your weaknesses in real-time.</p>
+        <div class="quiz-config">
+          <label>Questions per session:
+            <select id="quiz-size">
+              <option value="5">5 — Quick drill</option>
+              <option value="10" selected>10 — Standard</option>
+              <option value="20">20 — Deep practice</option>
+            </select>
+          </label>
+        </div>
+        <button class="btn-primary btn-large" id="btn-begin-quiz">Begin Session →</button>
+      </div>
+
+      <!-- Active quiz -->
+      <div id="quiz-active" class="quiz-section hidden">
+        <div class="quiz-header">
+          <div class="quiz-progress-wrap">
+            <div class="quiz-progress-bar">
+              <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+            </div>
+            <span class="quiz-counter" id="quiz-counter">1 / 10</span>
+          </div>
+          <div class="quiz-streak" id="quiz-streak-display"></div>
+        </div>
+
+        <div class="quiz-card" id="quiz-card">
+          <div class="quiz-type-badge" id="quiz-type-badge">hiragana</div>
+          <div class="quiz-character" id="quiz-character">あ</div>
+          <div class="quiz-prompt">What is the reading?</div>
+          <div class="quiz-choices" id="quiz-choices"></div>
+          <div class="quiz-feedback hidden" id="quiz-feedback"></div>
+          <div class="quiz-timer-bar">
+            <div class="quiz-timer-fill" id="quiz-timer-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results screen -->
+      <div id="quiz-results" class="quiz-section hidden">
+        <div class="results-header">
+          <div class="results-emoji" id="results-emoji">🎯</div>
+          <div class="results-score" id="results-accuracy">0%</div>
+          <div class="results-label">session accuracy</div>
+          <div class="results-points" id="results-points">+0 pts</div>
+        </div>
+        <div class="results-breakdown" id="results-breakdown"></div>
+        <div class="results-actions">
+          <button class="btn-primary" id="btn-retry">Play Again →</button>
+          <button class="btn-ghost" id="btn-view-stats">View Stats</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STATS VIEW ─────────────────────────────── -->
+    <div id="view-stats" class="view hidden">
+      <div class="stats-loading hidden" id="stats-loading">
+        <div class="spinner"></div> Loading analysis…
+      </div>
+
+      <div id="stats-content">
+        <h2 class="section-title">Learning Analytics</h2>
+
+        <!-- Weekly chart -->
+        <div class="stats-section">
+          <h3 class="stats-section-title">Weekly Accuracy</h3>
+          <canvas id="weekly-chart" width="700" height="200"></canvas>
+        </div>
+
+        <!-- Weakest characters -->
+        <div class="stats-section">
+          <h3 class="stats-section-title">Characters Needing Work</h3>
+          <div class="weakness-grid" id="weakness-grid"></div>
+        </div>
+
+        <!-- Time of day -->
+        <div class="stats-section">
+          <h3 class="stats-section-title">Performance by Time of Day</h3>
+          <div class="tod-grid" id="tod-grid"></div>
+        </div>
+
+        <!-- Velocity -->
+        <div class="stats-section">
+          <h3 class="stats-section-title">Learning Velocity</h3>
+          <div class="velocity-card" id="velocity-card"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /app-screen -->
+
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/quiz.js"></script>
+  <script src="js/stats.js"></script>
+</body>
+</html>
