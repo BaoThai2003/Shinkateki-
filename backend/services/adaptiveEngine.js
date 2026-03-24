@@ -326,13 +326,10 @@ async function generateQuiz(
           NULL AS next_review,
           kana, romaji, type, group_name, difficulty
    FROM characters
-   WHERE ${type ? "type = ? AND" : ""}
-         id NOT IN (${
-           seenIds.length ? seenIds.map(() => "?").join(",") : "NULL"
-         })
+   ${type ? "WHERE type = ?" : ""}
    ORDER BY difficulty ASC
    LIMIT 20`,
-    [...(type ? [type] : []), ...(seenIds.length ? seenIds : [])]
+    type ? [type] : []
   );
 
   // 4. Bucket characters
