@@ -64,7 +64,9 @@ async function register(req, res) {
 //Cho phép login bằng username HOẶC email
 async function login(req, res) {
   try {
-    const { identifier, password } = req.body;
+    const identifier =
+      req.body.identifier || req.body.username || req.body.email;
+    const { password } = req.body;
 
     // Validate
     if (!identifier || !password) {
