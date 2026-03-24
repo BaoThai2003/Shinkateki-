@@ -320,10 +320,61 @@
           </div>
           <div class="input-group">
             <label>Lesson Content</label>
+            <div class="formatting-toolbar">
+              <button
+                type="button"
+                class="format-btn"
+                title="Bold"
+                onclick="applyTextFormat('bold')"
+              >
+                <strong>B</strong>
+              </button>
+              <button
+                type="button"
+                class="format-btn"
+                title="Italic"
+                onclick="applyTextFormat('italic')"
+              >
+                <em>I</em>
+              </button>
+              <button
+                type="button"
+                class="format-btn"
+                title="Underline"
+                onclick="applyTextFormat('underline')"
+              >
+                <u>U</u>
+              </button>
+              <div class="format-divider"></div>
+              <button
+                type="button"
+                class="format-btn"
+                title="Large Text"
+                onclick="applyTextFormat('large')"
+              >
+                L
+              </button>
+              <button
+                type="button"
+                class="format-btn"
+                title="Medium Text"
+                onclick="applyTextFormat('medium')"
+              >
+                M
+              </button>
+              <button
+                type="button"
+                class="format-btn"
+                title="Small Text"
+                onclick="applyTextFormat('small')"
+              >
+                S
+              </button>
+            </div>
             <textarea
               id="lesson-content"
-              rows="4"
-              placeholder="Describe this lesson..."
+              rows="6"
+              placeholder="Describe this lesson... (supports formatting)"
             ></textarea>
           </div>
 

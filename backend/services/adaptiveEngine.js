@@ -308,13 +308,13 @@ async function generateQuiz(
   // 2. Fetch all characters the user has stats for, split by class
   const statsRows = await query(
     `SELECT ps.character_id, ps.weakness_score, ps.difficulty_class,
-            ps.mistake_streak, ps.next_review,
-            c.symbol, c.hina, c.kana, c.romaji, c.type, c.group_name, c.difficulty
-     FROM performance_stats ps
-     JOIN characters c ON c.id = ps.character_id
-     WHERE ps.user_id = ?
-       ${type ? "AND c.type = ?" : ""}
-     ORDER BY ps.weakness_score DESC`,
+          ps.mistake_streak, ps.next_review,
+          c.kana, c.romaji, c.type, c.group_name, c.difficulty
+   FROM performance_stats ps
+   JOIN characters c ON c.id = ps.character_id
+   WHERE ps.user_id = ?
+     ${type ? "AND c.type = ?" : ""}
+   ORDER BY ps.weakness_score DESC`,
     type ? [userId, type] : [userId]
   );
 
@@ -322,16 +322,16 @@ async function generateQuiz(
   const seenIds = statsRows.map((r) => r.character_id);
   const unseenRows = await query(
     `SELECT id AS character_id, 0 AS weakness_score,
-            'medium' AS difficulty_class, 0 AS mistake_streak,
-            NULL AS next_review,
-            character, romaji, type, group_name, difficulty
-     FROM characters
-     WHERE ${type ? "type = ? AND" : ""}
-           id NOT IN (${
-             seenIds.length ? seenIds.map(() => "?").join(",") : "NULL"
-           })
-     ORDER BY difficulty ASC
-     LIMIT 20`,
+          'medium' AS difficulty_class, 0 AS mistake_streak,
+          NULL AS next_review,
+          kana, romaji, type, group_name, difficulty
+   FROM characters
+   WHERE ${type ? "type = ? AND" : ""}
+         id NOT IN (${
+           seenIds.length ? seenIds.map(() => "?").join(",") : "NULL"
+         })
+   ORDER BY difficulty ASC
+   LIMIT 20`,
     [...(type ? [type] : []), ...(seenIds.length ? seenIds : [])]
   );
 
@@ -386,7 +386,7 @@ async function generateQuiz(
 
   // 6. Attach multiple-choice distractors to each question
   const allChars = await query(
-    `SELECT id, character, romaji, type FROM characters ${
+    `SELECT id, kana, romaji, type FROM characters ${
       type ? "WHERE type = ?" : ""
     }`,
     type ? [type] : []
@@ -394,7 +394,7 @@ async function generateQuiz(
 
   return selected.map((item) => ({
     characterId: item.character_id,
-    character: item.character,
+    character: item.kana,
     romaji: item.romaji,
     type: item.type,
     groupName: item.group_name,
@@ -413,15 +413,19 @@ function _buildChoices(targetChar, allChars, count) {
     romaji: targetChar.romaji,
     correct: true,
   };
+
   const pool = allChars
     .filter((c) => c.id !== targetChar.character_id)
     .sort(() => Math.random() - 0.5)
     .slice(0, count - 1)
-    .map((c) => ({ id: c.id, romaji: c.romaji, correct: false }));
+    .map((c) => ({
+      id: c.id,
+      romaji: c.romaji,
+      correct: false,
+    }));
 
   return _shuffle([correct, ...pool]);
 }
-
 /**
  * Sample up to `n` items, prioritising those due for review (next_review <= NOW).
  */

@@ -1081,6 +1081,246 @@ body {
   color: #9ab0e0;
 }
 
+/* ── Lessons View ───────────────────────────────────────────── */
+
+#view-lessons {
+  background: linear-gradient(
+    135deg,
+    rgba(25, 28, 48, 0.9),
+    rgba(13, 15, 20, 0.95)
+  );
+}
+
+.lesson-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.lesson-item {
+  background: rgba(20, 22, 31, 0.8);
+  border: 1px solid rgba(37, 40, 64, 0.6);
+  border-left: 4px solid var(--vermillion);
+  border-radius: var(--r-lg);
+  padding: 1.5rem;
+  transition: all var(--transition);
+}
+
+.lesson-item:hover {
+  border-color: var(--vermillion);
+  box-shadow: 0 4px 16px rgba(201, 64, 64, 0.2);
+  transform: translateX(4px);
+}
+
+.lesson-item h4 {
+  color: var(--rice);
+  margin-bottom: 0.5rem;
+  font-size: 1.15rem;
+}
+
+.lesson-item p {
+  color: var(--fog);
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.lesson-item strong {
+  color: var(--paper);
+}
+
+.lesson-card {
+  background: rgba(20, 22, 31, 0.95);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  margin-top: 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+
+.lesson-card h3 {
+  color: var(--rice);
+  margin-bottom: 1.5rem;
+  font-size: 1.35rem;
+}
+
+.lesson-card h4 {
+  color: var(--paper);
+  margin-top: 1.5rem;
+  margin-bottom: 0.8rem;
+  font-size: 1rem;
+}
+
+/* ── Text Formatting Toolbar ────────────────────────────────── */
+
+.formatting-toolbar {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+  padding: 0.6rem;
+  background: var(--ink-3);
+  border-radius: var(--r);
+  border: 1px solid var(--ink-4);
+}
+
+.format-btn {
+  background: var(--ink-4);
+  border: 1px solid var(--ink-4);
+  color: var(--paper);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--r);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all var(--transition);
+}
+
+.format-btn:hover {
+  background: var(--vermillion);
+  border-color: var(--vermillion);
+  color: var(--bright);
+}
+
+.format-btn:active {
+  transform: scale(0.95);
+}
+
+.format-divider {
+  width: 1px;
+  background: var(--ink-4);
+  margin: 0 0.25rem;
+}
+
+/* ── Lesson Input Fields ────────────────────────────────────── */
+
+.lesson-card #lesson-title,
+.lesson-card #lesson-content,
+.lesson-card #lesson-visibility,
+.lesson-question-card .question-text,
+.lesson-question-card .option-val {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: 0.85rem;
+  border-radius: var(--r);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.lesson-card #lesson-title:focus,
+.lesson-card #lesson-content:focus,
+.lesson-card #lesson-visibility:focus,
+.lesson-question-card .question-text:focus,
+.lesson-question-card .option-val:focus {
+  border-color: var(--vermillion);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(201, 64, 64, 0.15);
+}
+
+.lesson-card #lesson-title {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  font-size: 1.1rem;
+}
+
+.lesson-card #lesson-content {
+  width: 100%;
+  resize: vertical;
+  min-height: 150px;
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+
+/* ── Question Cards ────────────────────────────────────────── */
+
+.lesson-question-card {
+  background: rgba(58, 63, 92, 0.1);
+  border: 1px solid rgba(201, 64, 64, 0.2);
+  border-radius: var(--r-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.2rem;
+  transition: all var(--transition);
+}
+
+.lesson-question-card:hover {
+  border-color: rgba(201, 64, 64, 0.4);
+  background: rgba(58, 63, 92, 0.15);
+}
+
+.question-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.question-card-header h5 {
+  color: var(--rice);
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.btn-delete-question {
+  background: rgba(201, 64, 64, 0.15);
+  border: 1px solid rgba(201, 64, 64, 0.3);
+  color: #e88;
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--r);
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all var(--transition);
+}
+
+.btn-delete-question:hover {
+  background: rgba(201, 64, 64, 0.35);
+  border-color: rgba(201, 64, 64, 0.6);
+  color: #ff6b6b;
+}
+
+.lesson-question-card .question-text {
+  width: 100%;
+  margin-bottom: 1rem;
+  min-height: 80px;
+  font-size: 1rem;
+}
+
+.options-grid {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.option-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.option-row input[type="text"] {
+  width: 100%;
+  padding: 0.75rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--fog);
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  padding-top: 0.75rem;
+}
+
+.radio-label input[type="radio"] {
+  accent-color: var(--vermillion);
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
 /* ── Animations ─────────────────────────────────────────────── */
 
 @keyframes fadeIn {

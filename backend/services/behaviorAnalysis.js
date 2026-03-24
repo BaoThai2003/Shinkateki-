@@ -10,9 +10,9 @@
 //  4. Learning velocity (improvement rate over time)
 //  5. Personalised textual recommendations
 // ════════════════════════════════════════════════════════════════
-'use strict';
+"use strict";
 
-const { query, queryOne } = require('../config/db');
+const { query, queryOne } = require("../config/db");
 
 // ── Time-of-Day Analysis ─────────────────────────────────────────
 
@@ -30,20 +30,20 @@ async function getTimeOfDayInsights(userId) {
     [userId]
   );
 
-  return rows.map(r => ({
-    hour:         r.hour_slot,
-    label:        _timeLabel(r.hour_slot),
-    totalAttempts:r.total_attempts,
-    accuracy:     parseFloat((r.accuracy_rate * 100).toFixed(1)),
-    avgResponseMs:r.avg_response_ms,
+  return rows.map((r) => ({
+    hour: r.hour_slot,
+    label: _timeLabel(r.hour_slot),
+    totalAttempts: r.total_attempts,
+    accuracy: parseFloat((r.accuracy_rate * 100).toFixed(1)),
+    avgResponseMs: r.avg_response_ms,
   }));
 }
 
 function _timeLabel(hour) {
-  if (hour >= 5  && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 17) return 'afternoon';
-  if (hour >= 17 && hour < 21) return 'evening';
-  return 'night';
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 17) return "afternoon";
+  if (hour >= 17 && hour < 21) return "evening";
+  return "night";
 }
 
 /**
@@ -77,12 +77,13 @@ async function getWeeklyTrend(userId, days = 7) {
     [userId, days]
   );
 
-  return rows.map(r => ({
-    date:     r.day,
-    total:    r.total,
-    correct:  r.correct,
-    accuracy: r.total > 0 ? parseFloat(((r.correct / r.total) * 100).toFixed(1)) : 0,
-    avgMs:    Math.round(r.avg_ms),
+  return rows.map((r) => ({
+    date: r.day,
+    total: r.total,
+    correct: r.correct,
+    accuracy:
+      r.total > 0 ? parseFloat(((r.correct / r.total) * 100).toFixed(1)) : 0,
+    avgMs: Math.round(r.avg_ms),
   }));
 }
 
@@ -93,7 +94,7 @@ async function getWeeklyTrend(userId, days = 7) {
  */
 async function getWeakestCharacters(userId, limit = 10) {
   return query(
-    `SELECT c.character, c.romaji, c.type, c.group_name,
+    `SELECT c.kana AS character, c.romaji, c.type, c.group_name,
             ps.weakness_score, ps.difficulty_class,
             ps.correct_count, ps.wrong_count,
             ps.avg_response_ms, ps.mistake_streak
@@ -118,7 +119,7 @@ async function getLearningVelocity(userId) {
     [userId]
   );
   const total = countRow?.total ?? 0;
-  if (total < 10) return { status: 'insufficient_data', improvementPct: null };
+  if (total < 10) return { status: "insufficient_data", improvementPct: null };
 
   const half = Math.floor(total / 2);
 
@@ -135,31 +136,37 @@ async function getLearningVelocity(userId) {
     [userId, half]
   );
 
-  const first  = parseFloat(firstHalf?.acc  ?? 0) * 100;
+  const first = parseFloat(firstHalf?.acc ?? 0) * 100;
   const second = parseFloat(secondHalf?.acc ?? 0) * 100;
-  const delta  = second - first;
+  const delta = second - first;
 
   return {
-    firstHalfAccuracy:  parseFloat(first.toFixed(1)),
+    firstHalfAccuracy: parseFloat(first.toFixed(1)),
     secondHalfAccuracy: parseFloat(second.toFixed(1)),
-    improvementPct:     parseFloat(delta.toFixed(1)),
-    trend: delta > 2 ? 'improving' : delta < -2 ? 'declining' : 'stable',
+    improvementPct: parseFloat(delta.toFixed(1)),
+    trend: delta > 2 ? "improving" : delta < -2 ? "declining" : "stable",
   };
 }
 
 // ── Overall Dashboard Stats ──────────────────────────────────────
 
 async function getDashboardStats(userId) {
-  const [overall, velocity, weakest, timeInsights, optimal, weekly] = await Promise.all([
-    _getOverallStats(userId),
-    getLearningVelocity(userId),
-    getWeakestCharacters(userId, 5),
-    getTimeOfDayInsights(userId),
-    getOptimalStudyTime(userId),
-    getWeeklyTrend(userId, 7),
-  ]);
+  const [overall, velocity, weakest, timeInsights, optimal, weekly] =
+    await Promise.all([
+      _getOverallStats(userId),
+      getLearningVelocity(userId),
+      getWeakestCharacters(userId, 5),
+      getTimeOfDayInsights(userId),
+      getOptimalStudyTime(userId),
+      getWeeklyTrend(userId, 7),
+    ]);
 
-  const recommendations = _buildRecommendations({ overall, velocity, optimal, weakest });
+  const recommendations = _buildRecommendations({
+    overall,
+    velocity,
+    optimal,
+    weakest,
+  });
 
   return {
     overall,
@@ -167,7 +174,7 @@ async function getDashboardStats(userId) {
     weakest,
     timeInsights,
     optimalStudyTime: optimal,
-    weeklyTrend:      weekly,
+    weeklyTrend: weekly,
     recommendations,
   };
 }
@@ -184,8 +191,8 @@ async function _getOverallStats(userId) {
     [userId]
   );
 
-  const total   = row?.total_attempts ?? 0;
-  const correct = row?.total_correct  ?? 0;
+  const total = row?.total_attempts ?? 0;
+  const correct = row?.total_correct ?? 0;
 
   const masteredRow = await queryOne(
     `SELECT COUNT(*) AS count FROM performance_stats
@@ -194,12 +201,13 @@ async function _getOverallStats(userId) {
   );
 
   return {
-    totalAttempts:   total,
-    totalCorrect:    correct,
-    overallAccuracy: total > 0 ? parseFloat(((correct / total) * 100).toFixed(1)) : 0,
-    avgResponseMs:   Math.round(row?.avg_response_ms ?? 0),
-    masteredCount:   masteredRow?.count ?? 0,
-    lastAttempt:     row?.last_attempt ?? null,
+    totalAttempts: total,
+    totalCorrect: correct,
+    overallAccuracy:
+      total > 0 ? parseFloat(((correct / total) * 100).toFixed(1)) : 0,
+    avgResponseMs: Math.round(row?.avg_response_ms ?? 0),
+    masteredCount: masteredRow?.count ?? 0,
+    lastAttempt: row?.last_attempt ?? null,
   };
 }
 
@@ -211,42 +219,45 @@ function _buildRecommendations({ overall, velocity, optimal, weakest }) {
   // Accuracy-based advice
   if (overall.overallAccuracy < 50) {
     recs.push({
-      type: 'warning',
-      text: 'Your overall accuracy is below 50%. Focus on your weakest characters before advancing.',
+      type: "warning",
+      text: "Your overall accuracy is below 50%. Focus on your weakest characters before advancing.",
     });
   } else if (overall.overallAccuracy >= 80) {
     recs.push({
-      type: 'success',
-      text: 'Excellent work! You\'re above 80% accuracy — consider enabling katakana practice.',
+      type: "success",
+      text: "Excellent work! You're above 80% accuracy — consider enabling katakana practice.",
     });
   }
 
   // Velocity-based advice
-  if (velocity.trend === 'improving') {
+  if (velocity.trend === "improving") {
     recs.push({
-      type: 'success',
+      type: "success",
       text: `You've improved by ${velocity.improvementPct}% compared to your early sessions. Keep it up!`,
     });
-  } else if (velocity.trend === 'declining') {
+  } else if (velocity.trend === "declining") {
     recs.push({
-      type: 'warning',
-      text: 'Your recent accuracy is dropping. Try shorter, more focused sessions.',
+      type: "warning",
+      text: "Your recent accuracy is dropping. Try shorter, more focused sessions.",
     });
   }
 
   // Time-of-day advice
   if (optimal) {
     recs.push({
-      type: 'info',
+      type: "info",
       text: `You perform best during the ${optimal.label} (${optimal.accuracy}% accuracy). Try to study then.`,
     });
   }
 
   // Weak characters spotlight
   if (weakest.length > 0) {
-    const chars = weakest.slice(0, 3).map(c => `${c.character} (${c.romaji})`).join(', ');
+    const chars = weakest
+      .slice(0, 3)
+      .map((c) => `${c.character} (${c.romaji})`)
+      .join(", ");
     recs.push({
-      type: 'info',
+      type: "info",
       text: `Focus on your hardest characters: ${chars}.`,
     });
   }

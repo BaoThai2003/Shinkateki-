@@ -239,34 +239,83 @@ function renderLessonForms(questions = []) {
     .map((q, i) => {
       return `
       <div class="lesson-question-card" data-index="${i}">
-        <h5>Question ${i + 1}</h5>
-        <input type="text" class="question-text" placeholder="Question text" value="${escapeHtml(
+        <div class="question-card-header">
+          <h5>Question ${i + 1}</h5>
+          <button type="button" class="btn-delete-question" data-index="${i}" title="Delete question">✕</button>
+        </div>
+        <textarea class="question-text" placeholder="Enter question text here..." rows="3">${escapeHtml(
           q.questionText
-        )}" />
-        <div class="option-row"><input type="text" class="option-val" value="${escapeHtml(
-          q.options[0]
-        )}" placeholder="Option A" /><label><input type="radio" name="correct-${i}" value="0" ${
+        )}</textarea>
+        <div class="options-grid">
+          <div class="option-row">
+            <input type="text" class="option-val" value="${escapeHtml(
+              q.options[0]
+            )}" placeholder="Option A" />
+            <label class="radio-label"><input type="radio" name="correct-${i}" value="0" ${
         q.correctIndex === 0 ? "checked" : ""
-      }/> Correct</label></div>
-        <div class="option-row"><input type="text" class="option-val" value="${escapeHtml(
-          q.options[1]
-        )}" placeholder="Option B" /><label><input type="radio" name="correct-${i}" value="1" ${
+      }/> Correct</label>
+          </div>
+          <div class="option-row">
+            <input type="text" class="option-val" value="${escapeHtml(
+              q.options[1]
+            )}" placeholder="Option B" />
+            <label class="radio-label"><input type="radio" name="correct-${i}" value="1" ${
         q.correctIndex === 1 ? "checked" : ""
-      }/> Correct</label></div>
-        <div class="option-row"><input type="text" class="option-val" value="${escapeHtml(
-          q.options[2]
-        )}" placeholder="Option C" /><label><input type="radio" name="correct-${i}" value="2" ${
+      }/> Correct</label>
+          </div>
+          <div class="option-row">
+            <input type="text" class="option-val" value="${escapeHtml(
+              q.options[2]
+            )}" placeholder="Option C" />
+            <label class="radio-label"><input type="radio" name="correct-${i}" value="2" ${
         q.correctIndex === 2 ? "checked" : ""
-      }/> Correct</label></div>
-        <div class="option-row"><input type="text" class="option-val" value="${escapeHtml(
-          q.options[3]
-        )}" placeholder="Option D" /><label><input type="radio" name="correct-${i}" value="3" ${
+      }/> Correct</label>
+          </div>
+          <div class="option-row">
+            <input type="text" class="option-val" value="${escapeHtml(
+              q.options[3]
+            )}" placeholder="Option D" />
+            <label class="radio-label"><input type="radio" name="correct-${i}" value="3" ${
         q.correctIndex === 3 ? "checked" : ""
-      }/> Correct</label></div>
+      }/> Correct</label>
+          </div>
+        </div>
       </div>
       `;
     })
     .join("");
+
+  // Attach delete button handlers
+  container.querySelectorAll(".btn-delete-question").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const idx = parseInt(btn.dataset.index, 10);
+      const allCards = Array.from(
+        document.querySelectorAll(".lesson-question-card")
+      );
+      if (allCards.length <= 1) {
+        alert("You must have at least one question.");
+        return;
+      }
+      const currentQuestions = allCards
+        .map((card, cardIdx) => {
+          if (cardIdx === idx) return null;
+          return {
+            questionText: card.querySelector(".question-text").value,
+            options: Array.from(card.querySelectorAll(".option-val")).map(
+              (inp) => inp.value
+            ),
+            correctIndex: parseInt(
+              card.querySelector(`input[name='correct-${cardIdx}']:checked`)
+                ?.value || 0,
+              10
+            ),
+          };
+        })
+        .filter((q) => q !== null);
+      renderLessonForms(currentQuestions);
+    });
+  });
 }
 
 function createBlankQuestion() {
@@ -275,6 +324,50 @@ function createBlankQuestion() {
     options: ["", "", "", ""],
     correctIndex: 0,
   };
+}
+
+function applyTextFormat(format) {
+  const textarea = document.getElementById("lesson-content");
+  if (!textarea) return;
+
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const selectedText = textarea.value.substring(start, end);
+
+  if (!selectedText) return;
+
+  let formattedText = selectedText;
+  switch (format) {
+    case "bold":
+      formattedText = `**${selectedText}**`;
+      break;
+    case "italic":
+      formattedText = `*${selectedText}*`;
+      break;
+    case "underline":
+      formattedText = `__${selectedText}__`;
+      break;
+    case "large":
+      formattedText = `# ${selectedText}`;
+      break;
+    case "medium":
+      formattedText = `## ${selectedText}`;
+      break;
+    case "small":
+      formattedText = `### ${selectedText}`;
+      break;
+  }
+
+  const newValue =
+    textarea.value.substring(0, start) +
+    formattedText +
+    textarea.value.substring(end);
+  textarea.value = newValue;
+  textarea.focus();
+  textarea.setSelectionRange(
+    start + formattedText.length,
+    start + formattedText.length
+  );
 }
 
 async function loadLessons() {
@@ -323,120 +416,131 @@ function escapeHtml(str = "") {
     .replace(/'/g, "&#039;");
 }
 
-// ── Nav wiring ───────────────────────────────────────────────────
+// ── Nav wiring + All event listeners ──────────────────────────
 
-document.querySelectorAll(".nav-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const view = btn.dataset.view;
-    showView(view);
-    if (view === "home") loadHomeData();
-    if (view === "stats") window.loadStats?.();
-    if (view === "lessons") loadLessons();
+document.addEventListener("DOMContentLoaded", () => {
+  // Nav buttons
+  document.querySelectorAll(".nav-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const view = btn.dataset.view;
+      showView(view);
+      if (view === "home") loadHomeData();
+      if (view === "stats") window.loadStats?.();
+      if (view === "lessons") loadLessons();
+    });
   });
-});
 
-// Ensure lesson screen has initial question form.
-renderLessonForms();
-
-// Lesson form events
-document.getElementById("btn-add-question")?.addEventListener("click", () => {
-  const container = document.getElementById("question-form-list");
-  if (!container) return;
-  const current = container.querySelectorAll(".lesson-question-card").length;
-  if (current >= 25)
-    return alert("A lesson can have at most 25 quiz questions.");
-  const questions = Array.from(
-    container.querySelectorAll(".lesson-question-card")
-  ).map((card, idx) => {
-    return {
-      questionText: card.querySelector(".question-text").value,
-      options: Array.from(card.querySelectorAll(".option-val")).map(
-        (i) => i.value
-      ),
-      correctIndex: parseInt(
-        card.querySelector(`input[name='correct-${idx}']:checked`)?.value || 0,
-        10
-      ),
-    };
+  // Logout button
+  document.getElementById("btn-logout")?.addEventListener("click", () => {
+    App.clearAuth();
+    showScreen("auth-screen");
   });
-  questions.push(createBlankQuestion());
-  renderLessonForms(questions);
-});
 
-document
-  .getElementById("btn-save-lesson")
-  ?.addEventListener("click", async (e) => {
-    e.preventDefault && e.preventDefault();
-    const errorEl = document.getElementById("lesson-error");
-    if (errorEl) {
-      errorEl.classList.add("hidden");
-      errorEl.textContent = "";
-    }
+  // Start quiz button (home page)
+  document.getElementById("btn-start-quiz")?.addEventListener("click", () => {
+    const type =
+      document.querySelector('input[name="quiz-type"]:checked')?.value || "";
+    window.startQuiz?.(type);
+  });
 
-    try {
-      const title = document.getElementById("lesson-title").value.trim();
-      const content = document.getElementById("lesson-content").value.trim();
-      const isPublic =
-        document.getElementById("lesson-visibility").value === "public";
+  // Initialize lesson form
+  renderLessonForms();
 
-      const cards = Array.from(
-        document.querySelectorAll(".lesson-question-card")
-      );
-      if (!title || !content || cards.length === 0) {
-        throw new Error(
-          "Please fill lesson title, content, and at least one question."
-        );
-      }
+  // Add question button
+  document.getElementById("btn-add-question")?.addEventListener("click", () => {
+    const container = document.getElementById("question-form-list");
+    if (!container) return;
+    const current = container.querySelectorAll(".lesson-question-card").length;
+    if (current >= 25)
+      return alert("A lesson can have at most 25 quiz questions.");
+    const questions = Array.from(
+      container.querySelectorAll(".lesson-question-card")
+    ).map((card, idx) => {
+      return {
+        questionText: card.querySelector(".question-text").value,
+        options: Array.from(card.querySelectorAll(".option-val")).map(
+          (i) => i.value
+        ),
+        correctIndex: parseInt(
+          card.querySelector(`input[name='correct-${idx}']:checked`)?.value ||
+            0,
+          10
+        ),
+      };
+    });
+    questions.push(createBlankQuestion());
+    renderLessonForms(questions);
+  });
 
-      const questions = cards.map((card, idx) => {
-        const questionText = card.querySelector(".question-text").value.trim();
-        const options = Array.from(card.querySelectorAll(".option-val")).map(
-          (input) => input.value.trim()
-        );
-        const checked = card.querySelector(
-          `input[name='correct-${idx}']:checked`
-        );
-        return {
-          questionText,
-          options,
-          correctIndex: checked ? parseInt(checked.value, 10) : 0,
-        };
-      });
-
-      if (!questions.length || questions.length > 25) {
-        throw new Error("A lesson must include 1 to 25 questions.");
-      }
-
-      if (questions.some((q) => !q.questionText || q.options.some((o) => !o))) {
-        throw new Error("Every question and option must be non-empty.");
-      }
-
-      const payload = { title, content, isPublic, questions };
-      await api.post("/lessons", payload);
-
-      alert("Lesson saved successfully.");
-      document.getElementById("lesson-title").value = "";
-      document.getElementById("lesson-content").value = "";
-      document.getElementById("lesson-visibility").value = "private";
-      renderLessonForms();
-      loadLessons();
-    } catch (err) {
+  // Save lesson button
+  document
+    .getElementById("btn-save-lesson")
+    ?.addEventListener("click", async (e) => {
+      e.preventDefault && e.preventDefault();
+      const errorEl = document.getElementById("lesson-error");
       if (errorEl) {
-        errorEl.textContent = err.message || "Lesson save failed.";
-        errorEl.classList.remove("hidden");
+        errorEl.classList.add("hidden");
+        errorEl.textContent = "";
       }
-    }
-  });
 
-document.getElementById("btn-logout")?.addEventListener("click", () => {
-  App.clearAuth();
-  showScreen("auth-screen");
-});
+      try {
+        const title = document.getElementById("lesson-title").value.trim();
+        const content = document.getElementById("lesson-content").value.trim();
+        const isPublic =
+          document.getElementById("lesson-visibility").value === "public";
 
-document.getElementById("btn-start-quiz")?.addEventListener("click", () => {
-  const type =
-    document.querySelector('input[name="quiz-type"]:checked')?.value || "";
-  window.startQuiz?.(type);
+        const cards = Array.from(
+          document.querySelectorAll(".lesson-question-card")
+        );
+        if (!title || !content || cards.length === 0) {
+          throw new Error(
+            "Please fill lesson title, content, and at least one question."
+          );
+        }
+
+        const questions = cards.map((card, idx) => {
+          const questionText = card
+            .querySelector(".question-text")
+            .value.trim();
+          const options = Array.from(card.querySelectorAll(".option-val")).map(
+            (input) => input.value.trim()
+          );
+          const checked = card.querySelector(
+            `input[name='correct-${idx}']:checked`
+          );
+          return {
+            questionText,
+            options,
+            correctIndex: checked ? parseInt(checked.value, 10) : 0,
+          };
+        });
+
+        if (!questions.length || questions.length > 25) {
+          throw new Error("A lesson must include 1 to 25 questions.");
+        }
+
+        if (
+          questions.some((q) => !q.questionText || q.options.some((o) => !o))
+        ) {
+          throw new Error("Every question and option must be non-empty.");
+        }
+
+        const payload = { title, content, isPublic, questions };
+        await api.post("/lessons", payload);
+
+        alert("Lesson saved successfully.");
+        document.getElementById("lesson-title").value = "";
+        document.getElementById("lesson-content").value = "";
+        document.getElementById("lesson-visibility").value = "private";
+        renderLessonForms();
+        loadLessons();
+      } catch (err) {
+        if (errorEl) {
+          errorEl.textContent = err.message || "Lesson save failed.";
+          errorEl.classList.remove("hidden");
+        }
+      }
+    });
 });
 
 // ── Utilities ────────────────────────────────────────────────────
