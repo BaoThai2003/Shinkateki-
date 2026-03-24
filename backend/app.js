@@ -40,6 +40,8 @@ const authLimiter = rateLimit({
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/api/stats", statsRoutes);
+const lessonRoutes = require("./routes/lessons");
+app.use("/api/lessons", lessonRoutes);
 
 // ── Health check ──────────────────────────────────────────────────
 

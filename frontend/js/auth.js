@@ -57,9 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
         password,
       });
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-
+      App.setAuth(token, user);
       enterApp();
     } catch (err) {
       console.error("LOGIN ERROR:", err);
@@ -102,9 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
           password,
         });
 
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
-
+        App.setAuth(token, user);
         enterApp();
       } catch (err) {
         console.error("REGISTER ERROR:", err);

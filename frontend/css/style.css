@@ -517,7 +517,63 @@ body {
   font-size: 2rem;
   color: var(--gold);
 }
-.ot-accuracy {
+.ot-accuracy .lesson-grid {
+  display: grid;
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+.lesson-item {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 1rem;
+}
+.lesson-item h4 {
+  margin-bottom: 0.4rem;
+  color: var(--rice);
+}
+.lesson-item p {
+  color: var(--fog);
+  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+}
+.lesson-question-card {
+  background: rgba(74, 140, 106, 0.08);
+  border: 1px solid #4a8c6a44;
+  border-radius: var(--r);
+  padding: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+.lesson-question-card h5 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+.lesson-question-card input[type="text"],
+.lesson-question-card textarea,
+.lesson-question-card select {
+  width: 100%;
+  margin-bottom: 0.4rem;
+}
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+}
+.option-row input[type="text"] {
+  flex: 1;
+}
+.public-lesson {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 0.7rem;
+  margin-bottom: 0.4rem;
+}
+.public-lesson strong {
+  color: var(--rice);
+}
+ {
   font-family: var(--font-mono);
   font-size: 0.85rem;
   color: var(--fog);
