@@ -94,15 +94,15 @@ async function getWeeklyTrend(userId, days = 7) {
  */
 async function getWeakestCharacters(userId, limit = 10) {
   return query(
-    `SELECT c.kana AS character, c.romaji, c.type, c.group_name,
-            ps.weakness_score, ps.difficulty_class,
-            ps.correct_count, ps.wrong_count,
-            ps.avg_response_ms, ps.mistake_streak
-     FROM performance_stats ps
-     JOIN characters c ON c.id = ps.character_id
-     WHERE ps.user_id = ?
-     ORDER BY ps.weakness_score DESC
-     LIMIT ?`,
+    `SELECT c.kana AS kana_char, c.romaji, c.type, c.group_name,
+          ps.weakness_score, ps.difficulty_class,
+          ps.correct_count, ps.wrong_count,
+          ps.avg_response_ms, ps.mistake_streak
+   FROM performance_stats ps
+   JOIN characters c ON c.id = ps.character_id
+   WHERE ps.user_id = ?
+   ORDER BY ps.weakness_score DESC
+   LIMIT ?`,
     [userId, limit]
   );
 }
