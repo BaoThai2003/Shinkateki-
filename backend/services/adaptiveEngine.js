@@ -9,37 +9,37 @@
 //  3. Generate an adaptive quiz with the 70/20/10 distribution
 //  4. Schedule next_review using spaced repetition
 // ════════════════════════════════════════════════════════════════
-'use strict';
+"use strict";
 
-const { query, queryOne, withTransaction } = require('../config/db');
+const { query, queryOne, withTransaction } = require("../config/db");
 
 // ── Constants ────────────────────────────────────────────────────
 
 const DIFFICULTY = {
-  STRONG: 'strong',
-  MEDIUM: 'medium',
-  WEAK:   'weak',
+  STRONG: "strong",
+  MEDIUM: "medium",
+  WEAK: "weak",
 };
 
 // Thresholds that classify weakness_score
 const THRESHOLD = {
-  STRONG: 3,    // 0 – 3   → strong
-  MEDIUM: 8,    // 4 – 8   → medium
+  STRONG: 3, // 0 – 3   → strong
+  MEDIUM: 8, // 4 – 8   → medium
   // > 8          → weak
 };
 
 // Minutes until next review per difficulty class
 const REVIEW_DELAY_MIN = {
-  weak:   5,
-  medium: 60 * 24,       // 1 day
-  strong: 60 * 24 * 3,   // 3 days
+  weak: 5,
+  medium: 60 * 24, // 1 day
+  strong: 60 * 24 * 3, // 3 days
 };
 
 // Quiz generation target distribution
 const QUIZ_DISTRIBUTION = {
-  weak:   0.70,
-  medium: 0.20,
-  strong: 0.10,
+  weak: 0.7,
+  medium: 0.2,
+  strong: 0.1,
 };
 
 // Default quiz size
@@ -63,19 +63,16 @@ const COMPASSION_THRESHOLD = 5;
  * still remembering historical trouble with a character.
  */
 function computeWeaknessScore({
-  oldScore        = 0,
+  oldScore = 0,
   isCorrect,
   responseTimeMs,
-  mistakeStreak   = 0,
+  mistakeStreak = 0,
 }) {
-  const wrong          = isCorrect ? 0 : 1;
+  const wrong = isCorrect ? 0 : 1;
   const responseTimeSec = responseTimeMs / 1000;
 
   // Raw contribution of this single attempt
-  const contribution =
-    (wrong * 2) +
-    responseTimeSec +
-    (mistakeStreak * 3);
+  const contribution = wrong * 2 + responseTimeSec + mistakeStreak * 3;
 
   // Exponential moving average — recent attempts dominate
   const newScore = oldScore * 0.6 + contribution * 0.4;
@@ -142,7 +139,13 @@ async function getOrCreateStat(conn, userId, characterId) {
  * @param {string}  opts.sessionId       - UUID grouping a quiz session
  * @returns {object}  Updated performance_stats row + new weakness_score
  */
-async function recordAttempt({ userId, characterId, isCorrect, responseTimeMs, sessionId }) {
+async function recordAttempt({
+  userId,
+  characterId,
+  isCorrect,
+  responseTimeMs,
+  sessionId,
+}) {
   return withTransaction(async (conn) => {
     // 1. Load current stat (creates if missing)
     const stat = await getOrCreateStat(conn, userId, characterId);
@@ -152,7 +155,7 @@ async function recordAttempt({ userId, characterId, isCorrect, responseTimeMs, s
 
     // 3. Compute new weakness score
     const newScore = computeWeaknessScore({
-      oldScore:      stat.weakness_score,
+      oldScore: stat.weakness_score,
       isCorrect,
       responseTimeMs,
       mistakeStreak: newStreak,
@@ -164,7 +167,8 @@ async function recordAttempt({ userId, characterId, isCorrect, responseTimeMs, s
     // 5. Running average of response time
     const totalAttempts = stat.correct_count + stat.wrong_count + 1;
     const newAvgMs = Math.round(
-      (stat.avg_response_ms * (totalAttempts - 1) + responseTimeMs) / totalAttempts
+      (stat.avg_response_ms * (totalAttempts - 1) + responseTimeMs) /
+        totalAttempts
     );
 
     // 6. Next review schedule
@@ -177,8 +181,15 @@ async function recordAttempt({ userId, characterId, isCorrect, responseTimeMs, s
          (user_id, character_id, is_correct, response_time,
           mistake_streak, hour_of_day, session_id)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [userId, characterId, isCorrect ? 1 : 0,
-       responseTimeMs, newStreak, hourOfDay, sessionId]
+      [
+        userId,
+        characterId,
+        isCorrect ? 1 : 0,
+        responseTimeMs,
+        newStreak,
+        hourOfDay,
+        sessionId,
+      ]
     );
 
     // 8. Upsert performance_stats
@@ -194,21 +205,31 @@ async function recordAttempt({ userId, characterId, isCorrect, responseTimeMs, s
          next_review      = ?
        WHERE user_id = ? AND character_id = ?`,
       [
-        newScore, difficultyClass,
-        isCorrect ? 1 : 0, isCorrect ? 0 : 1,
-        newAvgMs, newStreak,
+        newScore,
+        difficultyClass,
+        isCorrect ? 1 : 0,
+        isCorrect ? 0 : 1,
+        newAvgMs,
+        newStreak,
         nextReview,
-        userId, characterId,
+        userId,
+        characterId,
       ]
     );
 
     // 9. Update time-of-day stats (upsert)
-    await _updateTimeOfDayStat(conn, userId, hourOfDay, isCorrect, responseTimeMs);
+    await _updateTimeOfDayStat(
+      conn,
+      userId,
+      hourOfDay,
+      isCorrect,
+      responseTimeMs
+    );
 
     return {
-      weaknessScore:   newScore,
+      weaknessScore: newScore,
       difficultyClass,
-      mistakeStreak:   newStreak,
+      mistakeStreak: newStreak,
       nextReview,
     };
   });
@@ -217,7 +238,13 @@ async function recordAttempt({ userId, characterId, isCorrect, responseTimeMs, s
 /**
  * Maintain a running accuracy/response-time average per hour-slot.
  */
-async function _updateTimeOfDayStat(conn, userId, hourSlot, isCorrect, responseTimeMs) {
+async function _updateTimeOfDayStat(
+  conn,
+  userId,
+  hourSlot,
+  isCorrect,
+  responseTimeMs
+) {
   const [[existing]] = await conn.execute(
     `SELECT * FROM time_of_day_stats WHERE user_id = ? AND hour_slot = ?`,
     [userId, hourSlot]
@@ -228,13 +255,20 @@ async function _updateTimeOfDayStat(conn, userId, hourSlot, isCorrect, responseT
       `INSERT INTO time_of_day_stats
          (user_id, hour_slot, total_attempts, correct_count, avg_response_ms, accuracy_rate)
        VALUES (?, ?, 1, ?, ?, ?)`,
-      [userId, hourSlot, isCorrect ? 1 : 0, responseTimeMs, isCorrect ? 1.0 : 0.0]
+      [
+        userId,
+        hourSlot,
+        isCorrect ? 1 : 0,
+        responseTimeMs,
+        isCorrect ? 1.0 : 0.0,
+      ]
     );
   } else {
-    const newTotal   = existing.total_attempts + 1;
+    const newTotal = existing.total_attempts + 1;
     const newCorrect = existing.correct_count + (isCorrect ? 1 : 0);
-    const newAvgMs   = Math.round(
-      (existing.avg_response_ms * existing.total_attempts + responseTimeMs) / newTotal
+    const newAvgMs = Math.round(
+      (existing.avg_response_ms * existing.total_attempts + responseTimeMs) /
+        newTotal
     );
     await conn.execute(
       `UPDATE time_of_day_stats SET
@@ -264,8 +298,10 @@ async function _updateTimeOfDayStat(conn, userId, hourSlot, isCorrect, responseT
  * @param {object} opts  { size, type }  type = 'hiragana'|'katakana'|null
  * @returns {Array}  Array of character objects with distractors
  */
-async function generateQuiz(userId, { size = DEFAULT_QUIZ_SIZE, type = null } = {}) {
-
+async function generateQuiz(
+  userId,
+  { size = DEFAULT_QUIZ_SIZE, type = null } = {}
+) {
   // 1. Check for compassion mode
   const compassionMode = await _isCompassionMode(userId);
 
@@ -273,66 +309,75 @@ async function generateQuiz(userId, { size = DEFAULT_QUIZ_SIZE, type = null } = 
   const statsRows = await query(
     `SELECT ps.character_id, ps.weakness_score, ps.difficulty_class,
             ps.mistake_streak, ps.next_review,
-            c.character, c.romaji, c.type, c.group_name, c.difficulty
+            c.symbol, c.hina, c.kana, c.romaji, c.type, c.group_name, c.difficulty
      FROM performance_stats ps
      JOIN characters c ON c.id = ps.character_id
      WHERE ps.user_id = ?
-       ${type ? 'AND c.type = ?' : ''}
+       ${type ? "AND c.type = ?" : ""}
      ORDER BY ps.weakness_score DESC`,
     type ? [userId, type] : [userId]
   );
 
   // 3. Fetch characters the user has NEVER seen (no stat row)
-  const seenIds = statsRows.map(r => r.character_id);
+  const seenIds = statsRows.map((r) => r.character_id);
   const unseenRows = await query(
     `SELECT id AS character_id, 0 AS weakness_score,
             'medium' AS difficulty_class, 0 AS mistake_streak,
             NULL AS next_review,
             character, romaji, type, group_name, difficulty
      FROM characters
-     WHERE ${type ? 'type = ? AND' : ''}
-           id NOT IN (${seenIds.length ? seenIds.map(() => '?').join(',') : 'NULL'})
+     WHERE ${type ? "type = ? AND" : ""}
+           id NOT IN (${
+             seenIds.length ? seenIds.map(() => "?").join(",") : "NULL"
+           })
      ORDER BY difficulty ASC
      LIMIT 20`,
-    [
-      ...(type ? [type] : []),
-      ...(seenIds.length ? seenIds : []),
-    ]
+    [...(type ? [type] : []), ...(seenIds.length ? seenIds : [])]
   );
 
   // 4. Bucket characters
   const buckets = {
-    weak:   statsRows.filter(r => r.difficulty_class === 'weak'),
+    weak: statsRows.filter((r) => r.difficulty_class === "weak"),
     medium: [
-      ...statsRows.filter(r => r.difficulty_class === 'medium'),
+      ...statsRows.filter((r) => r.difficulty_class === "medium"),
       ...unseenRows,
     ],
-    strong: statsRows.filter(r => r.difficulty_class === 'strong'),
+    strong: statsRows.filter((r) => r.difficulty_class === "strong"),
   };
 
   let selected;
 
   if (compassionMode) {
     // In compassion mode: 80% strong/medium (easiest first) + 20% weak
-    const easyPool = [...buckets.strong, ...buckets.medium]
-      .sort((a, b) => a.weakness_score - b.weakness_score);
+    const easyPool = [...buckets.strong, ...buckets.medium].sort(
+      (a, b) => a.weakness_score - b.weakness_score
+    );
     selected = [
       ..._sampleDue(easyPool, Math.ceil(size * 0.8)),
       ..._sampleDue(buckets.weak, Math.ceil(size * 0.2)),
     ];
   } else {
     selected = [
-      ..._sampleDue(buckets.weak,   Math.round(size * QUIZ_DISTRIBUTION.weak)),
-      ..._sampleDue(buckets.medium, Math.round(size * QUIZ_DISTRIBUTION.medium)),
-      ..._sampleDue(buckets.strong, Math.round(size * QUIZ_DISTRIBUTION.strong)),
+      ..._sampleDue(buckets.weak, Math.round(size * QUIZ_DISTRIBUTION.weak)),
+      ..._sampleDue(
+        buckets.medium,
+        Math.round(size * QUIZ_DISTRIBUTION.medium)
+      ),
+      ..._sampleDue(
+        buckets.strong,
+        Math.round(size * QUIZ_DISTRIBUTION.strong)
+      ),
     ];
   }
 
   // 5. Fill to `size` if pools were too small
   if (selected.length < size) {
     const allRemaining = [
-      ...buckets.weak, ...buckets.medium, ...buckets.strong, ...unseenRows,
-    ].filter(r => !selected.find(s => s.character_id === r.character_id));
+      ...buckets.weak,
+      ...buckets.medium,
+      ...buckets.strong,
+      ...unseenRows,
+    ].filter((r) => !selected.find((s) => s.character_id === r.character_id));
     selected.push(..._sample(allRemaining, size - selected.length));
   }
 
@@ -341,19 +386,21 @@ async function generateQuiz(userId, { size = DEFAULT_QUIZ_SIZE, type = null } = 
 
   // 6. Attach multiple-choice distractors to each question
   const allChars = await query(
-    `SELECT id, character, romaji, type FROM characters ${type ? 'WHERE type = ?' : ''}`,
+    `SELECT id, character, romaji, type FROM characters ${
+      type ? "WHERE type = ?" : ""
+    }`,
     type ? [type] : []
   );
 
-  return selected.map(item => ({
-    characterId:  item.character_id,
-    character:    item.character,
-    romaji:       item.romaji,
-    type:         item.type,
-    groupName:    item.group_name,
+  return selected.map((item) => ({
+    characterId: item.character_id,
+    character: item.character,
+    romaji: item.romaji,
+    type: item.type,
+    groupName: item.group_name,
     weaknessScore: parseFloat(item.weakness_score),
-    difficultyClass: item.difficulty_class ?? 'medium',
-    choices:      _buildChoices(item, allChars, 4),
+    difficultyClass: item.difficulty_class ?? "medium",
+    choices: _buildChoices(item, allChars, 4),
   }));
 }
 
@@ -361,12 +408,16 @@ async function generateQuiz(userId, { size = DEFAULT_QUIZ_SIZE, type = null } = 
  * Build an array of N multiple-choice options including the correct answer.
  */
 function _buildChoices(targetChar, allChars, count) {
-  const correct = { id: targetChar.character_id, romaji: targetChar.romaji, correct: true };
-  const pool    = allChars
-    .filter(c => c.id !== targetChar.character_id)
+  const correct = {
+    id: targetChar.character_id,
+    romaji: targetChar.romaji,
+    correct: true,
+  };
+  const pool = allChars
+    .filter((c) => c.id !== targetChar.character_id)
     .sort(() => Math.random() - 0.5)
     .slice(0, count - 1)
-    .map(c => ({ id: c.id, romaji: c.romaji, correct: false }));
+    .map((c) => ({ id: c.id, romaji: c.romaji, correct: false }));
 
   return _shuffle([correct, ...pool]);
 }
@@ -377,13 +428,21 @@ function _buildChoices(targetChar, allChars, count) {
 function _sampleDue(pool, n) {
   if (!pool.length || n <= 0) return [];
   const now = Date.now();
-  const due    = pool.filter(r => !r.next_review || new Date(r.next_review).getTime() <= now);
-  const notDue = pool.filter(r => r.next_review  && new Date(r.next_review).getTime() >  now);
+  const due = pool.filter(
+    (r) => !r.next_review || new Date(r.next_review).getTime() <= now
+  );
+  const notDue = pool.filter(
+    (r) => r.next_review && new Date(r.next_review).getTime() > now
+  );
   return _sample([..._shuffle(due), ..._shuffle(notDue)], n);
 }
 
-function _sample(arr, n) { return arr.slice(0, Math.min(n, arr.length)); }
-function _shuffle(arr)   { return arr.sort(() => Math.random() - 0.5);   }
+function _sample(arr, n) {
+  return arr.slice(0, Math.min(n, arr.length));
+}
+function _shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
 
 /**
  * Check whether any character for this user has a live streak >= threshold.

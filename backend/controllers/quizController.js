@@ -1,26 +1,31 @@
 // controllers/quizController.js
-'use strict';
+"use strict";
 
-const { v4: uuidv4 }  = require('uuid');
-const { query }       = require('../config/db');
-const adaptiveEngine  = require('../services/adaptiveEngine');
+const { v4: uuidv4 } = require("uuid");
+const { query } = require("../config/db");
+const adaptiveEngine = require("../services/adaptiveEngine");
 
 // GET /api/quiz/generate?size=10&type=hiragana
 async function generateQuiz(req, res) {
   try {
+    console.log("🔥 generateQuiz HIT");
+
     const userId = req.user.id;
-    const size   = Math.min(parseInt(req.query.size  || '10'), 30);
-    const type   = req.query.type || null;  // 'hiragana' | 'katakana' | null (both)
+    const size = Math.min(parseInt(req.query.size || "10"), 30);
+    const type = req.query.type || null;
+
+    console.log({ userId, size, type });
 
     const questions = await adaptiveEngine.generateQuiz(userId, { size, type });
 
-    // Create a session ID the client will echo back on submission
+    console.log("✅ questions:", questions);
+
     const sessionId = uuidv4();
 
     return res.json({ sessionId, questions, total: questions.length });
   } catch (err) {
-    console.error('[generateQuiz]', err);
-    return res.status(500).json({ error: 'Failed to generate quiz.' });
+    console.error("💥 generateQuiz ERROR:", err);
+    return res.status(500).json({ error: "Failed to generate quiz." });
   }
 }
 
@@ -28,67 +33,72 @@ async function generateQuiz(req, res) {
 // Body: { sessionId, answers: [{ characterId, choiceRomaji, responseTimeMs }] }
 async function submitAnswers(req, res) {
   try {
-    const userId             = req.user.id;
+    const userId = req.user.id;
     const { sessionId, answers } = req.body;
 
     if (!Array.isArray(answers) || !answers.length) {
-      return res.status(400).json({ error: 'answers array is required.' });
+      return res.status(400).json({ error: "answers array is required." });
     }
 
     // Fetch all characters once for lookup
     const charMap = {};
-    const charIds = [...new Set(answers.map(a => a.characterId))];
-    const chars   = await query(
-      `SELECT id, romaji FROM characters WHERE id IN (${charIds.map(() => '?').join(',')})`,
+    const charIds = [...new Set(answers.map((a) => a.characterId))];
+    const chars = await query(
+      `SELECT id, romaji FROM characters WHERE id IN (${charIds
+        .map(() => "?")
+        .join(",")})`,
       charIds
     );
-    chars.forEach(c => { charMap[c.id] = c; });
+    chars.forEach((c) => {
+      charMap[c.id] = c;
+    });
 
     // Process each answer
     const results = [];
     let sessionScore = 0;
 
     for (const answer of answers) {
-      const char       = charMap[answer.characterId];
+      const char = charMap[answer.characterId];
       if (!char) continue;
 
-      const isCorrect  = char.romaji.toLowerCase() === (answer.choiceRomaji || '').toLowerCase();
+      const isCorrect =
+        char.romaji.toLowerCase() === (answer.choiceRomaji || "").toLowerCase();
       const responseMs = Math.max(100, parseInt(answer.responseTimeMs || 3000));
 
       const update = await adaptiveEngine.recordAttempt({
         userId,
-        characterId:   answer.characterId,
+        characterId: answer.characterId,
         isCorrect,
         responseTimeMs: responseMs,
-        sessionId:      sessionId || uuidv4(),
+        sessionId: sessionId || uuidv4(),
       });
 
       if (isCorrect) sessionScore += _pointsFor(update.difficultyClass);
 
       results.push({
-        characterId:     answer.characterId,
+        characterId: answer.characterId,
         isCorrect,
-        correctRomaji:   char.romaji,
-        weaknessScore:   update.weaknessScore,
+        correctRomaji: char.romaji,
+        weaknessScore: update.weaknessScore,
         difficultyClass: update.difficultyClass,
-        nextReview:      update.nextReview,
+        nextReview: update.nextReview,
       });
     }
 
     // Award session score to user
-    await query(
-      `UPDATE users SET total_score = total_score + ? WHERE id = ?`,
-      [sessionScore, userId]
-    );
+    await query(`UPDATE users SET total_score = total_score + ? WHERE id = ?`, [
+      sessionScore,
+      userId,
+    ]);
 
     const accuracy = Math.round(
-      (results.filter(r => r.isCorrect).length / results.length) * 100
+      (results.filter((r) => r.isCorrect).length / results.length) * 100
     );
 
     return res.json({ sessionId, results, accuracy, sessionScore });
   } catch (err) {
-    console.error('[submitAnswers]', err);
-    return res.status(500).json({ error: 'Failed to submit answers.' });
+    console.error("[submitAnswers]", err);
+    return res.status(500).json({ error: "Failed to submit answers." });
   }
 }
 
