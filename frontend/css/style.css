@@ -1350,3 +1350,183 @@ body {
     display: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+  PROFILE STYLES
+   ════════════════════════════════════════════════════════════════ */
+
+.profile-section {
+  background: var(--ink-2);
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-card);
+}
+
+.profile-section h3 {
+  color: var(--rice);
+  font-family: var(--font-zen);
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--vermillion);
+  padding-bottom: 0.5rem;
+}
+
+.profile-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--ink-3);
+  border-radius: var(--r);
+  border-left: 4px solid var(--vermillion);
+}
+
+.info-label {
+  font-weight: 600;
+  color: var(--fog);
+}
+
+.info-value {
+  color: var(--paper);
+  font-family: var(--font-mono);
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--ink-3);
+  border-radius: var(--r);
+  border: 1px solid var(--ink-4);
+}
+
+.history-date {
+  font-weight: 600;
+  color: var(--rice);
+  min-width: 100px;
+}
+
+.history-details {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.history-questions,
+.history-accuracy,
+.history-score {
+  color: var(--fog);
+  font-size: 0.9rem;
+}
+
+.history-grade {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: var(--gold);
+  min-width: 40px;
+  text-align: center;
+}
+
+.grade-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.grade-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: var(--ink-3);
+  border-radius: var(--r);
+}
+
+.grade-letter {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: var(--gold);
+  min-width: 40px;
+  text-align: center;
+}
+
+.grade-bar {
+  flex: 1;
+  height: 12px;
+  background: var(--ink-4);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.grade-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--vermillion), var(--gold));
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.grade-count {
+  color: var(--fog);
+  font-size: 0.9rem;
+  min-width: 120px;
+}
+
+.lessons-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.profile-lesson-item {
+  background: var(--ink-3);
+  border-radius: var(--r);
+  padding: 1.5rem;
+  border: 1px solid var(--ink-4);
+}
+
+.profile-lesson-item h4 {
+  color: var(--rice);
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.profile-lesson-item p {
+  color: var(--paper);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.lesson-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--fog);
+}
+
+.lesson-visibility {
+  color: var(--sage);
+  font-weight: 600;
+}
+
+.lesson-questions {
+  color: var(--indigo);
+}
+
+.lesson-date {
+  color: var(--fog);
+}

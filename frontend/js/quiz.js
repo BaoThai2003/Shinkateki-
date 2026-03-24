@@ -270,11 +270,20 @@ async function finishQuiz() {
     showQuizSection("results");
     renderResults(data);
 
-    // Refresh nav score
+    // Refresh nav score and home data
     try {
       const { user } = await api.get("/auth/me");
       App.setAuth(App.token, user);
-      setText("nav-score", `${user.total_score} pts`);
+      updateNavUser();
+      loadHomeData();
+
+      // If stats view is currently visible, refresh it too
+      if (
+        document.getElementById("view-stats") &&
+        !document.getElementById("view-stats").classList.contains("hidden")
+      ) {
+        window.loadStats?.();
+      }
     } catch {}
   } catch (err) {
     console.error("Submit failed", err);

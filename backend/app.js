@@ -10,6 +10,8 @@ const rateLimit = require("express-rate-limit");
 const authRoutes = require("./routes/auth");
 const quizRoutes = require("./routes/quiz");
 const statsRoutes = require("./routes/stats");
+const profileRoutes = require("./routes/profile");
+const lessonRoutes = require("./routes/lessons");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,7 +42,7 @@ const authLimiter = rateLimit({
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/api/stats", statsRoutes);
-const lessonRoutes = require("./routes/lessons");
+app.use("/api/profile", profileRoutes);
 app.use("/api/lessons", lessonRoutes);
 
 // ── Health check ──────────────────────────────────────────────────

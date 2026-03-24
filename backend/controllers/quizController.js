@@ -11,7 +11,7 @@ async function generateQuiz(req, res) {
     console.log("🔥 generateQuiz HIT");
 
     const userId = req.user.id;
-    const size = Math.min(parseInt(req.query.size || "10"), 30);
+    const size = Math.min(parseInt(req.query.size || "10"), 100);
     const type = req.query.type || null;
 
     console.log({ userId, size, type });

@@ -2,7 +2,7 @@
 "use strict";
 
 // ── Configuration ────────────────────────────────────────────────
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "http://localhost:5001/api";
 
 // ── Shared Application State ─────────────────────────────────────
 window.App = {
@@ -81,6 +81,7 @@ function showView(name) {
     name === "home" ||
     name === "quiz" ||
     name === "stats" ||
+    name === "profile" ||
     name === "lessons"
   ) {
     setRandomBackground();
@@ -426,6 +427,7 @@ document.addEventListener("DOMContentLoaded", () => {
       showView(view);
       if (view === "home") loadHomeData();
       if (view === "stats") window.loadStats?.();
+      if (view === "profile") window.loadProfile?.();
       if (view === "lessons") loadLessons();
     });
   });

@@ -128,6 +128,7 @@
           <button class="nav-btn active" data-view="home">Home</button>
           <button class="nav-btn" data-view="quiz">Quiz</button>
           <button class="nav-btn" data-view="stats">Stats</button>
+          <button class="nav-btn" data-view="profile">Profile</button>
           <button class="nav-btn" data-view="lessons">Lessons</button>
         </div>
         <div class="nav-user">
@@ -216,9 +217,10 @@
             <label
               >Questions per session:
               <select id="quiz-size">
-                <option value="5">5 — Quick drill</option>
-                <option value="10" selected>10 — Standard</option>
-                <option value="20">20 — Deep practice</option>
+                <option value="10" selected>10 — Quick session</option>
+                <option value="25">25 — Standard practice</option>
+                <option value="50">50 — Deep study</option>
+                <option value="100">100 — Marathon</option>
               </select>
             </label>
           </div>
@@ -396,6 +398,62 @@
           <button class="btn-primary" id="btn-save-lesson">Save Lesson</button>
         </div>
       </div>
+
+      <!-- ── PROFILE VIEW ───────────────────────────────────────────── -->
+      <div id="view-profile" class="view hidden">
+        <h2 class="section-title">My Profile</h2>
+
+        <!-- User Info -->
+        <div class="profile-section">
+          <h3>User Information</h3>
+          <div class="profile-info">
+            <div class="info-item">
+              <span class="info-label">Username:</span>
+              <span class="info-value" id="profile-username">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Email:</span>
+              <span class="info-value" id="profile-email">—</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Total Score:</span>
+              <span class="info-value" id="profile-score">0 pts</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Level:</span>
+              <span class="info-value" id="profile-level">1</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Member Since:</span>
+              <span class="info-value" id="profile-joined">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quiz History -->
+        <div class="profile-section">
+          <h3>Quiz History</h3>
+          <div id="quiz-history-list" class="history-list">
+            <p style="color: var(--fog)">Loading quiz history...</p>
+          </div>
+        </div>
+
+        <!-- Success Rate -->
+        <div class="profile-section">
+          <h3>Success Rate by Grade</h3>
+          <div class="grade-breakdown" id="grade-breakdown">
+            <p style="color: var(--fog)">Loading grade breakdown...</p>
+          </div>
+        </div>
+
+        <!-- My Lessons -->
+        <div class="profile-section">
+          <h3>My Lessons</h3>
+          <div id="profile-lessons-list" class="lessons-list">
+            <p style="color: var(--fog)">Loading lessons...</p>
+          </div>
+        </div>
+      </div>
     </div>
     <!-- /app-screen -->
 
@@ -403,5 +461,6 @@
     <script src="js/auth.js"></script>
     <script src="js/quiz.js"></script>
     <script src="js/stats.js"></script>
+    <script src="js/profile.js"></script>
   </body>
 </html>
