@@ -17,8 +17,8 @@ const registerRules = [
 ];
 
 const loginRules = [
-  body("username").trim().notEmpty(),
-  body("password").notEmpty(),
+  body("identifier").trim().notEmpty().withMessage("Identifier is required"),
+  body("password").notEmpty().withMessage("Password is required"),
 ];
 
 function validate(req, res, next) {
