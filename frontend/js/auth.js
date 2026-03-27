@@ -3,7 +3,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   // ===== CONFIG =====
-  const API_BASE = "http://localhost:5000/api";
+  const API_BASE = "http://localhost:8000/api";
 
   // ===== SIMPLE API HELPER =====
   const api = {
@@ -81,6 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const username = v("reg-username");
       const email = v("reg-email");
       const password = v("reg-password");
+      const language = v("reg-language") || "en";
       const errEl = document.getElementById("reg-error");
 
       clearError(errEl);
@@ -98,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
           username,
           email,
           password,
+          language,
         });
 
         App.setAuth(token, user);

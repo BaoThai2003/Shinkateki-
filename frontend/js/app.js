@@ -2,16 +2,18 @@
 "use strict";
 
 // ── Configuration ────────────────────────────────────────────────
-const API_BASE = "http://localhost:5001/api";
+const API_BASE = "http://localhost:8000/api";
 
 // ── Shared Application State ─────────────────────────────────────
 window.App = {
   token: localStorage.getItem("token"),
   user: JSON.parse(localStorage.getItem("user") || "null"),
+  language: "en", // default language
 
   setAuth(token, user) {
     this.token = token;
     this.user = user;
+    this.language = user.language || "en";
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
   },
@@ -19,12 +21,21 @@ window.App = {
   clearAuth() {
     this.token = null;
     this.user = null;
+    this.language = "en";
     localStorage.removeItem("token");
     localStorage.removeItem("user");
   },
 
   isLoggedIn() {
     return !!this.token;
+  },
+
+  setLanguage(language) {
+    this.language = language;
+    if (this.user) {
+      this.user.language = language;
+      localStorage.setItem("user", JSON.stringify(this.user));
+    }
   },
 };
 

@@ -105,6 +105,13 @@
               placeholder="min 6 characters"
             />
           </div>
+          <div class="input-group">
+            <label>Language / Ngôn ngữ</label>
+            <select id="reg-language">
+              <option value="en">English</option>
+              <option value="vi">Tiếng Việt</option>
+            </select>
+          </div>
           <div class="form-error hidden" id="reg-error"></div>
           <button class="btn-primary" id="btn-register">Begin Journey →</button>
           <p class="form-switch">
@@ -201,6 +208,22 @@
             <div id="public-lessons-list" class="rec-list">
               No public lessons yet.
             </div>
+          </div>
+
+          <div class="home-card card-learning">
+            <div class="card-icon">学</div>
+            <h3>Learning Japanese</h3>
+            <p>Structured lessons from basics to advanced.</p>
+            <button class="btn-primary" id="btn-learning-japanese">
+              Start Learning →
+            </button>
+          </div>
+
+          <div class="home-card card-dictionary">
+            <div class="card-icon">辞</div>
+            <h3>Dictionary</h3>
+            <p>Vocabulary from completed lessons.</p>
+            <button class="btn-secondary" id="btn-dictionary">Browse →</button>
           </div>
         </div>
       </div>
@@ -454,6 +477,80 @@
           </div>
         </div>
       </div>
+
+      <!-- ── LEARNING JAPANESE VIEW ─────────────────────────────── -->
+      <div id="view-learning" class="view hidden">
+        <div class="learning-header">
+          <h2 class="section-title">Learning Japanese</h2>
+          <p class="section-subtitle">
+            Structured lessons to master Japanese step by step
+          </p>
+        </div>
+
+        <div id="learning-content">
+          <!-- Chapters will be loaded here -->
+        </div>
+      </div>
+
+      <!-- ── DICTIONARY VIEW ─────────────────────────────── -->
+      <div id="view-dictionary" class="view hidden">
+        <div class="dictionary-header">
+          <h2 class="section-title">Dictionary</h2>
+          <p class="section-subtitle">Vocabulary from your completed lessons</p>
+          <div class="dictionary-search">
+            <input
+              type="text"
+              id="dictionary-search"
+              placeholder="Search vocabulary..."
+            />
+          </div>
+        </div>
+
+        <div id="dictionary-content">
+          <!-- Dictionary entries will be loaded here -->
+        </div>
+      </div>
+
+      <!-- ── LESSON VIEW ─────────────────────────────── -->
+      <div id="view-lesson" class="view hidden">
+        <div class="lesson-header">
+          <button class="btn-back" id="btn-back-from-lesson">← Back</button>
+          <h2 class="lesson-title" id="lesson-title"></h2>
+        </div>
+
+        <div id="lesson-content">
+          <!-- Lesson content will be loaded here -->
+        </div>
+
+        <div class="lesson-actions" id="lesson-actions">
+          <!-- Action buttons will be shown here -->
+        </div>
+      </div>
+
+      <!-- ── LESSON QUIZ VIEW ─────────────────────────────── -->
+      <div id="view-lesson-quiz" class="view hidden">
+        <div class="quiz-header">
+          <button class="btn-back" id="btn-back-from-quiz">← Back</button>
+          <h2 class="section-title">Lesson Review</h2>
+          <div class="quiz-progress-wrap">
+            <div class="quiz-progress-bar">
+              <div
+                class="quiz-progress-fill"
+                id="lesson-quiz-progress-fill"
+              ></div>
+            </div>
+            <span class="quiz-counter" id="lesson-quiz-counter">1 / 25</span>
+          </div>
+        </div>
+
+        <div id="lesson-quiz-content">
+          <!-- Quiz questions will be loaded here -->
+        </div>
+
+        <div class="quiz-actions" id="lesson-quiz-actions">
+          <!-- Quiz action buttons -->
+        </div>
+      </div>
     </div>
     <!-- /app-screen -->
 
@@ -462,5 +559,6 @@
     <script src="js/quiz.js"></script>
     <script src="js/stats.js"></script>
     <script src="js/profile.js"></script>
+    <script src="js/learning.js"></script>
   </body>
 </html>

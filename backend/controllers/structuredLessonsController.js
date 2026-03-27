@@ -1,0 +1,355 @@
+// controllers/structuredLessonsController.js
+"use strict";
+
+const { query, withTransaction } = require("../config/db");
+
+// Get all chapters with sections and lessons
+async function getChapters(req, res) {
+  try {
+    const userId = req.user.id;
+    const userLanguage = req.user.language || "en";
+
+    // Get chapters with sections and lessons
+    const chapters = await query(
+      `
+      SELECT
+        c.id, c.title_en, c.title_vi, c.description_en, c.description_vi, c.order_index,
+        s.id as section_id, s.title_en as section_title_en, s.title_vi as section_title_vi,
+        s.description_en as section_description_en, s.description_vi as section_description_vi,
+        s.order_index as section_order,
+        sl.id as lesson_id, sl.lesson_number, sl.title_en as lesson_title_en, sl.title_vi as lesson_title_vi,
+        sl.type, sl.script_type, sl.prerequisites, sl.unlocks,
+        ulp.is_completed, ulp.is_unlocked
+      FROM chapters c
+      LEFT JOIN sections s ON s.chapter_id = c.id
+      LEFT JOIN structured_lessons sl ON sl.section_id = s.id
+      LEFT JOIN user_lesson_progress ulp ON ulp.lesson_id = sl.id AND ulp.user_id = ?
+      ORDER BY c.order_index, s.order_index, sl.lesson_number
+    `,
+      [userId]
+    );
+
+    // Group by chapters and sections
+    const result = {};
+    chapters.forEach((row) => {
+      if (!result[row.id]) {
+        result[row.id] = {
+          id: row.id,
+          title: userLanguage === "vi" ? row.title_vi : row.title_en,
+          description:
+            userLanguage === "vi" ? row.description_vi : row.description_en,
+          order_index: row.order_index,
+          sections: {},
+        };
+      }
+
+      if (row.section_id && !result[row.id].sections[row.section_id]) {
+        result[row.id].sections[row.section_id] = {
+          id: row.section_id,
+          title:
+            userLanguage === "vi" ? row.section_title_vi : row.section_title_en,
+          description:
+            userLanguage === "vi"
+              ? row.section_description_vi
+              : row.section_description_en,
+          order_index: row.section_order,
+          lessons: [],
+        };
+      }
+
+      if (row.lesson_id) {
+        result[row.id].sections[row.section_id].lessons.push({
+          id: row.lesson_id,
+          lesson_number: row.lesson_number,
+          title:
+            userLanguage === "vi" ? row.lesson_title_vi : row.lesson_title_en,
+          type: row.type,
+          script_type: row.script_type,
+          prerequisites: JSON.parse(row.prerequisites || "[]"),
+          unlocks: JSON.parse(row.unlocks || "[]"),
+          is_completed: !!row.is_completed,
+          is_unlocked: !!row.is_unlocked,
+        });
+      }
+    });
+
+    // Convert to array format
+    const chaptersArray = Object.values(result).map((chapter) => ({
+      ...chapter,
+      sections: Object.values(chapter.sections),
+    }));
+
+    return res.json(chaptersArray);
+  } catch (err) {
+    console.error("[getChapters]", err);
+    return res.status(500).json({ error: "Failed to load chapters." });
+  }
+}
+
+// Get a specific lesson with content
+async function getLesson(req, res) {
+  try {
+    const userId = req.user.id;
+    const lessonId = req.params.id;
+    const userLanguage = req.user.language || "en";
+
+    // Get lesson details
+    const lessons = await query(
+      `
+      SELECT sl.*, ulp.is_completed, ulp.is_unlocked
+      FROM structured_lessons sl
+      LEFT JOIN user_lesson_progress ulp ON ulp.lesson_id = sl.id AND ulp.user_id = ?
+      WHERE sl.id = ?
+    `,
+      [userId, lessonId]
+    );
+
+    if (lessons.length === 0) {
+      return res.status(404).json({ error: "Lesson not found." });
+    }
+
+    const lesson = lessons[0];
+
+    // Check if lesson is unlocked
+    if (
+      !lesson.is_unlocked &&
+      lesson.prerequisites &&
+      lesson.prerequisites.length > 0
+    ) {
+      const prerequisites = JSON.parse(lesson.prerequisites);
+      const completedPrerequisites = await query(
+        `
+        SELECT COUNT(*) as count FROM user_lesson_progress
+        WHERE user_id = ? AND lesson_id IN (?) AND is_completed = 1
+      `,
+        [userId, prerequisites]
+      );
+
+      if (completedPrerequisites[0].count < prerequisites.length) {
+        return res.status(403).json({ error: "Lesson prerequisites not met." });
+      }
+    }
+
+    // Get vocabulary for this lesson
+    const vocabulary = await query(
+      `
+      SELECT * FROM vocabulary WHERE lesson_id = ? ORDER BY id
+    `,
+      [lessonId]
+    );
+
+    // Format vocabulary based on language
+    const formattedVocabulary = vocabulary.map((word) => ({
+      id: word.id,
+      romaji: word.romaji,
+      hiragana: word.hiragana,
+      katakana: word.katakana,
+      kanji: word.kanji,
+      meaning:
+        userLanguage === "vi" ? word.vietnamese_meaning : word.english_meaning,
+      part_of_speech: word.part_of_speech,
+      example_sentence:
+        userLanguage === "vi"
+          ? word.example_sentence_vi
+          : word.example_sentence_en,
+    }));
+
+    const response = {
+      id: lesson.id,
+      lesson_number: lesson.lesson_number,
+      title: userLanguage === "vi" ? lesson.title_vi : lesson.title_en,
+      content: userLanguage === "vi" ? lesson.content_vi : lesson.content_en,
+      type: lesson.type,
+      script_type: lesson.script_type,
+      is_completed: !!lesson.is_completed,
+      is_unlocked: !!lesson.is_unlocked,
+      vocabulary: formattedVocabulary,
+    };
+
+    return res.json(response);
+  } catch (err) {
+    console.error("[getLesson]", err);
+    return res.status(500).json({ error: "Failed to load lesson." });
+  }
+}
+
+// Mark lesson as completed
+async function completeLesson(req, res) {
+  try {
+    const userId = req.user.id;
+    const lessonId = req.params.id;
+
+    await withTransaction(async (connection) => {
+      // Mark lesson as completed
+      await connection.query(
+        `
+        INSERT INTO user_lesson_progress (user_id, lesson_id, is_completed, completed_at)
+        VALUES (?, ?, 1, NOW())
+        ON DUPLICATE KEY UPDATE is_completed = 1, completed_at = NOW()
+      `,
+        [userId, lessonId]
+      );
+
+      // Check if this unlocks other lessons
+      const lesson = await connection.query(
+        `
+        SELECT unlocks FROM structured_lessons WHERE id = ?
+      `,
+        [lessonId]
+      );
+
+      if (lesson.length > 0 && lesson[0].unlocks) {
+        const unlocks = JSON.parse(lesson[0].unlocks);
+        for (const unlockId of unlocks) {
+          await connection.query(
+            `
+            INSERT INTO user_lesson_progress (user_id, lesson_id, is_unlocked)
+            VALUES (?, ?, 1)
+            ON DUPLICATE KEY UPDATE is_unlocked = 1
+          `,
+            [userId, unlockId]
+          );
+        }
+      }
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("[completeLesson]", err);
+    return res.status(500).json({ error: "Failed to complete lesson." });
+  }
+}
+
+// Get quiz questions for a lesson
+async function getLessonQuiz(req, res) {
+  try {
+    const userId = req.user.id;
+    const lessonId = req.params.id;
+    const userLanguage = req.user.language || "en";
+
+    // Check if lesson is completed (required for quiz)
+    const progress = await query(
+      `
+      SELECT is_completed FROM user_lesson_progress
+      WHERE user_id = ? AND lesson_id = ?
+    `,
+      [userId, lessonId]
+    );
+
+    if (!progress.length || !progress[0].is_completed) {
+      return res
+        .status(403)
+        .json({ error: "Lesson must be completed before taking quiz." });
+    }
+
+    // Get quiz questions
+    const questions = await query(
+      `
+      SELECT * FROM quiz_questions WHERE lesson_id = ? ORDER BY id
+    `,
+      [lessonId]
+    );
+
+    const formattedQuestions = questions.map((q) => ({
+      id: q.id,
+      type: q.question_type,
+      question: userLanguage === "vi" ? q.question_text_vi : q.question_text_en,
+      romaji: q.romaji,
+      options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean),
+      correct_answer: q.correct_answer,
+      explanation: userLanguage === "vi" ? q.explanation_vi : q.explanation_en,
+    }));
+
+    return res.json(formattedQuestions);
+  } catch (err) {
+    console.error("[getLessonQuiz]", err);
+    return res.status(500).json({ error: "Failed to load quiz questions." });
+  }
+}
+
+// Submit quiz attempt
+async function submitQuizAttempt(req, res) {
+  try {
+    const userId = req.user.id;
+    const { lessonId, questionId, selectedAnswer, responseTimeMs } = req.body;
+
+    // Get the correct answer
+    const question = await query(
+      `
+      SELECT correct_answer FROM quiz_questions WHERE id = ?
+    `,
+      [questionId]
+    );
+
+    if (!question.length) {
+      return res.status(404).json({ error: "Question not found." });
+    }
+
+    const isCorrect = question[0].correct_answer === selectedAnswer;
+
+    // Record the attempt
+    await query(
+      `
+      INSERT INTO user_quiz_attempts (user_id, lesson_id, question_id, selected_answer, is_correct, response_time_ms)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+      [userId, lessonId, questionId, selectedAnswer, isCorrect, responseTimeMs]
+    );
+
+    return res.json({ is_correct: isCorrect });
+  } catch (err) {
+    console.error("[submitQuizAttempt]", err);
+    return res.status(500).json({ error: "Failed to submit quiz attempt." });
+  }
+}
+
+// Get quiz results for a lesson
+async function getQuizResults(req, res) {
+  try {
+    const userId = req.user.id;
+    const lessonId = req.params.id;
+
+    const attempts = await query(
+      `
+      SELECT uqa.*, qq.correct_answer
+      FROM user_quiz_attempts uqa
+      JOIN quiz_questions qq ON qq.id = uqa.question_id
+      WHERE uqa.user_id = ? AND uqa.lesson_id = ?
+      ORDER BY uqa.attempt_date DESC
+    `,
+      [userId, lessonId]
+    );
+
+    const totalQuestions = await query(
+      `
+      SELECT COUNT(*) as count FROM quiz_questions WHERE lesson_id = ?
+    `,
+      [lessonId]
+    );
+
+    const correctCount = attempts.filter((a) => a.is_correct).length;
+    const accuracy =
+      totalQuestions[0].count > 0
+        ? (correctCount / totalQuestions[0].count) * 100
+        : 0;
+
+    return res.json({
+      total_questions: totalQuestions[0].count,
+      correct_answers: correctCount,
+      accuracy: Math.round(accuracy * 100) / 100,
+      attempts: attempts.slice(0, 25), // Last 25 attempts
+    });
+  } catch (err) {
+    console.error("[getQuizResults]", err);
+    return res.status(500).json({ error: "Failed to load quiz results." });
+  }
+}
+
+module.exports = {
+  getChapters,
+  getLesson,
+  completeLesson,
+  getLessonQuiz,
+  submitQuizAttempt,
+  getQuizResults,
+};

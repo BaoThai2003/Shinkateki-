@@ -32,6 +32,7 @@ function validate(req, res, next) {
 router.post("/register", registerRules, validate, ctrl.register);
 router.post("/login", loginRules, validate, ctrl.login);
 router.get("/me", authenticate, ctrl.me);
+router.put("/language", authenticate, ctrl.updateLanguage);
 
 module.exports = router;
 

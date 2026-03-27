@@ -7,7 +7,7 @@ const { query, queryOne } = require("../config/db");
 // ================= REGISTER =================
 async function register(req, res) {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, language = "en" } = req.body;
 
     // Validate
     if (!username || !email || !password) {
@@ -18,6 +18,12 @@ async function register(req, res) {
       return res
         .status(422)
         .json({ error: "Password must be at least 6 characters." });
+    }
+
+    if (!["en", "vi"].includes(language)) {
+      return res
+        .status(422)
+        .json({ error: "Invalid language. Must be 'en' or 'vi'." });
     }
 
     // Check duplicate
@@ -36,12 +42,12 @@ async function register(req, res) {
     const hash = await bcrypt.hash(password, 12);
 
     const result = await query(
-      `INSERT INTO users (username, email, password_hash, level, total_score)
-       VALUES (?, ?, ?, 1, 0)`,
-      [username, email, hash]
+      `INSERT INTO users (username, email, password_hash, language, level, total_score)
+       VALUES (?, ?, ?, ?, 1, 0)`,
+      [username, email, hash, language]
     );
 
-    const token = _issueToken(result.insertId, username);
+    const token = _issueToken(result.insertId, username, language);
 
     return res.status(201).json({
       message: "Account created.",
@@ -50,6 +56,7 @@ async function register(req, res) {
         id: result.insertId,
         username,
         email,
+        language,
         level: 1,
         total_score: 0,
       },
@@ -75,7 +82,7 @@ async function login(req, res) {
 
     // Tìm user bằng username hoặc email
     const user = await queryOne(
-      `SELECT id, username, email, password_hash, level, total_score
+      `SELECT id, username, email, password_hash, language, level, total_score
        FROM users
        WHERE username = ? OR email = ?`,
       [identifier, identifier]
@@ -93,7 +100,7 @@ async function login(req, res) {
     // Update last_active
     await query(`UPDATE users SET last_active = NOW() WHERE id = ?`, [user.id]);
 
-    const token = _issueToken(user.id, user.username);
+    const token = _issueToken(user.id, user.username, user.language);
 
     return res.json({
       message: "Login successful.",
@@ -102,6 +109,7 @@ async function login(req, res) {
         id: user.id,
         username: user.username,
         email: user.email,
+        language: user.language,
         level: user.level,
         total_score: user.total_score,
       },
@@ -120,7 +128,7 @@ async function me(req, res) {
     }
 
     const user = await queryOne(
-      `SELECT id, username, email, level, total_score, streak_days, last_active, created_at
+      `SELECT id, username, email, language, level, total_score, streak_days, last_active, created_at
        FROM users WHERE id = ?`,
       [req.user.sub]
     );
@@ -137,11 +145,12 @@ async function me(req, res) {
 }
 
 // ================= TOKEN =================
-function _issueToken(userId, username) {
+function _issueToken(userId, username, language = "en") {
   return jwt.sign(
     {
       sub: userId,
       username,
+      language,
     },
     process.env.JWT_SECRET,
     {
@@ -150,4 +159,28 @@ function _issueToken(userId, username) {
   );
 }
 
-module.exports = { register, login, me };
+// ================= UPDATE LANGUAGE =================
+async function updateLanguage(req, res) {
+  try {
+    const userId = req.user.sub;
+    const { language } = req.body;
+
+    if (!["en", "vi"].includes(language)) {
+      return res
+        .status(422)
+        .json({ error: "Invalid language. Must be 'en' or 'vi'." });
+    }
+
+    await query(`UPDATE users SET language = ? WHERE id = ?`, [
+      language,
+      userId,
+    ]);
+
+    return res.json({ message: "Language updated successfully.", language });
+  } catch (err) {
+    console.error("[updateLanguage]", err);
+    return res.status(500).json({ error: "Failed to update language." });
+  }
+}
+
+module.exports = { register, login, me, updateLanguage };

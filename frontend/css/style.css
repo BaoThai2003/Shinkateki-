@@ -1530,3 +1530,346 @@ body {
 .lesson-date {
   color: var(--fog);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+  LEARNING JAPANESE
+   ════════════════════════════════════════════════════════════════ */
+
+.learning-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.chapter {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.chapter-header {
+  margin-bottom: 1.5rem;
+}
+
+.chapter-title {
+  font-family: var(--font-zen);
+  font-size: 1.5rem;
+  color: var(--rice);
+  margin-bottom: 0.5rem;
+}
+
+.chapter-description {
+  color: var(--fog);
+  font-size: 0.9rem;
+}
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.section-header {
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  color: var(--paper);
+  margin-bottom: 0.25rem;
+}
+
+.section-description {
+  color: var(--fog);
+  font-size: 0.85rem;
+}
+
+.lessons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.lesson-card {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+}
+
+.lesson-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--mist);
+}
+
+.lesson-card.locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lesson-card.unlocked {
+  border-color: var(--indigo);
+}
+
+.lesson-card.completed {
+  border-color: var(--gold);
+  background: linear-gradient(
+    135deg,
+    var(--ink-3) 0%,
+    rgba(200, 145, 58, 0.1) 100%
+  );
+}
+
+.lesson-number {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--fog);
+  margin-bottom: 0.5rem;
+}
+
+.lesson-card h5 {
+  color: var(--rice);
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.lesson-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.lesson-card.locked .lesson-status {
+  color: var(--vermillion);
+}
+
+.lesson-card.unlocked .lesson-status {
+  color: var(--indigo);
+}
+
+.lesson-card.completed .lesson-status {
+  color: var(--gold);
+}
+
+/* Lesson View */
+.lesson-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--ink-4);
+}
+
+.btn-back {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  color: var(--paper);
+  padding: 0.5rem 1rem;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-size: 0.9rem;
+}
+
+.btn-back:hover {
+  background: var(--ink-4);
+  border-color: var(--mist);
+}
+
+.lesson-title {
+  color: var(--rice);
+  font-size: 1.5rem;
+  flex: 1;
+}
+
+#lesson-content {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  line-height: 1.8;
+}
+
+#lesson-content h2 {
+  color: var(--rice);
+  font-family: var(--font-zen);
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+}
+
+#lesson-content h3 {
+  color: var(--paper);
+  margin: 1.5rem 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+#lesson-content ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+#lesson-content li {
+  margin-bottom: 0.5rem;
+}
+
+.lesson-actions {
+  text-align: center;
+}
+
+/* Quiz Styles */
+.quiz-question {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  margin-bottom: 1rem;
+}
+
+.question-text {
+  font-size: 1.2rem;
+  color: var(--rice);
+  margin-bottom: 1rem;
+}
+
+.question-romaji {
+  font-family: var(--font-mono);
+  color: var(--fog);
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.option {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.option:hover {
+  border-color: var(--mist);
+  background: var(--ink-4);
+}
+
+.option input[type="radio"] {
+  margin: 0;
+}
+
+.quiz-feedback {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: var(--r);
+  text-align: center;
+}
+
+.quiz-feedback.correct {
+  background: rgba(74, 140, 106, 0.1);
+  border: 1px solid var(--sage);
+  color: var(--sage);
+}
+
+.quiz-feedback.incorrect {
+  background: rgba(201, 64, 64, 0.1);
+  border: 1px solid var(--vermillion);
+  color: var(--vermillion);
+}
+
+.quiz-actions {
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+  DICTIONARY
+   ════════════════════════════════════════════════════════════════ */
+
+.dictionary-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.dictionary-search {
+  max-width: 400px;
+  margin: 0 auto 2rem auto;
+}
+
+.dictionary-search input {
+  width: 100%;
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 0.75rem 1rem;
+  color: var(--paper);
+  font-size: 1rem;
+}
+
+.dictionary-search input:focus {
+  outline: none;
+  border-color: var(--mist);
+}
+
+#dictionary-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.vocabulary-entry {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 1.5rem;
+  transition: all var(--transition);
+}
+
+.vocabulary-entry:hover {
+  border-color: var(--mist);
+  transform: translateY(-2px);
+}
+
+.vocab-header {
+  margin-bottom: 1rem;
+}
+
+.vocab-japanese {
+  font-family: var(--font-zen);
+  font-size: 1.5rem;
+  color: var(--rice);
+  margin-bottom: 0.25rem;
+}
+
+.vocab-romaji {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--fog);
+}
+
+.vocab-meaning {
+  color: var(--paper);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.vocab-pos {
+  color: var(--indigo);
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.vocab-example {
+  color: var(--fog);
+  font-style: italic;
+  font-size: 0.9rem;
+}

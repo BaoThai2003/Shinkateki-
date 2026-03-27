@@ -12,9 +12,12 @@ const quizRoutes = require("./routes/quiz");
 const statsRoutes = require("./routes/stats");
 const profileRoutes = require("./routes/profile");
 const lessonRoutes = require("./routes/lessons");
+const structuredLessonsRoutes = require("./routes/structuredLessons");
+const dictionaryRoutes = require("./routes/dictionary");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+console.log(`Starting server on port ${PORT}`);
 
 // ── Middleware ────────────────────────────────────────────────────
 
@@ -44,6 +47,8 @@ app.use("/api/quiz", quizRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/lessons", lessonRoutes);
+app.use("/api/structured-lessons", structuredLessonsRoutes);
+app.use("/api/dictionary", dictionaryRoutes);
 
 // ── Health check ──────────────────────────────────────────────────
 
