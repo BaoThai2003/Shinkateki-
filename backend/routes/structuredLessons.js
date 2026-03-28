@@ -11,6 +11,7 @@ const {
   getLessonQuiz,
   submitQuizAttempt,
   getQuizResults,
+  getReviewQuiz,
 } = require("../controllers/structuredLessonsController");
 
 // All routes require authentication
@@ -18,6 +19,9 @@ router.use(auth.authenticate);
 
 // Get all chapters with sections and lessons
 router.get("/chapters", getChapters);
+
+// Get quick review quiz (all review lessons)
+router.get("/review-quiz", getReviewQuiz);
 
 // Get a specific lesson
 router.get("/:id", getLesson);

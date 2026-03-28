@@ -48,22 +48,19 @@ async function loadChapters() {
 }
 
 function createChapterElement(chapter) {
-  const chapterDiv = document.createElement("div");
-  chapterDiv.className = "chapter";
-
-  chapterDiv.innerHTML = `
-    <div class="chapter-header">
-      <h3 class="chapter-title">${chapter.title}</h3>
-      <p class="chapter-description">${chapter.description}</p>
-    </div>
-    <div class="sections-container">
-      ${chapter.sections
-        .map((section) => createSectionElement(section))
-        .join("")}
+  return `
+    <div class="chapter">
+      <div class="chapter-header">
+        <h3 class="chapter-title">${chapter.title}</h3>
+        <p class="chapter-description">${chapter.description}</p>
+      </div>
+      <div class="sections-container">
+        ${chapter.sections
+          .map((section) => createSectionElement(section))
+          .join("")}
+      </div>
     </div>
   `;
-
-  return chapterDiv;
 }
 
 function createSectionElement(section) {
@@ -138,15 +135,19 @@ function renderLesson() {
       actionsEl.innerHTML = `
         <button class="btn-primary" onclick="completeLesson()">Mark as Complete</button>
       `;
-    } else if (currentLesson.type === "interactive") {
+    } else {
       actionsEl.innerHTML = `
-        <button class="btn-primary" onclick="startLessonQuiz()">Start Review Quiz</button>
+        <p class="lesson-status">This reading lesson is completed.</p>
       `;
     }
   } else if (currentLesson.type === "interactive") {
     if (!currentLesson.is_completed) {
       actionsEl.innerHTML = `
         <button class="btn-primary" onclick="startLessonQuiz()">Start Review Quiz</button>
+      `;
+    } else {
+      actionsEl.innerHTML = `
+        <button class="btn-primary" onclick="startLessonQuiz()">Retake Quiz</button>
       `;
     }
   }
@@ -178,6 +179,7 @@ async function startLessonQuiz() {
     );
     quizCurrentIndex = 0;
     quizAnswers = [];
+    window.lessonQuizStartTime = Date.now();
 
     showView("lesson-quiz");
     renderQuizQuestion();
@@ -292,9 +294,13 @@ function nextQuizQuestion() {
 
 async function finishQuiz() {
   try {
+    const sinceParam = window.lessonQuizStartTime
+      ? `?since=${window.lessonQuizStartTime}`
+      : "";
+
     const results = await api.request(
       "GET",
-      `/structured-lessons/${currentLesson.id}/quiz/results`
+      `/structured-lessons/${currentLesson.id}/quiz/results${sinceParam}`
     );
 
     // Check if passed (75% accuracy)
@@ -328,16 +334,16 @@ async function finishQuiz() {
 // ── Dictionary ──────────────────────────────────────────────────
 
 async function loadDictionary(searchTerm = "") {
+  const container = document.getElementById("dictionary-content");
   try {
     const params = searchTerm
       ? `?search=${encodeURIComponent(searchTerm)}`
       : "";
     const vocabulary = await api.request("GET", `/dictionary${params}`);
 
-    const container = document.getElementById("dictionary-content");
     container.innerHTML = "";
 
-    if (vocabulary.length === 0) {
+    if (!Array.isArray(vocabulary) || vocabulary.length === 0) {
       container.innerHTML = "<p>No vocabulary found.</p>";
       return;
     }
@@ -348,8 +354,13 @@ async function loadDictionary(searchTerm = "") {
     });
   } catch (err) {
     console.error("Failed to load dictionary:", err);
-    document.getElementById("dictionary-content").innerHTML =
-      "<p>Error loading dictionary. Please try again.</p>";
+    if (err.status === 401 || err.status === 403) {
+      container.innerHTML =
+        "<p>Please log in to view the dictionary, then reload the page.</p>";
+    } else {
+      container.innerHTML =
+        "<p>Error loading dictionary. Please try again.</p>";
+    }
   }
 }
 

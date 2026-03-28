@@ -58,20 +58,27 @@ async function getChapters(req, res) {
       }
 
       if (row.lesson_id) {
-        result[row.id].sections[row.section_id].lessons.push({
-          id: row.lesson_id,
-          lesson_number: row.lesson_number,
-          title:
-            userLanguage === "vi" ? row.lesson_title_vi : row.lesson_title_en,
-          type: row.type,
-          script_type: row.script_type,
-          prerequisites: JSON.parse(row.prerequisites || "[]"),
-          unlocks: JSON.parse(row.unlocks || "[]"),
-          is_completed: !!row.is_completed,
-          is_unlocked: !!row.is_unlocked,
-        });
-      }
-    });
+      const prerequisites = JSON.parse(row.prerequisites || "[]");
+      const isFirstLesson = Number(row.lesson_number) === 1;
+      const isUnlocked =
+        !!row.is_unlocked ||
+        (isFirstLesson && prerequisites.length === 0) ||
+        (row.is_completed === 1); // completed implies unlocked
+
+      result[row.id].sections[row.section_id].lessons.push({
+        id: row.lesson_id,
+        lesson_number: row.lesson_number,
+        title:
+          userLanguage === "vi" ? row.lesson_title_vi : row.lesson_title_en,
+        type: row.type,
+        script_type: row.script_type,
+        prerequisites,
+        unlocks: JSON.parse(row.unlocks || "[]"),
+        is_completed: !!row.is_completed,
+        is_unlocked: !!isUnlocked,
+      });
+    }
+  });
 
     // Convert to array format
     const chaptersArray = Object.values(result).map((chapter) => ({
@@ -172,7 +179,44 @@ async function getLesson(req, res) {
     return res.status(500).json({ error: "Failed to load lesson." });
   }
 }
+// Get a random quick quiz from all review lessons
+async function getReviewQuiz(req, res) {
+  try {
+    const userLanguage = req.user.language || "en";
 
+    const reviewLessons = await query(
+      `SELECT id FROM structured_lessons WHERE type = 'review'`,
+      []
+    );
+
+    const lessonIds = reviewLessons.map((l) => l.id);
+    if (!lessonIds.length) {
+      return res.json([]);
+    }
+
+    const questions = await query(
+      `SELECT * FROM quiz_questions WHERE lesson_id IN (?) ORDER BY RAND() LIMIT 15`,
+      [lessonIds]
+    );
+
+    const formatted = questions.map((q) => ({
+      id: q.id,
+      lesson_id: q.lesson_id,
+      question: userLanguage === "vi" ? q.question_text_vi : q.question_text_en,
+      romaji: q.romaji,
+      options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean),
+      correct_answer:
+        userLanguage === "vi" ? q.correct_answer : q.correct_answer,
+      explanation:
+        userLanguage === "vi" ? q.explanation_vi : q.explanation_en,
+    }));
+
+    return res.json(formatted);
+  } catch (err) {
+    console.error("[getReviewQuiz]", err);
+    return res.status(500).json({ error: "Failed to load quick review quiz." });
+  }
+}
 // Mark lesson as completed
 async function completeLesson(req, res) {
   try {
@@ -308,17 +352,24 @@ async function getQuizResults(req, res) {
   try {
     const userId = req.user.id;
     const lessonId = req.params.id;
+    const since = req.query.since ? new Date(parseInt(req.query.since, 10)) : null;
 
-    const attempts = await query(
-      `
+    let attemptsSql = `
       SELECT uqa.*, qq.correct_answer
       FROM user_quiz_attempts uqa
       JOIN quiz_questions qq ON qq.id = uqa.question_id
       WHERE uqa.user_id = ? AND uqa.lesson_id = ?
-      ORDER BY uqa.attempt_date DESC
-    `,
-      [userId, lessonId]
-    );
+    `;
+    const attemptParams = [userId, lessonId];
+
+    if (since && !Number.isNaN(since.getTime())) {
+      attemptsSql += ` AND uqa.attempt_date >= ?`;
+      attemptParams.push(since);
+    }
+
+    attemptsSql += ` ORDER BY uqa.attempt_date DESC`;
+
+    const attempts = await query(attemptsSql, attemptParams);
 
     const totalQuestions = await query(
       `
@@ -328,14 +379,15 @@ async function getQuizResults(req, res) {
     );
 
     const correctCount = attempts.filter((a) => a.is_correct).length;
-    const accuracy =
-      totalQuestions[0].count > 0
-        ? (correctCount / totalQuestions[0].count) * 100
-        : 0;
+    const totalAttempts = attempts.length;
+
+    const accuracy = totalAttempts > 0 ? (correctCount / totalAttempts) * 100 : 0;
 
     return res.json({
+      lesson_id: lessonId,
       total_questions: totalQuestions[0].count,
       correct_answers: correctCount,
+      total_attempts: totalAttempts,
       accuracy: Math.round(accuracy * 100) / 100,
       attempts: attempts.slice(0, 25), // Last 25 attempts
     });
@@ -352,4 +404,5 @@ module.exports = {
   getLessonQuiz,
   submitQuizAttempt,
   getQuizResults,
+  getReviewQuiz,
 };

@@ -95,7 +95,13 @@ function renderQuestion() {
 
   // Card content
   setText("quiz-type-badge", q.type);
-  setText("quiz-character", q.character);
+
+  // Some character payloads may be HTML-encoded or in incorrect encoding path.
+  // If we get non-Japanese text here, fallback to a romaji->kana mapper.
+  const labelCharacter = /^[\u3040-\u30FF\u4E00-\u9FFF]+$/.test(q.character)
+    ? q.character
+    : (romajiToKana(q.romaji) || q.character);
+  setText("quiz-character", labelCharacter);
 
   // Choices
   const choicesEl = document.getElementById("quiz-choices");
@@ -334,6 +340,59 @@ function renderResults({ results, accuracy, sessionScore }) {
 function _charFromId(id) {
   const q = quizState.questions.find((q) => q.characterId === id);
   return q?.character || "";
+}
+
+function romajiToKana(romaji) {
+  const map = {
+    a: "あ",
+    i: "い",
+    u: "う",
+    e: "え",
+    o: "お",
+    ka: "か",
+    ki: "き",
+    ku: "く",
+    ke: "け",
+    ko: "こ",
+    sa: "さ",
+    shi: "し",
+    su: "す",
+    se: "せ",
+    so: "そ",
+    ta: "た",
+    chi: "ち",
+    tsu: "つ",
+    te: "て",
+    to: "と",
+    na: "な",
+    ni: "に",
+    nu: "ぬ",
+    ne: "ね",
+    no: "の",
+    ha: "は",
+    hi: "ひ",
+    fu: "ふ",
+    he: "へ",
+    ho: "ほ",
+    ma: "ま",
+    mi: "み",
+    mu: "む",
+    me: "め",
+    mo: "も",
+    ya: "や",
+    yu: "ゆ",
+    yo: "よ",
+    ra: "ら",
+    ri: "り",
+    ru: "る",
+    re: "れ",
+    ro: "ろ",
+    wa: "わ",
+    wo: "を",
+    n: "ん",
+    // Katakana not mapped, but can be extended as needed
+  };
+  return map[romaji.toLowerCase()] || null;
 }
 
 // ── Section switcher ──────────────────────────────────────────────

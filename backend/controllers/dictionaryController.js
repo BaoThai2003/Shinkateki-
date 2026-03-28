@@ -19,9 +19,10 @@ async function getDictionary(req, res) {
     `;
     const params = [userId];
 
+    let searchTerm;
     if (search) {
       sql += ` AND (v.romaji LIKE ? OR v.hiragana LIKE ? OR v.katakana LIKE ? OR v.kanji LIKE ? OR v.english_meaning LIKE ? OR v.vietnamese_meaning LIKE ?)`;
-      const searchTerm = `%${search}%`;
+      searchTerm = `%${search}%`;
       params.push(
         searchTerm,
         searchTerm,
