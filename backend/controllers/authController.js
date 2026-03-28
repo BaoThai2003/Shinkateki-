@@ -83,16 +83,20 @@ async function login(req, res) {
     // Tìm user bằng username hoặc email
     const user = await queryOne(
       `SELECT id, username, email, password_hash, language, level, total_score
-       FROM users
-       WHERE username = ? OR email = ?`,
+      FROM users
+      WHERE username = ? OR email = ?`,
       [identifier, identifier]
     );
+
+    console.log("LOGIN INPUT:", identifier, password);
+    console.log("USER FROM DB:", user);
 
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials." });
     }
 
     const valid = await bcrypt.compare(password, user.password_hash);
+    console.log("PASSWORD VALID:", valid);
     if (!valid) {
       return res.status(401).json({ error: "Invalid credentials." });
     }
@@ -123,14 +127,14 @@ async function login(req, res) {
 // ================= ME =================
 async function me(req, res) {
   try {
-    if (!req.user || !req.user.sub) {
+    if (!req.user || !req.user.id) {
       return res.status(401).json({ error: "Unauthorized." });
     }
 
     const user = await queryOne(
       `SELECT id, username, email, language, level, total_score, streak_days, last_active, created_at
        FROM users WHERE id = ?`,
-      [req.user.sub]
+      [req.user.id]
     );
 
     if (!user) {
@@ -162,7 +166,7 @@ function _issueToken(userId, username, language = "en") {
 // ================= UPDATE LANGUAGE =================
 async function updateLanguage(req, res) {
   try {
-    const userId = req.user.sub;
+    const userId = req.user.id;
     const { language } = req.body;
 
     if (!["en", "vi"].includes(language)) {

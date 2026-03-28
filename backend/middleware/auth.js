@@ -14,12 +14,13 @@ function authenticate(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    // Attach user info so controllers can read req.user.id
+    console.log("PAYLOAD:", payload);
     req.user = {
       id: payload.sub,
       username: payload.username,
       language: payload.language || "en",
     };
+    console.log("USER:", req.user);
     next();
   } catch (err) {
     const msg =
