@@ -191,5 +191,6 @@ module.exports = {
   myLessons,
   publicLessons,
   createLesson,
+  getLessonById,
   setVisibility,
 };
