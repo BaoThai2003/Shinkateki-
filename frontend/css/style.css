@@ -158,6 +158,21 @@ body {
   border-color: var(--mist);
 }
 
+.btn-secondary {
+  background: var(--ink-3);
+  color: var(--paper);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 0.75rem 1.75rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-secondary:hover {
+  background: var(--ink-2);
+  border-color: var(--fog);
+}
+
 /* ── AUTH ───────────────────────────────────────────────────── */
 
 #auth-screen {
@@ -573,7 +588,7 @@ body {
 .public-lesson strong {
   color: var(--rice);
 }
- {
+.public-lesson p {
   font-family: var(--font-mono);
   font-size: 0.85rem;
   color: var(--fog);

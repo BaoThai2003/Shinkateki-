@@ -41,7 +41,7 @@ async function getDictionary(req, res) {
 
     const vocabulary = await query(sql, params);
 
-    const formattedVocabulary = vocabulary.map((word) => ({
+    let formattedVocabulary = vocabulary.map((word) => ({
       id: word.id,
       lesson_number: word.lesson_number,
       lesson_title: userLanguage === "vi" ? word.title_vi : word.title_en,
@@ -57,6 +57,37 @@ async function getDictionary(req, res) {
           ? word.example_sentence_vi
           : word.example_sentence_en,
     }));
+
+    // Fallback for users with no completed lessons: show all vocabulary
+    if (!formattedVocabulary.length && !searchTerm) {
+      const allWords = await query(
+        `
+        SELECT v.*, sl.lesson_number, sl.title_en, sl.title_vi
+        FROM vocabulary v
+        JOIN structured_lessons sl ON sl.id = v.lesson_id
+        ORDER BY sl.lesson_number, v.id
+        LIMIT 200
+      `
+      );
+      formattedVocabulary = allWords.map((word) => ({
+        id: word.id,
+        lesson_number: word.lesson_number,
+        lesson_title: userLanguage === "vi" ? word.title_vi : word.title_en,
+        romaji: word.romaji,
+        hiragana: word.hiragana,
+        katakana: word.katakana,
+        kanji: word.kanji,
+        meaning:
+          userLanguage === "vi"
+            ? word.vietnamese_meaning
+            : word.english_meaning,
+        part_of_speech: word.part_of_speech,
+        example_sentence:
+          userLanguage === "vi"
+            ? word.example_sentence_vi
+            : word.example_sentence_en,
+      }));
+    }
 
     return res.json(formattedVocabulary);
   } catch (err) {
