@@ -213,6 +213,10 @@ async function loadHomeData() {
     console.warn("Home data load failed", err);
   }
 }
+function _safeOpenLesson(lessonId) {
+  if (!lessonId) return;
+  openCustomLesson(lessonId);
+}
 
 function _hourLabel(hour) {
   const ampm = hour >= 12 ? "PM" : "AM";
@@ -225,7 +229,9 @@ function _hourLabel(hour) {
 function formatLessonCard(lesson) {
   const visibility = lesson.is_public ? "Public" : "Private";
   return `
-    <div class="lesson-item" data-lesson-id="${lesson.id}">
+    <div class="lesson-item" data-lesson-id="${
+      lesson.id
+    }" onclick="_safeOpenLesson(${lesson.id})">
       <h4>${escapeHtml(lesson.title)}</h4>
       <p>${escapeHtml(lesson.content)}</p>
       <p><strong>Questions:</strong> ${lesson.question_count}</p>

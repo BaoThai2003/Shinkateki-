@@ -168,6 +168,9 @@ async function getLesson(req, res) {
       content: userLanguage === "vi" ? lesson.content_vi : lesson.content_en,
       type: lesson.type,
       script_type: lesson.script_type,
+      prerequisites: lesson.prerequisites
+        ? JSON.parse(lesson.prerequisites)
+        : [],
       is_completed: !!lesson.is_completed,
       is_unlocked: !!lesson.is_unlocked,
       vocabulary: formattedVocabulary,
@@ -183,20 +186,22 @@ async function getLesson(req, res) {
 async function getReviewQuiz(req, res) {
   try {
     const userLanguage = req.user.language || "en";
+    const size = Math.min(parseInt(req.query.size || "15"), 100);
+    const script = (req.query.script || "").toLowerCase();
 
-    const reviewLessons = await query(
-      `SELECT id FROM structured_lessons WHERE type = 'review'`,
-      []
-    );
-
-    const lessonIds = reviewLessons.map((l) => l.id);
-    if (!lessonIds.length) {
-      return res.json([]);
-    }
+    const scriptFilter =
+      script === "hiragana"
+        ? "AND (sl.script_type IN ('hiragana', 'both'))"
+        : script === "katakana"
+        ? "AND (sl.script_type IN ('katakana', 'both'))"
+        : "";
 
     const questions = await query(
-      `SELECT * FROM quiz_questions WHERE lesson_id IN (?) ORDER BY RAND() LIMIT 15`,
-      [lessonIds]
+      `SELECT qq.* FROM quiz_questions qq
+       JOIN structured_lessons sl ON sl.id = qq.lesson_id
+       WHERE sl.type = 'review' ${scriptFilter}
+       ORDER BY RAND() LIMIT ?`,
+      [size]
     );
 
     const formatted = questions.map((q) => ({
@@ -205,8 +210,7 @@ async function getReviewQuiz(req, res) {
       question: userLanguage === "vi" ? q.question_text_vi : q.question_text_en,
       romaji: q.romaji,
       options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean),
-      correct_answer:
-        userLanguage === "vi" ? q.correct_answer : q.correct_answer,
+      correct_answer: q.correct_answer,
       explanation: userLanguage === "vi" ? q.explanation_vi : q.explanation_en,
     }));
 

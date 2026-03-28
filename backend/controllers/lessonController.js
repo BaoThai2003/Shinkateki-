@@ -161,7 +161,12 @@ async function setVisibility(req, res) {
   try {
     const userId = req.user.id;
     const lessonId = Number(req.params.id);
-    const { isPublic } = req.body;
+    let { isPublic } = req.body;
+
+    // Allow both JSON boolean and string-form boolean for compatibility
+    if (typeof isPublic === "string") {
+      isPublic = isPublic === "true" || isPublic === "1";
+    }
 
     if (typeof isPublic !== "boolean") {
       return res.status(422).json({ error: "isPublic must be boolean." });

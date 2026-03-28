@@ -36,7 +36,7 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 90%; /* 10% overall design size reduction */
   scroll-behavior: smooth;
 }
 
@@ -98,6 +98,15 @@ body {
 }
 
 /* ── Utilities ──────────────────────────────────────────────── */
+
+.lesson-title,
+.chapter-title,
+.vocab-japanese,
+.quiz-character,
+.home-card h3,
+.public-lesson h4 {
+  font-family: var(--font-jp), var(--font-zen), sans-serif;
+}
 
 .screen {
   min-height: 100vh;

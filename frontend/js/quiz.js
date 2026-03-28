@@ -47,13 +47,36 @@ async function beginQuiz() {
   const type = quizState.questionType;
 
   try {
+    // Quick quiz: review-only pool (structured lessons review section)
     const params = new URLSearchParams({ size });
-    if (type) params.set("type", type);
+    if (type) params.set("script", type);
 
-    const data = await api.get(`/quiz/generate?${params}`);
+    let questionData = await api.get(
+      `/structured-lessons/review-quiz?${params}`
+    );
 
-    quizState.sessionId = data.sessionId;
-    quizState.questions = data.questions;
+    if (!Array.isArray(questionData) || questionData.length === 0) {
+      // fallback to adaptive general quiz
+      const fallbackParams = new URLSearchParams({ size });
+      if (type) fallbackParams.set("type", type);
+      const data = await api.get(`/quiz/generate?${fallbackParams}`);
+      quizState.sessionId = data.sessionId;
+      quizState.questions = data.questions;
+    } else {
+      // map review quiz format into same question representation used by quiz engine
+      quizState.sessionId = `review-${Date.now()}`;
+      quizState.questions = questionData.map((q) => ({
+        characterId: q.id,
+        character: q.question || q.kanji || q.hiragana || q.katakana || "？",
+        romaji: q.romaji || "",
+        type: "review",
+        choices: (q.options || []).map((option) => ({
+          romaji: option,
+          correct: option === q.correct_answer,
+        })),
+      }));
+    }
+
     quizState.current = 0;
     quizState.answers = [];
     quizState.streakDisplay = 0;
@@ -281,7 +304,7 @@ async function finishQuiz() {
       const { user } = await api.get("/auth/me");
       App.setAuth(App.token, user);
       updateNavUser();
-      loadHomeData();
+      window.loadHomeData?.();
 
       // If stats view is currently visible, refresh it too
       if (
@@ -290,7 +313,17 @@ async function finishQuiz() {
       ) {
         window.loadStats?.();
       }
-    } catch {}
+
+      // Update result area from latest stats (minor user feedback)
+      const miniAccuracy = document.getElementById("ms-accuracy");
+      const miniAttempts = document.getElementById("ms-attempts");
+      if (miniAccuracy && miniAttempts) {
+        miniAccuracy.textContent = `${data.accuracy}%`;
+        miniAttempts.textContent = `${data.results.length || 0}`;
+      }
+    } catch (e) {
+      console.warn("Could not refresh stats after quiz:", e);
+    }
   } catch (err) {
     console.error("Submit failed", err);
     showQuizSection("lobby");

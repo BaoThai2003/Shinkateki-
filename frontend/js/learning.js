@@ -47,12 +47,22 @@ async function loadChapters() {
   }
 }
 
+function normalizeText(text) {
+  if (typeof text !== "string") return text;
+  try {
+    // correct mojibake from non-UTF8 data sources, e.g., Windows-1252 input
+    return decodeURIComponent(escape(text));
+  } catch (_) {
+    return text;
+  }
+}
+
 function createChapterElement(chapter) {
   return `
     <div class="chapter">
       <div class="chapter-header">
-        <h3 class="chapter-title">${chapter.title}</h3>
-        <p class="chapter-description">${chapter.description}</p>
+        <h3 class="chapter-title">${normalizeText(chapter.title)}</h3>
+        <p class="chapter-description">${normalizeText(chapter.description)}</p>
       </div>
       <div class="sections-container">
         ${chapter.sections
@@ -67,8 +77,8 @@ function createSectionElement(section) {
   return `
     <div class="section">
       <div class="section-header">
-        <h4 class="section-title">${section.title}</h4>
-        <p class="section-description">${section.description}</p>
+        <h4 class="section-title">${normalizeText(section.title)}</h4>
+        <p class="section-description">${normalizeText(section.description)}</p>
       </div>
       <div class="lessons-grid">
         ${section.lessons.map((lesson) => createLessonCard(lesson)).join("")}
@@ -92,7 +102,7 @@ function createLessonCard(lesson) {
   return `
     <div class="lesson-card ${statusClass}" onclick="openLesson(${lesson.id})">
       <div class="lesson-number">Lesson ${lesson.lesson_number}</div>
-      <h5 class="lesson-title">${lesson.title}</h5>
+      <h5 class="lesson-title">${normalizeText(lesson.title)}</h5>
       <div class="lesson-status">${statusText}</div>
     </div>
   `;
@@ -104,11 +114,20 @@ async function openLesson(lessonId) {
   try {
     currentLesson = await api.request("GET", `/structured-lessons/${lessonId}`);
 
-    if (!currentLesson.is_unlocked && currentLesson.prerequisites.length > 0) {
+    const prerequisites = Array.isArray(currentLesson.prerequisites)
+      ? currentLesson.prerequisites
+      : [];
+
+    if (!currentLesson.is_unlocked && prerequisites.length > 0) {
       alert(
         "This lesson is locked. Please complete the prerequisite lessons first."
       );
       return;
+    }
+
+    if (!currentLesson.is_unlocked && prerequisites.length === 0) {
+      // allow first lesson unlock path
+      currentLesson.is_unlocked = true;
     }
 
     showView("lesson");
@@ -371,14 +390,14 @@ function createVocabularyElement(word) {
   wordDiv.innerHTML = `
     <div class="vocab-header">
       <div class="vocab-japanese">
-        ${word.kanji || word.hiragana}
+        ${normalizeText(word.kanji || word.hiragana)}
         ${
           word.katakana && word.katakana !== word.hiragana
-            ? `(${word.katakana})`
+            ? `(${normalizeText(word.katakana)})`
             : ""
         }
       </div>
-      <div class="vocab-romaji">${word.romaji}</div>
+      <div class="vocab-romaji">${normalizeText(word.romaji)}</div>
     </div>
     <div class="vocab-meaning">${word.meaning}</div>
     ${
