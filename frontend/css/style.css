@@ -707,7 +707,8 @@ body {
   margin-bottom: 1.5rem;
 }
 .quiz-character {
-  font-family: var(--font-zen);
+  font-family: var(--font-jp), var(--font-zen), "Noto Sans JP",
+    "Hiragino Kaku Gothic Pro", Meiryo, sans-serif;
   font-size: clamp(5rem, 18vw, 9rem);
   color: var(--rice);
   line-height: 1;

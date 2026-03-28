@@ -230,11 +230,16 @@ function formatLessonCard(lesson) {
       <p>${escapeHtml(lesson.content)}</p>
       <p><strong>Questions:</strong> ${lesson.question_count}</p>
       <p><strong>Visibility:</strong> ${visibility}</p>
-      <button class="btn-ghost btn-toggle-visibility" data-id="${
-        lesson.id
-      }" data-visible="${lesson.is_public}">
-        Set ${lesson.is_public ? "Private" : "Public"}
-      </button>
+      <div class="lesson-actions-inline">
+        <button class="btn-ghost btn-open-lesson" data-id="${
+          lesson.id
+        }">Open</button>
+        <button class="btn-ghost btn-toggle-visibility" data-id="${
+          lesson.id
+        }" data-visible="${lesson.is_public ? "true" : "false"}">
+          Set ${lesson.is_public ? "Private" : "Public"}
+        </button>
+      </div>
     </div>
   `;
 }
@@ -404,6 +409,13 @@ async function loadLessons() {
             .join("")
         : "<p style='color:var(--fog)'>No public lessons yet.</p>";
 
+    document.querySelectorAll(".btn-open-lesson").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const lessonId = btn.dataset.id;
+        openCustomLesson(lessonId);
+      });
+    });
+
     document.querySelectorAll(".btn-toggle-visibility").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const lessonId = btn.dataset.id;
@@ -417,6 +429,137 @@ async function loadLessons() {
   } catch (err) {
     console.error("Lessons loading failed", err);
   }
+}
+
+async function openCustomLesson(lessonId) {
+  try {
+    const lesson = await api.get(`/lessons/${lessonId}`);
+    if (!lesson) throw new Error("Lesson not found.");
+
+    showView("lesson");
+    document.getElementById("lesson-title").textContent = lesson.title;
+    document.getElementById("lesson-content").innerHTML = lesson.content;
+
+    const actionsEl = document.getElementById("lesson-actions");
+    actionsEl.innerHTML = "";
+
+    if (lesson.questions && lesson.questions.length) {
+      actionsEl.innerHTML = `
+        <button class="btn-primary" onclick="startCustomLessonQuiz()">Start Quiz</button>
+      `;
+      window.customLessonQuiz = {
+        lessonId: lesson.id,
+        questions: lesson.questions,
+        currentIndex: 0,
+        answers: [],
+      };
+    } else {
+      actionsEl.innerHTML = `<p style='color:var(--fog)'>No quiz questions available for this lesson.</p>`;
+      window.customLessonQuiz = null;
+    }
+  } catch (err) {
+    console.error("Failed to open lesson:", err);
+    alert("Failed to open lesson. Please try again.");
+  }
+}
+
+function startCustomLessonQuiz() {
+  if (!window.customLessonQuiz || !window.customLessonQuiz.questions.length) {
+    alert("No quiz available.");
+    return;
+  }
+
+  showView("lesson-quiz");
+  renderCustomQuizQuestion();
+}
+
+function renderCustomQuizQuestion() {
+  const quiz = window.customLessonQuiz;
+  const question = quiz.questions[quiz.currentIndex];
+
+  document.getElementById("lesson-quiz-counter").textContent = `${
+    quiz.currentIndex + 1
+  } / ${quiz.questions.length}`;
+  document.getElementById("lesson-quiz-progress-fill").style.width = `${
+    ((quiz.currentIndex + 1) / quiz.questions.length) * 100
+  }%`;
+
+  const contentEl = document.getElementById("lesson-quiz-content");
+  contentEl.innerHTML = `
+    <div class="quiz-question">
+      <div class="question-text">${escapeHtml(question.question_text)}</div>
+      <div class="question-options">
+        ${[
+          question.option_a,
+          question.option_b,
+          question.option_c,
+          question.option_d,
+        ]
+          .map(
+            (option, index) => `
+            <label class="option">
+              <input type="radio" name="quiz-option" value="${escapeHtml(
+                option
+              )}" />
+              ${escapeHtml(option)}
+            </label>
+          `
+          )
+          .join("")}
+      </div>
+    </div>
+  `;
+
+  document.getElementById("lesson-quiz-actions").innerHTML = `
+    <button class="btn-primary" onclick="submitCustomQuizAnswer()">Submit Answer</button>
+  `;
+}
+
+function submitCustomQuizAnswer() {
+  const selectedOption = document.querySelector(
+    'input[name="quiz-option"]:checked'
+  );
+  if (!selectedOption) {
+    alert("Please select an answer.");
+    return;
+  }
+
+  const quiz = window.customLessonQuiz;
+  const question = quiz.questions[quiz.currentIndex];
+  const isCorrect = selectedOption.value === question[`correct_option`];
+
+  quiz.answers.push({ questionId: question.id, isCorrect });
+
+  const contentEl = document.getElementById("lesson-quiz-content");
+  contentEl.innerHTML += `<div class="quiz-feedback ${
+    isCorrect ? "correct" : "incorrect"
+  }"><p>${isCorrect ? "Correct!" : "Incorrect."}</p></div>`;
+
+  if (quiz.currentIndex < quiz.questions.length - 1) {
+    document.getElementById(
+      "lesson-quiz-actions"
+    ).innerHTML = `<button class="btn-primary" onclick="nextCustomQuizQuestion()">Next Question</button>`;
+  } else {
+    document.getElementById(
+      "lesson-quiz-actions"
+    ).innerHTML = `<button class="btn-primary" onclick="finishCustomQuiz()">Finish Quiz</button>`;
+  }
+}
+
+function nextCustomQuizQuestion() {
+  window.customLessonQuiz.currentIndex++;
+  renderCustomQuizQuestion();
+}
+
+function finishCustomQuiz() {
+  const quiz = window.customLessonQuiz;
+  const correctCount = quiz.answers.filter((a) => a.isCorrect).length;
+  const accuracy = Math.round((correctCount / quiz.questions.length) * 100);
+  alert(
+    `Quiz complete! ${correctCount}/${quiz.questions.length} correct (${accuracy}%)`
+  );
+  showView("lessons");
+  loadLessons();
 }
 
 function escapeHtml(str = "") {

@@ -30,9 +30,15 @@ async function loadChapters() {
     const container = document.getElementById("learning-content");
     container.innerHTML = "";
 
+    if (!Array.isArray(chapters) || chapters.length === 0) {
+      container.innerHTML =
+        "<p>No structured lessons available at the moment.</p>";
+      return;
+    }
+
     chapters.forEach((chapter) => {
       const chapterEl = createChapterElement(chapter);
-      container.appendChild(chapterEl);
+      container.insertAdjacentHTML("beforeend", chapterEl);
     });
   } catch (err) {
     console.error("Failed to load chapters:", err);
@@ -61,20 +67,17 @@ function createChapterElement(chapter) {
 }
 
 function createSectionElement(section) {
-  const sectionDiv = document.createElement("div");
-  sectionDiv.className = "section";
-
-  sectionDiv.innerHTML = `
-    <div class="section-header">
-      <h4 class="section-title">${section.title}</h4>
-      <p class="section-description">${section.description}</p>
-    </div>
-    <div class="lessons-grid">
-      ${section.lessons.map((lesson) => createLessonCard(lesson)).join("")}
+  return `
+    <div class="section">
+      <div class="section-header">
+        <h4 class="section-title">${section.title}</h4>
+        <p class="section-description">${section.description}</p>
+      </div>
+      <div class="lessons-grid">
+        ${section.lessons.map((lesson) => createLessonCard(lesson)).join("")}
+      </div>
     </div>
   `;
-
-  return sectionDiv;
 }
 
 function createLessonCard(lesson) {

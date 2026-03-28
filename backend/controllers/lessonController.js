@@ -117,6 +117,46 @@ async function createLesson(req, res) {
   }
 }
 
+async function getLessonById(req, res) {
+  try {
+    const userId = req.user.id;
+    const lessonId = Number(req.params.id);
+
+    const lessons = await query(
+      `SELECT l.*, u.username FROM lessons l JOIN users u ON u.id = l.user_id WHERE l.id = ? LIMIT 1`,
+      [lessonId]
+    );
+
+    if (!lessons.length) {
+      return res.status(404).json({ error: "Lesson not found." });
+    }
+
+    const lesson = lessons[0];
+
+    if (!lesson.is_public && lesson.user_id !== userId) {
+      return res
+        .status(403)
+        .json({ error: "Not allowed to access this lesson." });
+    }
+
+    const questions = await query(
+      `SELECT id, question_text, option_a, option_b, option_c, option_d, correct_option FROM lesson_questions WHERE lesson_id = ? ORDER BY id`,
+      [lessonId]
+    );
+
+    return res.json({
+      id: lesson.id,
+      title: lesson.title,
+      content: lesson.content,
+      is_public: lesson.is_public === 1,
+      questions,
+    });
+  } catch (err) {
+    console.error("[getLessonById]", err);
+    return res.status(500).json({ error: "Failed to load lesson." });
+  }
+}
+
 async function setVisibility(req, res) {
   try {
     const userId = req.user.id;
