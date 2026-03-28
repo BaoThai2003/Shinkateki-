@@ -58,27 +58,27 @@ async function getChapters(req, res) {
       }
 
       if (row.lesson_id) {
-      const prerequisites = JSON.parse(row.prerequisites || "[]");
-      const isFirstLesson = Number(row.lesson_number) === 1;
-      const isUnlocked =
-        !!row.is_unlocked ||
-        (isFirstLesson && prerequisites.length === 0) ||
-        (row.is_completed === 1); // completed implies unlocked
+        const prerequisites = JSON.parse(row.prerequisites || "[]");
+        const isFirstLesson = Number(row.lesson_number) === 1;
+        const isUnlocked =
+          !!row.is_unlocked ||
+          (isFirstLesson && prerequisites.length === 0) ||
+          row.is_completed === 1; // completed implies unlocked
 
-      result[row.id].sections[row.section_id].lessons.push({
-        id: row.lesson_id,
-        lesson_number: row.lesson_number,
-        title:
-          userLanguage === "vi" ? row.lesson_title_vi : row.lesson_title_en,
-        type: row.type,
-        script_type: row.script_type,
-        prerequisites,
-        unlocks: JSON.parse(row.unlocks || "[]"),
-        is_completed: !!row.is_completed,
-        is_unlocked: !!isUnlocked,
-      });
-    }
-  });
+        result[row.id].sections[row.section_id].lessons.push({
+          id: row.lesson_id,
+          lesson_number: row.lesson_number,
+          title:
+            userLanguage === "vi" ? row.lesson_title_vi : row.lesson_title_en,
+          type: row.type,
+          script_type: row.script_type,
+          prerequisites,
+          unlocks: JSON.parse(row.unlocks || "[]"),
+          is_completed: !!row.is_completed,
+          is_unlocked: !!isUnlocked,
+        });
+      }
+    });
 
     // Convert to array format
     const chaptersArray = Object.values(result).map((chapter) => ({
@@ -207,8 +207,7 @@ async function getReviewQuiz(req, res) {
       options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean),
       correct_answer:
         userLanguage === "vi" ? q.correct_answer : q.correct_answer,
-      explanation:
-        userLanguage === "vi" ? q.explanation_vi : q.explanation_en,
+      explanation: userLanguage === "vi" ? q.explanation_vi : q.explanation_en,
     }));
 
     return res.json(formatted);
@@ -352,7 +351,9 @@ async function getQuizResults(req, res) {
   try {
     const userId = req.user.id;
     const lessonId = req.params.id;
-    const since = req.query.since ? new Date(parseInt(req.query.since, 10)) : null;
+    const since = req.query.since
+      ? new Date(parseInt(req.query.since, 10))
+      : null;
 
     let attemptsSql = `
       SELECT uqa.*, qq.correct_answer
@@ -381,7 +382,8 @@ async function getQuizResults(req, res) {
     const correctCount = attempts.filter((a) => a.is_correct).length;
     const totalAttempts = attempts.length;
 
-    const accuracy = totalAttempts > 0 ? (correctCount / totalAttempts) * 100 : 0;
+    const accuracy =
+      totalAttempts > 0 ? (correctCount / totalAttempts) * 100 : 0;
 
     return res.json({
       lesson_id: lessonId,

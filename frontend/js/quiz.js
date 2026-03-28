@@ -100,7 +100,7 @@ function renderQuestion() {
   // If we get non-Japanese text here, fallback to a romaji->kana mapper.
   const labelCharacter = /^[\u3040-\u30FF\u4E00-\u9FFF]+$/.test(q.character)
     ? q.character
-    : (romajiToKana(q.romaji) || q.character);
+    : romajiToKana(q.romaji) || q.character;
   setText("quiz-character", labelCharacter);
 
   // Choices
