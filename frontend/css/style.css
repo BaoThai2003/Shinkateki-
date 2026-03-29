@@ -933,6 +933,30 @@ body {
   }
 }
 
+.stats-instant {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stats-instant h4 {
+  margin: 0 0 0.6rem;
+  color: var(--rice);
+  font-family: var(--font-zen);
+}
+
+.stats-card {
+  color: var(--paper);
+  font-size: 0.95rem;
+}
+
+.stats-card ul {
+  margin: 0.4rem 0 0.6rem;
+  padding-left: 1.1rem;
+}
+
 .stats-section {
   background: var(--ink-2);
   border: 1px solid var(--ink-4);
@@ -1845,6 +1869,37 @@ body {
   border-color: var(--mist);
 }
 
+.dictionary-add {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 1rem;
+  margin: 0 auto 1.5rem auto;
+  max-width: 1000px;
+}
+
+.dictionary-add h4 {
+  margin: 0 0 0.75rem;
+  color: var(--rice);
+  font-family: var(--font-zen);
+}
+
+.add-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.add-grid input {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  color: var(--paper);
+  padding: 0.6rem 0.8rem;
+  font-family: var(--font-body);
+}
+
 #dictionary-content {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -1869,7 +1924,7 @@ body {
 }
 
 .vocab-japanese {
-  font-family: var(--font-zen);
+  font-family: var(--font-jp), var(--font-zen), sans-serif;
   font-size: 1.5rem;
   color: var(--rice);
   margin-bottom: 0.25rem;

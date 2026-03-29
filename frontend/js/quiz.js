@@ -299,6 +299,22 @@ async function finishQuiz() {
     showQuizSection("results");
     renderResults(data);
 
+    // Instant stats for quick quiz
+    window.instantStats = {
+      source: `quick-quiz-${data.sessionId || Date.now()}`,
+      type: "quick-quiz",
+      accuracy: data.accuracy,
+      totalQuestions: data.results ? data.results.length : 0,
+      correctAnswers: data.results
+        ? data.results.filter((r) => r.isCorrect).length
+        : 0,
+      wrongAnswers: data.results
+        ? data.results.filter((r) => !r.isCorrect).length
+        : 0,
+      results: data.results || [],
+      completedAt: new Date().toISOString(),
+    };
+
     // Refresh nav score and home data
     try {
       const { user } = await api.get("/auth/me");

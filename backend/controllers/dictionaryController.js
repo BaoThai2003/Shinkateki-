@@ -204,8 +204,62 @@ async function searchVocabulary(req, res) {
   }
 }
 
+async function addVocabulary(req, res) {
+  try {
+    const userId = req.user.id; // currently not used but keeps consistency
+    const {
+      lesson_id,
+      romaji,
+      hiragana,
+      katakana,
+      kanji,
+      english_meaning,
+      vietnamese_meaning,
+      part_of_speech,
+      example_sentence_en,
+      example_sentence_vi,
+    } = req.body;
+
+    if (!lesson_id || !romaji || !english_meaning) {
+      return res
+        .status(400)
+        .json({ error: "lesson_id, romaji and english_meaning are required" });
+    }
+
+    const result = await query(
+      `INSERT INTO vocabulary
+         (lesson_id, romaji, hiragana, katakana, kanji,
+          english_meaning, vietnamese_meaning, part_of_speech,
+          example_sentence_en, example_sentence_vi)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        lesson_id,
+        romaji,
+        hiragana || null,
+        katakana || null,
+        kanji || null,
+        english_meaning,
+        vietnamese_meaning || null,
+        part_of_speech || null,
+        example_sentence_en || null,
+        example_sentence_vi || null,
+      ]
+    );
+
+    const created = await query(`SELECT * FROM vocabulary WHERE id = ?`, [
+      result.insertId,
+    ]);
+
+    return res.status(201).json({ success: true, word: created[0] });
+  } catch (err) {
+    console.error("[addVocabulary]", err);
+    return res.status(500).json({ error: "Failed to add vocabulary." });
+  }
+}
+
 module.exports = {
   getDictionary,
   getVocabularyByLesson,
   searchVocabulary,
+  addVocabulary,
 };

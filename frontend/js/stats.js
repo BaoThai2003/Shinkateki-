@@ -25,7 +25,88 @@ window.loadStats = async function () {
 
 // ── Main render ───────────────────────────────────────────────────
 
+function renderInstantStats(stats) {
+  const container = document.getElementById("stats-instant");
+  if (!container) return;
+
+  if (!stats || !stats.totalQuestions) {
+    container.innerHTML =
+      '<p style="color:var(--fog);">No instant stats yet. Complete a quiz to see immediate performance.</p>';
+    return;
+  }
+
+  const topCorrect = (stats.results || [])
+    .filter((r) => r.isCorrect)
+    .sort((a, b) => b.isCorrect - a.isCorrect)
+    .slice(0, 3);
+  const topWrong = (stats.results || [])
+    .filter((r) => !r.isCorrect)
+    .slice(0, 3);
+
+  container.innerHTML = `
+    <div class="stats-card">
+      <h4>Instant Session Stats (${stats.type})</h4>
+      <p><strong>Accuracy:</strong> ${stats.accuracy}%</p>
+      <p><strong>Correct:</strong> ${stats.correctAnswers}</p>
+      <p><strong>Incorrect:</strong> ${stats.wrongAnswers}</p>
+      <p><strong>Session:</strong> ${stats.source}</p>
+      <p><strong>Completed:</strong> ${new Date(stats.completedAt).toLocaleString()}</p>
+      <div>
+        <strong>Best answered</strong>
+        <ul>${topCorrect.map((q) => `<li>${q.characterId || q.question || "?"}</li>`).join("")}</ul>
+      </div>
+      <div>
+        <strong>Needs work</strong>
+        <ul>${topWrong.map((q) => `<li>${q.characterId || q.question || "?"}</li>`).join("")}</ul>
+      </div>
+    </div>
+  `;
+}
+
+function renderCumulativeStats(longTerm) {
+  const container = document.getElementById("stats-cumulative");
+  if (!container) return;
+
+  if (!longTerm) {
+    container.innerHTML =
+      '<p style="color:var(--fog)">No cumulative stats available yet.</p>';
+    return;
+  }
+
+  const topCorrect = (longTerm.topCorrect || [])
+    .map((q) => `<li>${q.kana || q.romaji} — ${q.accuracy}% (${q.attempts})</li>`)
+    .join("");
+  const topWrong = (longTerm.topIncorrect || [])
+    .map((q) => `<li>${q.kana || q.romaji} — ${q.accuracy}% (${q.attempts})</li>`)
+    .join("");
+
+  container.innerHTML = `
+    <div class="stats-card">
+      <h4>Cumulative Stats</h4>
+      <p><strong>Total Attempts:</strong> ${longTerm.totalAttempts}</p>
+      <p><strong>Total Correct:</strong> ${longTerm.totalCorrect}</p>
+      <p><strong>Total Wrong:</strong> ${longTerm.totalWrong}</p>
+      <p><strong>Overall Accuracy:</strong> ${longTerm.accuracy}%</p>
+      <p><strong>Top Correct</strong></p>
+      <ul>${topCorrect || "<li>Insufficient data</li>"}</ul>
+      <p><strong>Top Incorrect</strong></p>
+      <ul>${topWrong || "<li>Insufficient data</li>"}</ul>
+      <p><strong>Peak Time Slots</strong></p>
+      <ul>${(longTerm.habitTimeOfDay || [])
+        .map((t) => `<li>${t.label} (${t.hour}:00) — ${t.count}</li>`)
+        .join("")}</ul>
+      <p><strong>Weekly Logins</strong></p>
+      <ul>${(longTerm.habitWeekDay || [])
+        .map((d) => `<li>${d.day} — ${d.count}</li>`)
+        .join("")}</ul>
+    </div>
+  `;
+}
+
 function renderAll(dash) {
+  renderInstantStats(window.instantStats);
+  renderCumulativeStats(dash?.longTerm);
+
   if (!dash || typeof dash !== "object") {
     document.getElementById("stats-content").innerHTML =
       '<p style="color:var(--fog)">No stats available yet. Complete a quiz to start tracking.</p>';

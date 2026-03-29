@@ -50,8 +50,8 @@ async function loadChapters() {
 function normalizeText(text) {
   if (typeof text !== "string") return text;
   try {
-    // correct mojibake from non-UTF8 data sources, e.g., Windows-1252 input
-    return decodeURIComponent(escape(text));
+    // Safely normalize while preserving proper Unicode Japanese glyphs
+    return text.normalize ? text.normalize("NFC") : text;
   } catch (_) {
     return text;
   }
@@ -322,6 +322,18 @@ async function finishQuiz() {
       `/structured-lessons/${currentLesson.id}/quiz/results${sinceParam}`
     );
 
+    // Track instant lesson quiz stats for dashboard/quick look
+    window.instantStats = {
+      source: `lesson-${currentLesson.id}`,
+      type: "lesson-review",
+      accuracy: results.accuracy,
+      totalQuestions: results.total_questions,
+      correctAnswers: results.correct_answers,
+      wrongAnswers: results.total_attempts - results.correct_answers,
+      attempts: results.attempts || [],
+      completedAt: new Date().toISOString(),
+    };
+
     // Check if passed (75% accuracy)
     if (results.accuracy >= 75) {
       // Mark lesson as completed if not already
@@ -447,4 +459,65 @@ document.addEventListener("DOMContentLoaded", () => {
     ?.addEventListener("input", (e) => {
       loadDictionary(e.target.value);
     });
+
+  document
+    .getElementById("btn-add-vocab")
+    ?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await addVocabularyWord();
+    });
 });
+
+async function addVocabularyWord() {
+  const lessonId = Number(document.getElementById("add-lesson-id").value);
+  const romaji = document.getElementById("add-romaji").value.trim();
+  const hiragana = document.getElementById("add-hiragana").value.trim();
+  const katakana = document.getElementById("add-katakana").value.trim();
+  const kanji = document.getElementById("add-kanji").value.trim();
+  const meaning = document.getElementById("add-meaning").value.trim();
+  const partOfSpeech = document.getElementById("add-pos").value.trim();
+  const statusEl = document.getElementById("add-vocab-status");
+
+  if (!lessonId || !romaji || !meaning) {
+    statusEl.textContent = "Please provide Lesson ID, Romaji, and English meaning.";
+    statusEl.classList.remove("hidden");
+    return;
+  }
+
+  try {
+    const body = {
+      lesson_id: lessonId,
+      romaji,
+      hiragana: hiragana || null,
+      katakana: katakana || null,
+      kanji: kanji || null,
+      english_meaning: meaning,
+      vietnamese_meaning: meaning,
+      part_of_speech: partOfSpeech || null,
+      example_sentence_en: `Practice: ${romaji}`,
+      example_sentence_vi: `Practice: ${romaji}`,
+    };
+
+    const resp = await api.post("/dictionary", body);
+    statusEl.textContent = "Vocabulary added successfully.";
+    statusEl.classList.remove("hidden");
+    statusEl.style.color = "#9de0b8";
+
+    // Clear form and reload dictionary
+    document.getElementById("add-lesson-id").value = "";
+    document.getElementById("add-romaji").value = "";
+    document.getElementById("add-hiragana").value = "";
+    document.getElementById("add-katakana").value = "";
+    document.getElementById("add-kanji").value = "";
+    document.getElementById("add-meaning").value = "";
+    document.getElementById("add-pos").value = "";
+
+    loadDictionary();
+  } catch (err) {
+    console.error("Failed to add vocabulary:", err);
+    statusEl.textContent =
+      err.data?.error || "Could not add vocabulary. Check fields and retry.";
+    statusEl.classList.remove("hidden");
+    statusEl.style.color = "#ff8f8f";
+  }
+}

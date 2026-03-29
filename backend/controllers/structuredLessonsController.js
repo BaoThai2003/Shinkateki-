@@ -117,23 +117,32 @@ async function getLesson(req, res) {
 
     const lesson = lessons[0];
 
+    let prerequisites = [];
+    if (lesson.prerequisites) {
+      try {
+        prerequisites = JSON.parse(lesson.prerequisites);
+      } catch (_err) {
+        prerequisites = [];
+      }
+    }
+
     // Check if lesson is unlocked
-    if (
-      !lesson.is_unlocked &&
-      lesson.prerequisites &&
-      lesson.prerequisites.length > 0
-    ) {
-      const prerequisites = JSON.parse(lesson.prerequisites);
-      const completedPrerequisites = await query(
-        `
+    if (!lesson.is_unlocked) {
+      if (Array.isArray(prerequisites) && prerequisites.length > 0) {
+        const completedPrerequisites = await query(
+          `
         SELECT COUNT(*) as count FROM user_lesson_progress
         WHERE user_id = ? AND lesson_id IN (?) AND is_completed = 1
       `,
-        [userId, prerequisites]
-      );
+          [userId, prerequisites]
+        );
 
-      if (completedPrerequisites[0].count < prerequisites.length) {
-        return res.status(403).json({ error: "Lesson prerequisites not met." });
+        if (completedPrerequisites[0].count < prerequisites.length) {
+          return res.status(403).json({ error: "Lesson prerequisites not met." });
+        }
+      } else {
+        // Allow first lesson or no prerequisites
+        lesson.is_unlocked = 1;
       }
     }
 

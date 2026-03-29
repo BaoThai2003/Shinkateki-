@@ -160,6 +160,7 @@ async function getDashboardStats(userId) {
       getWeeklyTrend(userId, 7),
     ]);
 
+  const longTerm = await getLongTermStats(userId);
   const recommendations = _buildRecommendations({
     overall,
     velocity,
@@ -174,9 +175,89 @@ async function getDashboardStats(userId) {
     timeInsights,
     optimalStudyTime: optimal,
     weeklyTrend: weekly,
+    longTerm,
     recommendations,
   };
 }
+
+async function getLongTermStats(userId) {
+  const overallRow = await queryOne(
+    `SELECT COUNT(*) AS total_attempts, SUM(is_correct) AS total_correct
+     FROM attempts
+     WHERE user_id = ?`,
+    [userId]
+  );
+
+  const totalAttempts = overallRow?.total_attempts ?? 0;
+  const totalCorrect = overallRow?.total_correct ?? 0;
+
+  const wrongAttempt = totalAttempts - totalCorrect;
+
+  const topHit = await query(
+    `SELECT c.kana, c.romaji, COUNT(*) AS attempts,
+            SUM(a.is_correct) AS correct,
+            100 * SUM(a.is_correct)/COUNT(*) AS accuracy
+     FROM attempts a
+     JOIN characters c ON c.id = a.character_id
+     WHERE a.user_id = ?
+     GROUP BY a.character_id
+     HAVING attempts >= 3
+     ORDER BY accuracy DESC, attempts DESC
+     LIMIT 5`,
+    [userId]
+  );
+
+  const topMiss = await query(
+    `SELECT c.kana, c.romaji, COUNT(*) AS attempts,
+            SUM(a.is_correct) AS correct,
+            100 * SUM(a.is_correct)/COUNT(*) AS accuracy
+     FROM attempts a
+     JOIN characters c ON c.id = a.character_id
+     WHERE a.user_id = ?
+     GROUP BY a.character_id
+     HAVING attempts >= 3
+     ORDER BY accuracy ASC, attempts DESC
+     LIMIT 5`,
+    [userId]
+  );
+
+  const habitTime = await query(
+    `SELECT HOUR(created_at) hour, COUNT(*) total
+     FROM attempts
+     WHERE user_id = ?
+     GROUP BY HOUR(created_at)
+     ORDER BY total DESC
+     LIMIT 8`,
+    [userId]
+  );
+
+  const habitWeek = await query(
+    `SELECT DAYOFWEEK(created_at) day_of_week, COUNT(*) total
+     FROM attempts
+     WHERE user_id = ?
+     GROUP BY DAYOFWEEK(created_at)
+     ORDER BY total DESC
+     LIMIT 7`,
+    [userId]
+  );
+
+  return {
+    totalAttempts,
+    totalCorrect,
+    totalWrong: wrongAttempt,
+    accuracy: totalAttempts > 0 ? parseFloat(((totalCorrect / totalAttempts) * 100).toFixed(1)) : 0,
+    topCorrect: topHit.map((r) => ({ kana: r.kana, romaji: r.romaji, attempts: r.attempts, accuracy: Number(r.accuracy.toFixed(1)) })),
+    topIncorrect: topMiss.map((r) => ({ kana: r.kana, romaji: r.romaji, attempts: r.attempts, accuracy: Number(r.accuracy.toFixed(1)) })),
+    habitTimeOfDay: habitTime.map((r) => ({ hour: r.hour, label: _timeLabel(r.hour), count: r.total })),
+    habitWeekDay: habitWeek.map((r) => ({ day: _dayName(r.day_of_week), count: r.total })),
+  };
+}
+
+function _dayName(dow) {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  return days[(dow - 1 + 7) % 7];
+}
+
 
 async function _getOverallStats(userId) {
   const row = await queryOne(

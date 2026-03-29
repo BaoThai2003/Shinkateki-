@@ -19,6 +19,9 @@ router.get("/", getDictionary);
 // Search vocabulary
 router.get("/search", searchVocabulary);
 
+// Add vocabulary word
+router.post("/", addVocabulary);
+
 // Get vocabulary by lesson
 router.get("/lesson/:lessonId", getVocabularyByLesson);
 
