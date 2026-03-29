@@ -245,19 +245,46 @@ async function getLongTermStats(userId) {
     totalAttempts,
     totalCorrect,
     totalWrong: wrongAttempt,
-    accuracy: totalAttempts > 0 ? parseFloat(((totalCorrect / totalAttempts) * 100).toFixed(1)) : 0,
-    topCorrect: topHit.map((r) => ({ kana: r.kana, romaji: r.romaji, attempts: r.attempts, accuracy: Number(r.accuracy.toFixed(1)) })),
-    topIncorrect: topMiss.map((r) => ({ kana: r.kana, romaji: r.romaji, attempts: r.attempts, accuracy: Number(r.accuracy.toFixed(1)) })),
-    habitTimeOfDay: habitTime.map((r) => ({ hour: r.hour, label: _timeLabel(r.hour), count: r.total })),
-    habitWeekDay: habitWeek.map((r) => ({ day: _dayName(r.day_of_week), count: r.total })),
+    accuracy:
+      totalAttempts > 0
+        ? parseFloat(((totalCorrect / totalAttempts) * 100).toFixed(1))
+        : 0,
+    topCorrect: topHit.map((r) => ({
+      kana: r.kana,
+      romaji: r.romaji,
+      attempts: r.attempts,
+      accuracy: Number(r.accuracy.toFixed(1)),
+    })),
+    topIncorrect: topMiss.map((r) => ({
+      kana: r.kana,
+      romaji: r.romaji,
+      attempts: r.attempts,
+      accuracy: Number(r.accuracy.toFixed(1)),
+    })),
+    habitTimeOfDay: habitTime.map((r) => ({
+      hour: r.hour,
+      label: _timeLabel(r.hour),
+      count: r.total,
+    })),
+    habitWeekDay: habitWeek.map((r) => ({
+      day: _dayName(r.day_of_week),
+      count: r.total,
+    })),
   };
 }
 
 function _dayName(dow) {
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   return days[(dow - 1 + 7) % 7];
 }
-
 
 async function _getOverallStats(userId) {
   const row = await queryOne(

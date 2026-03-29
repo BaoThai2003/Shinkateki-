@@ -50,14 +50,20 @@ function renderInstantStats(stats) {
       <p><strong>Correct:</strong> ${stats.correctAnswers}</p>
       <p><strong>Incorrect:</strong> ${stats.wrongAnswers}</p>
       <p><strong>Session:</strong> ${stats.source}</p>
-      <p><strong>Completed:</strong> ${new Date(stats.completedAt).toLocaleString()}</p>
+      <p><strong>Completed:</strong> ${new Date(
+        stats.completedAt
+      ).toLocaleString()}</p>
       <div>
         <strong>Best answered</strong>
-        <ul>${topCorrect.map((q) => `<li>${q.characterId || q.question || "?"}</li>`).join("")}</ul>
+        <ul>${topCorrect
+          .map((q) => `<li>${q.characterId || q.question || "?"}</li>`)
+          .join("")}</ul>
       </div>
       <div>
         <strong>Needs work</strong>
-        <ul>${topWrong.map((q) => `<li>${q.characterId || q.question || "?"}</li>`).join("")}</ul>
+        <ul>${topWrong
+          .map((q) => `<li>${q.characterId || q.question || "?"}</li>`)
+          .join("")}</ul>
       </div>
     </div>
   `;
@@ -74,10 +80,14 @@ function renderCumulativeStats(longTerm) {
   }
 
   const topCorrect = (longTerm.topCorrect || [])
-    .map((q) => `<li>${q.kana || q.romaji} — ${q.accuracy}% (${q.attempts})</li>`)
+    .map(
+      (q) => `<li>${q.kana || q.romaji} — ${q.accuracy}% (${q.attempts})</li>`
+    )
     .join("");
   const topWrong = (longTerm.topIncorrect || [])
-    .map((q) => `<li>${q.kana || q.romaji} — ${q.accuracy}% (${q.attempts})</li>`)
+    .map(
+      (q) => `<li>${q.kana || q.romaji} — ${q.accuracy}% (${q.attempts})</li>`
+    )
     .join("");
 
   container.innerHTML = `

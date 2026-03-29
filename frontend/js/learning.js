@@ -479,7 +479,8 @@ async function addVocabularyWord() {
   const statusEl = document.getElementById("add-vocab-status");
 
   if (!lessonId || !romaji || !meaning) {
-    statusEl.textContent = "Please provide Lesson ID, Romaji, and English meaning.";
+    statusEl.textContent =
+      "Please provide Lesson ID, Romaji, and English meaning.";
     statusEl.classList.remove("hidden");
     return;
   }

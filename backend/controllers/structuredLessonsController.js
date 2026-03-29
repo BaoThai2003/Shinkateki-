@@ -138,7 +138,9 @@ async function getLesson(req, res) {
         );
 
         if (completedPrerequisites[0].count < prerequisites.length) {
-          return res.status(403).json({ error: "Lesson prerequisites not met." });
+          return res
+            .status(403)
+            .json({ error: "Lesson prerequisites not met." });
         }
       } else {
         // Allow first lesson or no prerequisites
