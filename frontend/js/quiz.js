@@ -300,7 +300,9 @@ async function finishQuiz() {
     await api.post("/structured-lessons/quiz/session", {
       sessionType: "quick-quiz",
       totalQuestions: data.results ? data.results.length : 0,
-      correctAnswers: data.results ? data.results.filter(r => r.isCorrect).length : 0,
+      correctAnswers: data.results
+        ? data.results.filter((r) => r.isCorrect).length
+        : 0,
       accuracy: data.accuracy,
     });
 

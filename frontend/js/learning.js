@@ -358,21 +358,34 @@ async function finishQuiz() {
           </div>
           <div class="stat-item">
             <span class="stat-label">Correct:</span>
-            <span class="stat-value">${results.correct_answers}/${results.total_attempts}</span>
+            <span class="stat-value">${results.correct_answers}/${
+      results.total_attempts
+    }</span>
           </div>
           <div class="stat-item">
             <span class="stat-label">Incorrect:</span>
-            <span class="stat-value">${results.total_attempts - results.correct_answers}/${results.total_attempts}</span>
+            <span class="stat-value">${
+              results.total_attempts - results.correct_answers
+            }/${results.total_attempts}</span>
           </div>
         </div>
-        ${results.attempts && results.attempts.filter(a => !a.is_correct).length > 0 ? `
+        ${
+          results.attempts &&
+          results.attempts.filter((a) => !a.is_correct).length > 0
+            ? `
           <div class="incorrect-list">
             <h4>Questions to review:</h4>
             <ul>
-              ${results.attempts.filter(a => !a.is_correct).slice(0, 5).map(a => `<li>${a.question_id || 'Question'}</li>`).join('')}
+              ${results.attempts
+                .filter((a) => !a.is_correct)
+                .slice(0, 5)
+                .map((a) => `<li>${a.question_id || "Question"}</li>`)
+                .join("")}
             </ul>
           </div>
-        ` : ''}
+        `
+            : ""
+        }
       </div>
     `;
 

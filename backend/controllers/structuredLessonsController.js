@@ -422,12 +422,20 @@ async function getQuizResults(req, res) {
 async function saveQuizSession(req, res) {
   try {
     const userId = req.user.id;
-    const { sessionType, lessonId, totalQuestions, correctAnswers, accuracy } = req.body;
+    const { sessionType, lessonId, totalQuestions, correctAnswers, accuracy } =
+      req.body;
 
     await query(
       `INSERT INTO quiz_sessions (user_id, session_type, lesson_id, total_questions, correct_answers, accuracy)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, sessionType, lessonId || null, totalQuestions, correctAnswers, accuracy]
+      [
+        userId,
+        sessionType,
+        lessonId || null,
+        totalQuestions,
+        correctAnswers,
+        accuracy,
+      ]
     );
 
     return res.json({ success: true });

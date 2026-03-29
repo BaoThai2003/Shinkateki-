@@ -150,16 +150,23 @@ async function getLearningVelocity(userId) {
 // ── Overall Dashboard Stats ──────────────────────────────────────
 
 async function getDashboardStats(userId) {
-  const [overall, velocity, weakest, timeInsights, optimal, weekly, quizHistory] =
-    await Promise.all([
-      _getOverallStats(userId),
-      getLearningVelocity(userId),
-      getWeakestCharacters(userId, 5),
-      getTimeOfDayInsights(userId),
-      getOptimalStudyTime(userId),
-      getWeeklyTrend(userId, 7),
-      getQuizHistoryStats(userId),
-    ]);
+  const [
+    overall,
+    velocity,
+    weakest,
+    timeInsights,
+    optimal,
+    weekly,
+    quizHistory,
+  ] = await Promise.all([
+    _getOverallStats(userId),
+    getLearningVelocity(userId),
+    getWeakestCharacters(userId, 5),
+    getTimeOfDayInsights(userId),
+    getOptimalStudyTime(userId),
+    getWeeklyTrend(userId, 7),
+    getQuizHistoryStats(userId),
+  ]);
 
   const longTerm = await getLongTermStats(userId);
   const recommendations = _buildRecommendations({

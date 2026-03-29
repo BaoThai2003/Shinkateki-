@@ -91,21 +91,36 @@ function renderCumulativeStats(longTerm) {
     .join("");
 
   const quizSessions = (longTerm.quizSessions || [])
-    .map(s => `<li>${s.session_type}: ${s.count} sessions, ${s.avg_accuracy?.toFixed(1)}% avg</li>`)
+    .map(
+      (s) =>
+        `<li>${s.session_type}: ${s.count} sessions, ${s.avg_accuracy?.toFixed(
+          1
+        )}% avg</li>`
+    )
     .join("");
 
   const mostCorrectQ = (longTerm.mostCorrectQuestions || [])
-    .map(q => `<li>${q.question_text_en?.substring(0, 50)}... — ${q.accuracy?.toFixed(1)}%</li>`)
+    .map(
+      (q) =>
+        `<li>${q.question_text_en?.substring(0, 50)}... — ${q.accuracy?.toFixed(
+          1
+        )}%</li>`
+    )
     .join("");
   const mostIncorrectQ = (longTerm.mostIncorrectQuestions || [])
-    .map(q => `<li>${q.question_text_en?.substring(0, 50)}... — ${q.accuracy?.toFixed(1)}%</li>`)
+    .map(
+      (q) =>
+        `<li>${q.question_text_en?.substring(0, 50)}... — ${q.accuracy?.toFixed(
+          1
+        )}%</li>`
+    )
     .join("");
 
   const quizDayOfWeek = (longTerm.quizDayOfWeek || [])
-    .map(d => `<li>${_dayName(d.day)} — ${d.count}</li>`)
+    .map((d) => `<li>${_dayName(d.day)} — ${d.count}</li>`)
     .join("");
   const quizTimeOfDay = (longTerm.quizTimeOfDay || [])
-    .map(t => `<li>${t.hour}:00 — ${t.count}</li>`)
+    .map((t) => `<li>${t.hour}:00 — ${t.count}</li>`)
     .join("");
 
   container.innerHTML = `
@@ -145,7 +160,15 @@ function renderCumulativeStats(longTerm) {
 }
 
 function _dayName(dow) {
-  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   return days[dow - 1] || "Unknown";
 }
 

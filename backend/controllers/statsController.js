@@ -1,8 +1,8 @@
 // controllers/statsController.js
-'use strict';
+"use strict";
 
-const behaviorAnalysis = require('../services/behaviorAnalysis');
-const { query }        = require('../config/db');
+const behaviorAnalysis = require("../services/behaviorAnalysis");
+const { query } = require("../config/db");
 
 // GET /api/stats/dashboard
 async function dashboard(req, res) {
@@ -10,32 +10,37 @@ async function dashboard(req, res) {
     const stats = await behaviorAnalysis.getDashboardStats(req.user.id);
     return res.json(stats);
   } catch (err) {
-    console.error('[dashboard]', err);
-    return res.status(500).json({ error: 'Failed to load dashboard stats.' });
+    console.error("[dashboard]", err);
+    return res.status(500).json({ error: "Failed to load dashboard stats." });
   }
 }
 
 // GET /api/stats/weakest?limit=10
 async function weakest(req, res) {
   try {
-    const limit = Math.min(parseInt(req.query.limit || '10'), 50);
-    const chars = await behaviorAnalysis.getWeakestCharacters(req.user.id, limit);
+    const limit = Math.min(parseInt(req.query.limit || "10"), 50);
+    const chars = await behaviorAnalysis.getWeakestCharacters(
+      req.user.id,
+      limit
+    );
     return res.json({ characters: chars });
   } catch (err) {
-    console.error('[weakest]', err);
-    return res.status(500).json({ error: 'Failed to fetch weakest characters.' });
+    console.error("[weakest]", err);
+    return res
+      .status(500)
+      .json({ error: "Failed to fetch weakest characters." });
   }
 }
 
 // GET /api/stats/weekly?days=7
 async function weekly(req, res) {
   try {
-    const days  = Math.min(parseInt(req.query.days || '7'), 90);
+    const days = Math.min(parseInt(req.query.days || "7"), 90);
     const trend = await behaviorAnalysis.getWeeklyTrend(req.user.id, days);
     return res.json({ trend });
   } catch (err) {
-    console.error('[weekly]', err);
-    return res.status(500).json({ error: 'Failed to fetch weekly trend.' });
+    console.error("[weekly]", err);
+    return res.status(500).json({ error: "Failed to fetch weekly trend." });
   }
 }
 
@@ -48,8 +53,10 @@ async function timeOfDay(req, res) {
     ]);
     return res.json({ insights, optimalStudyTime: optimal });
   } catch (err) {
-    console.error('[timeOfDay]', err);
-    return res.status(500).json({ error: 'Failed to fetch time-of-day stats.' });
+    console.error("[timeOfDay]", err);
+    return res
+      .status(500)
+      .json({ error: "Failed to fetch time-of-day stats." });
   }
 }
 
@@ -57,9 +64,9 @@ async function timeOfDay(req, res) {
 async function characterPerformance(req, res) {
   try {
     const userId = req.user.id;
-    const type   = req.query.type || null;
-    const page   = Math.max(1, parseInt(req.query.page  || '1'));
-    const limit  = Math.min(   parseInt(req.query.limit || '20'), 100);
+    const type = req.query.type || null;
+    const page = Math.max(1, parseInt(req.query.page || "1"));
+    const limit = Math.min(parseInt(req.query.limit || "20"), 100);
     const offset = (page - 1) * limit;
 
     const rows = await query(
@@ -71,7 +78,7 @@ async function characterPerformance(req, res) {
        FROM performance_stats ps
        JOIN characters c ON c.id = ps.character_id
        WHERE ps.user_id = ?
-         ${type ? 'AND c.type = ?' : ''}
+         ${type ? "AND c.type = ?" : ""}
        ORDER BY ps.weakness_score DESC
        LIMIT ? OFFSET ?`,
       type ? [userId, type, limit, offset] : [userId, limit, offset]
@@ -80,21 +87,23 @@ async function characterPerformance(req, res) {
     const [[{ total }]] = await query(
       `SELECT COUNT(*) AS total FROM performance_stats ps
        JOIN characters c ON c.id = ps.character_id
-       WHERE ps.user_id = ? ${type ? 'AND c.type = ?' : ''}`,
+       WHERE ps.user_id = ? ${type ? "AND c.type = ?" : ""}`,
       type ? [userId, type] : [userId]
-    ).then(r => [r]);
+    ).then((r) => [r]);
 
     return res.json({ characters: rows, total, page, limit });
   } catch (err) {
-    console.error('[characterPerformance]', err);
-    return res.status(500).json({ error: 'Failed to fetch character performance.' });
+    console.error("[characterPerformance]", err);
+    return res
+      .status(500)
+      .json({ error: "Failed to fetch character performance." });
   }
 }
 
 // GET /api/stats/quiz-history
 async function quizHistory(req, res) {
   try {
-    const limit = Math.min(parseInt(req.query.limit || '20'), 100);
+    const limit = Math.min(parseInt(req.query.limit || "20"), 100);
     const sessions = await query(
       `SELECT qs.*, sl.title_en, sl.title_vi
        FROM quiz_sessions qs
@@ -149,9 +158,16 @@ async function quizHistory(req, res) {
       timeOfDay: timeOfDayStats,
     });
   } catch (err) {
-    console.error('[quizHistory]', err);
-    return res.status(500).json({ error: 'Failed to fetch quiz history.' });
+    console.error("[quizHistory]", err);
+    return res.status(500).json({ error: "Failed to fetch quiz history." });
   }
 }
 
-module.exports = { dashboard, weakest, weekly, timeOfDay, characterPerformance, quizHistory };
+module.exports = {
+  dashboard,
+  weakest,
+  weekly,
+  timeOfDay,
+  characterPerformance,
+  quizHistory,
+};
