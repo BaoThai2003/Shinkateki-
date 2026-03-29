@@ -90,27 +90,63 @@ function renderCumulativeStats(longTerm) {
     )
     .join("");
 
+  const quizSessions = (longTerm.quizSessions || [])
+    .map(s => `<li>${s.session_type}: ${s.count} sessions, ${s.avg_accuracy?.toFixed(1)}% avg</li>`)
+    .join("");
+
+  const mostCorrectQ = (longTerm.mostCorrectQuestions || [])
+    .map(q => `<li>${q.question_text_en?.substring(0, 50)}... — ${q.accuracy?.toFixed(1)}%</li>`)
+    .join("");
+  const mostIncorrectQ = (longTerm.mostIncorrectQuestions || [])
+    .map(q => `<li>${q.question_text_en?.substring(0, 50)}... — ${q.accuracy?.toFixed(1)}%</li>`)
+    .join("");
+
+  const quizDayOfWeek = (longTerm.quizDayOfWeek || [])
+    .map(d => `<li>${_dayName(d.day)} — ${d.count}</li>`)
+    .join("");
+  const quizTimeOfDay = (longTerm.quizTimeOfDay || [])
+    .map(t => `<li>${t.hour}:00 — ${t.count}</li>`)
+    .join("");
+
   container.innerHTML = `
     <div class="stats-card">
-      <h4>Cumulative Stats</h4>
+      <h4>Character Learning Stats</h4>
       <p><strong>Total Attempts:</strong> ${longTerm.totalAttempts}</p>
       <p><strong>Total Correct:</strong> ${longTerm.totalCorrect}</p>
       <p><strong>Total Wrong:</strong> ${longTerm.totalWrong}</p>
       <p><strong>Overall Accuracy:</strong> ${longTerm.accuracy}%</p>
-      <p><strong>Top Correct</strong></p>
+      <p><strong>Top Correct Characters</strong></p>
       <ul>${topCorrect || "<li>Insufficient data</li>"}</ul>
-      <p><strong>Top Incorrect</strong></p>
+      <p><strong>Top Incorrect Characters</strong></p>
       <ul>${topWrong || "<li>Insufficient data</li>"}</ul>
       <p><strong>Peak Time Slots</strong></p>
       <ul>${(longTerm.habitTimeOfDay || [])
         .map((t) => `<li>${t.label} (${t.hour}:00) — ${t.count}</li>`)
         .join("")}</ul>
-      <p><strong>Weekly Logins</strong></p>
+      <p><strong>Weekly Activity</strong></p>
       <ul>${(longTerm.habitWeekDay || [])
         .map((d) => `<li>${d.day} — ${d.count}</li>`)
         .join("")}</ul>
     </div>
+    <div class="stats-card">
+      <h4>Quiz History Stats</h4>
+      <p><strong>Quiz Sessions</strong></p>
+      <ul>${quizSessions || "<li>No quiz sessions yet</li>"}</ul>
+      <p><strong>Most Correct Questions</strong></p>
+      <ul>${mostCorrectQ || "<li>Insufficient data</li>"}</ul>
+      <p><strong>Most Incorrect Questions</strong></p>
+      <ul>${mostIncorrectQ || "<li>Insufficient data</li>"}</ul>
+      <p><strong>Quiz Days of Week</strong></p>
+      <ul>${quizDayOfWeek || "<li>No data</li>"}</ul>
+      <p><strong>Quiz Times of Day</strong></p>
+      <ul>${quizTimeOfDay || "<li>No data</li>"}</ul>
+    </div>
   `;
+}
+
+function _dayName(dow) {
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  return days[dow - 1] || "Unknown";
 }
 
 function renderAll(dash) {

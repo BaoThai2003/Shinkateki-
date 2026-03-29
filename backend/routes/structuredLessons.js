@@ -12,6 +12,7 @@ const {
   submitQuizAttempt,
   getQuizResults,
   getReviewQuiz,
+  saveQuizSession,
 } = require("../controllers/structuredLessonsController");
 
 // All routes require authentication
@@ -37,5 +38,8 @@ router.post("/quiz/attempt", submitQuizAttempt);
 
 // Get quiz results for a lesson
 router.get("/:id/quiz/results", getQuizResults);
+
+// Save quiz session
+router.post("/quiz/session", saveQuizSession);
 
 module.exports = router;

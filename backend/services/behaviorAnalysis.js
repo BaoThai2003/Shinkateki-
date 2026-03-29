@@ -150,7 +150,7 @@ async function getLearningVelocity(userId) {
 // ── Overall Dashboard Stats ──────────────────────────────────────
 
 async function getDashboardStats(userId) {
-  const [overall, velocity, weakest, timeInsights, optimal, weekly] =
+  const [overall, velocity, weakest, timeInsights, optimal, weekly, quizHistory] =
     await Promise.all([
       _getOverallStats(userId),
       getLearningVelocity(userId),
@@ -158,6 +158,7 @@ async function getDashboardStats(userId) {
       getTimeOfDayInsights(userId),
       getOptimalStudyTime(userId),
       getWeeklyTrend(userId, 7),
+      getQuizHistoryStats(userId),
     ]);
 
   const longTerm = await getLongTermStats(userId);
@@ -175,7 +176,7 @@ async function getDashboardStats(userId) {
     timeInsights,
     optimalStudyTime: optimal,
     weeklyTrend: weekly,
-    longTerm,
+    longTerm: { ...longTerm, ...quizHistory },
     recommendations,
   };
 }
@@ -270,6 +271,61 @@ async function getLongTermStats(userId) {
       day: _dayName(r.day_of_week),
       count: r.total,
     })),
+  };
+}
+
+async function getQuizHistoryStats(userId) {
+  // Quiz sessions
+  const sessions = await query(
+    `SELECT session_type, COUNT(*) as count, AVG(accuracy) as avg_accuracy
+     FROM quiz_sessions
+     WHERE user_id = ?
+     GROUP BY session_type`,
+    [userId]
+  );
+
+  // Most correct/incorrect questions
+  const questionStats = await query(
+    `SELECT qq.question_text_en, qq.question_text_vi,
+            COUNT(*) as total_attempts,
+            SUM(uqa.is_correct) as correct_count,
+            (SUM(uqa.is_correct) / COUNT(*)) * 100 as accuracy
+     FROM user_quiz_attempts uqa
+     JOIN quiz_questions qq ON qq.id = uqa.question_id
+     WHERE uqa.user_id = ?
+     GROUP BY qq.id
+     ORDER BY accuracy DESC`,
+    [userId]
+  );
+
+  const mostCorrectQuestions = questionStats.slice(0, 5);
+  const mostIncorrectQuestions = questionStats.slice(-5).reverse();
+
+  // User behavior for quizzes
+  const dayOfWeekStats = await query(
+    `SELECT DAYOFWEEK(completed_at) as day, COUNT(*) as count
+     FROM quiz_sessions
+     WHERE user_id = ?
+     GROUP BY DAYOFWEEK(completed_at)
+     ORDER BY day`,
+    [userId]
+  );
+
+  const timeOfDayStats = await query(
+    `SELECT HOUR(completed_at) as hour, COUNT(*) as count
+     FROM quiz_sessions
+     WHERE user_id = ?
+     GROUP BY HOUR(completed_at)
+     ORDER BY hour`,
+    [userId]
+  );
+
+  return {
+    quizSessions: sessions,
+    mostCorrectQuestions,
+    mostIncorrectQuestions,
+    quizDayOfWeek: dayOfWeekStats,
+    quizTimeOfDay: timeOfDayStats,
   };
 }
 

@@ -296,6 +296,14 @@ async function finishQuiz() {
       answers: quizState.answers,
     });
 
+    // Save quiz session
+    await api.post("/structured-lessons/quiz/session", {
+      sessionType: "quick-quiz",
+      totalQuestions: data.results ? data.results.length : 0,
+      correctAnswers: data.results ? data.results.filter(r => r.isCorrect).length : 0,
+      accuracy: data.accuracy,
+    });
+
     showQuizSection("results");
     renderResults(data);
 

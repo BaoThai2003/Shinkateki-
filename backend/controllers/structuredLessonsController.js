@@ -127,7 +127,8 @@ async function getLesson(req, res) {
     }
 
     // Check if lesson is unlocked
-    if (!lesson.is_unlocked) {
+    const lessonNumber = lesson.lesson_number;
+    if (!lesson.is_unlocked && lessonNumber !== 1) {
       if (Array.isArray(prerequisites) && prerequisites.length > 0) {
         const completedPrerequisites = await query(
           `
@@ -143,9 +144,12 @@ async function getLesson(req, res) {
             .json({ error: "Lesson prerequisites not met." });
         }
       } else {
-        // Allow first lesson or no prerequisites
+        // Allow lessons with no prerequisites
         lesson.is_unlocked = 1;
       }
+    } else {
+      // Always allow lesson 1
+      lesson.is_unlocked = 1;
     }
 
     // Get vocabulary for this lesson
@@ -414,12 +418,21 @@ async function getQuizResults(req, res) {
   }
 }
 
-module.exports = {
-  getChapters,
-  getLesson,
-  completeLesson,
-  getLessonQuiz,
-  submitQuizAttempt,
-  getQuizResults,
-  getReviewQuiz,
-};
+// Save quiz session for stats
+async function saveQuizSession(req, res) {
+  try {
+    const userId = req.user.id;
+    const { sessionType, lessonId, totalQuestions, correctAnswers, accuracy } = req.body;
+
+    await query(
+      `INSERT INTO quiz_sessions (user_id, session_type, lesson_id, total_questions, correct_answers, accuracy)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [userId, sessionType, lessonId || null, totalQuestions, correctAnswers, accuracy]
+    );
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("[saveQuizSession]", err);
+    return res.status(500).json({ error: "Failed to save quiz session." });
+  }
+}

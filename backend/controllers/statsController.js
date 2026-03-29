@@ -91,4 +91,67 @@ async function characterPerformance(req, res) {
   }
 }
 
-module.exports = { dashboard, weakest, weekly, timeOfDay, characterPerformance };
+// GET /api/stats/quiz-history
+async function quizHistory(req, res) {
+  try {
+    const limit = Math.min(parseInt(req.query.limit || '20'), 100);
+    const sessions = await query(
+      `SELECT qs.*, sl.title_en, sl.title_vi
+       FROM quiz_sessions qs
+       LEFT JOIN structured_lessons sl ON sl.id = qs.lesson_id
+       WHERE qs.user_id = ?
+       ORDER BY qs.completed_at DESC
+       LIMIT ?`,
+      [req.user.id, limit]
+    );
+
+    // Get most correct/incorrect questions
+    const questionStats = await query(
+      `SELECT qq.id, qq.question_text_en, qq.question_text_vi,
+              COUNT(*) as total_attempts,
+              SUM(uqa.is_correct) as correct_count,
+              (SUM(uqa.is_correct) / COUNT(*)) * 100 as accuracy
+       FROM user_quiz_attempts uqa
+       JOIN quiz_questions qq ON qq.id = uqa.question_id
+       WHERE uqa.user_id = ?
+       GROUP BY qq.id
+       ORDER BY accuracy DESC`,
+      [req.user.id]
+    );
+
+    const mostCorrect = questionStats.slice(0, 5);
+    const mostIncorrect = questionStats.slice(-5).reverse();
+
+    // User behavior
+    const dayOfWeekStats = await query(
+      `SELECT DAYOFWEEK(completed_at) as day, COUNT(*) as count
+       FROM quiz_sessions
+       WHERE user_id = ?
+       GROUP BY DAYOFWEEK(completed_at)
+       ORDER BY day`,
+      [req.user.id]
+    );
+
+    const timeOfDayStats = await query(
+      `SELECT HOUR(completed_at) as hour, COUNT(*) as count
+       FROM quiz_sessions
+       WHERE user_id = ?
+       GROUP BY HOUR(completed_at)
+       ORDER BY hour`,
+      [req.user.id]
+    );
+
+    return res.json({
+      sessions,
+      mostCorrect,
+      mostIncorrect,
+      dayOfWeek: dayOfWeekStats,
+      timeOfDay: timeOfDayStats,
+    });
+  } catch (err) {
+    console.error('[quizHistory]', err);
+    return res.status(500).json({ error: 'Failed to fetch quiz history.' });
+  }
+}
+
+module.exports = { dashboard, weakest, weekly, timeOfDay, characterPerformance, quizHistory };

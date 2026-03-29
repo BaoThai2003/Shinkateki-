@@ -114,21 +114,8 @@ async function openLesson(lessonId) {
   try {
     currentLesson = await api.request("GET", `/structured-lessons/${lessonId}`);
 
-    const prerequisites = Array.isArray(currentLesson.prerequisites)
-      ? currentLesson.prerequisites
-      : [];
-
-    if (!currentLesson.is_unlocked && prerequisites.length > 0) {
-      alert(
-        "This lesson is locked. Please complete the prerequisite lessons first."
-      );
-      return;
-    }
-
-    if (!currentLesson.is_unlocked && prerequisites.length === 0) {
-      // allow first lesson unlock path
-      currentLesson.is_unlocked = true;
-    }
+    // Allow access to lesson if it exists, regardless of unlock status
+    // (Backend will handle prerequisites)
 
     showView("lesson");
     renderLesson();
@@ -322,6 +309,15 @@ async function finishQuiz() {
       `/structured-lessons/${currentLesson.id}/quiz/results${sinceParam}`
     );
 
+    // Save quiz session
+    await api.request("POST", "/structured-lessons/quiz/session", {
+      sessionType: "lesson-review",
+      lessonId: currentLesson.id,
+      totalQuestions: results.total_attempts,
+      correctAnswers: results.correct_answers,
+      accuracy: results.accuracy,
+    });
+
     // Track instant lesson quiz stats for dashboard/quick look
     window.instantStats = {
       source: `lesson-${currentLesson.id}`,
@@ -335,7 +331,8 @@ async function finishQuiz() {
     };
 
     // Check if passed (75% accuracy)
-    if (results.accuracy >= 75) {
+    const passed = results.accuracy >= 75;
+    if (passed) {
       // Mark lesson as completed if not already
       if (!currentLesson.is_completed) {
         await api.request(
@@ -344,17 +341,47 @@ async function finishQuiz() {
         );
         currentLesson.is_completed = true;
       }
-
-      alert(
-        `Congratulations! You passed with ${results.accuracy}% accuracy. Lesson completed!`
-      );
-    } else {
-      alert(
-        `You scored ${results.accuracy}%. You need 75% to pass. Try again!`
-      );
     }
 
-    showView("learning");
+    // Show immediate stats
+    showView("lesson-quiz");
+    const contentEl = document.getElementById("lesson-quiz-content");
+    const actionsEl = document.getElementById("lesson-quiz-actions");
+
+    contentEl.innerHTML = `
+      <div class="quiz-results">
+        <h3>${passed ? "Congratulations!" : "Keep practicing!"}</h3>
+        <div class="results-stats">
+          <div class="stat-item">
+            <span class="stat-label">Accuracy:</span>
+            <span class="stat-value">${results.accuracy}%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Correct:</span>
+            <span class="stat-value">${results.correct_answers}/${results.total_attempts}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Incorrect:</span>
+            <span class="stat-value">${results.total_attempts - results.correct_answers}/${results.total_attempts}</span>
+          </div>
+        </div>
+        ${results.attempts && results.attempts.filter(a => !a.is_correct).length > 0 ? `
+          <div class="incorrect-list">
+            <h4>Questions to review:</h4>
+            <ul>
+              ${results.attempts.filter(a => !a.is_correct).slice(0, 5).map(a => `<li>${a.question_id || 'Question'}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    actionsEl.innerHTML = `
+      <button class="btn-primary" onclick="showView('learning'); loadChapters();">Back to Lessons</button>
+      <button class="btn-ghost" onclick="showView('stats'); window.loadStats?.();">View Full Stats</button>
+    `;
+
+    // Refresh chapters to show updated progress
     loadChapters();
   } catch (err) {
     console.error("Failed to get quiz results:", err);
