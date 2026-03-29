@@ -154,7 +154,18 @@ CREATE TABLE user_quiz_attempts (
     FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE CASCADE,
     FOREIGN KEY (question_id) REFERENCES quiz_questions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
+CREATE TABLE IF NOT EXISTS quiz_sessions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    session_type VARCHAR(50) NOT NULL,
+    lesson_id INT NULL,
+    total_questions INT NOT NULL,
+    correct_answers INT NOT NULL,
+    accuracy DECIMAL(5,2) NOT NULL,
+    completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 -- ============================================================
 -- LESSONS
 -- User-created lesson/quiz content

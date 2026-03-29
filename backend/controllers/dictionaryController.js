@@ -3,6 +3,55 @@
 
 const { query } = require("../config/db");
 
+function _normalizeTerm(term) {
+  return String(term || "").trim().toLowerCase();
+}
+
+function _levenshtein(a, b) {
+  a = _normalizeTerm(a);
+  b = _normalizeTerm(b);
+  const matrix = Array.from({ length: a.length + 1 }, () => []);
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[a.length][b.length];
+}
+
+function _fuzzyMatch(word, query) {
+  const key = _normalizeTerm(query);
+  if (!key) return false;
+
+  const searchFields = [
+    word.romaji,
+    word.hiragana,
+    word.katakana,
+    word.kanji,
+    word.english_meaning,
+    word.vietnamese_meaning,
+  ];
+
+  const normalizedWord = searchFields
+    .filter(Boolean)
+    .map((s) => _normalizeTerm(s));
+
+  if (normalizedWord.some((source) => source.includes(key))) return true;
+
+  const closeEnough = normalizedWord.some(
+    (source) => _levenshtein(source, key) <= Math.max(2, Math.floor(key.length * 0.2))
+  );
+
+  return closeEnough;
+}
+
 // Get all vocabulary from completed lessons
 async function getDictionary(req, res) {
   try {
@@ -40,7 +89,20 @@ async function getDictionary(req, res) {
 
     sql += ` ORDER BY sl.lesson_number, v.id`;
 
-    const vocabulary = await query(sql, params);
+    let vocabulary = await query(sql, params);
+
+    // Fuzzy search fallback for non-completed vocabulary or typos
+    if (search && vocabulary.length === 0) {
+      const allVocab = await query(
+        `SELECT v.*, sl.lesson_number, sl.title_en, sl.title_vi
+         FROM vocabulary v
+         JOIN structured_lessons sl ON sl.id = v.lesson_id
+         ORDER BY sl.lesson_number, v.id
+         LIMIT 500`
+      );
+
+      vocabulary = allVocab.filter((word) => _fuzzyMatch(word, search));
+    }
 
     let formattedVocabulary = vocabulary.map((word) => ({
       id: word.id,
@@ -159,7 +221,7 @@ async function searchVocabulary(req, res) {
       return res.json([]);
     }
 
-    const vocabulary = await query(
+    let vocabulary = await query(
       `
       SELECT v.*, sl.lesson_number
       FROM vocabulary v
@@ -180,6 +242,17 @@ async function searchVocabulary(req, res) {
         `%${searchTerm}%`,
       ]
     );
+
+    if (!vocabulary.length) {
+      const allVocab = await query(
+        `SELECT v.*, sl.lesson_number
+         FROM vocabulary v
+         JOIN structured_lessons sl ON sl.id = v.lesson_id
+         ORDER BY sl.lesson_number, v.id
+         LIMIT 1000`
+      );
+      vocabulary = allVocab.filter((word) => _fuzzyMatch(word, searchTerm));
+    }
 
     const formattedVocabulary = vocabulary.map((word) => ({
       id: word.id,

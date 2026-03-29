@@ -8,6 +8,72 @@ let currentQuiz = null;
 let quizQuestions = [];
 let quizCurrentIndex = 0;
 let quizAnswers = [];
+let dictionaryQuery = "";
+const DICTIONARY_DEBOUNCE_TIME = 300;
+
+function debounce(fn, delay) {
+  let timer = null;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+function _highlight(text, query) {
+  if (!query || !text) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`(${escaped})`, "gi");
+  return String(text).replace(re, "<mark>$1</mark>");
+}
+
+function _getSearchHistory() {
+  return JSON.parse(localStorage.getItem("dictionaryHistory") || "[]");
+}
+
+function _addSearchHistory(term) {
+  const list = _getSearchHistory();
+  const trimmed = String(term || "").trim();
+  if (!trimmed) return;
+  const updated = [trimmed, ...list.filter((x) => x !== trimmed)].slice(0, 10);
+  localStorage.setItem("dictionaryHistory", JSON.stringify(updated));
+  _renderSearchHistory(updated);
+}
+
+function _renderSearchHistory(hItems) {
+  const el = document.getElementById("dictionary-recent");
+  if (!el) return;
+  const items = (hItems || _getSearchHistory()).slice(0, 10);
+  el.innerHTML = items
+    .map(
+      (item) =>
+        `<a href="#" class="dictionary-history-item" data-term="${item}">${item}</a>`
+    )
+    .join(", ");
+}
+
+function _renderRecentlyViewed(items) {
+  const container = document.getElementById("dictionary-recently-viewed");
+  if (!container) return;
+  const recent = items || JSON.parse(localStorage.getItem("dictionaryViewed") || "[]");
+  if (!recent.length) {
+    container.innerHTML = "<p>No recently viewed words yet.</p>";
+    return;
+  }
+
+  container.innerHTML = `
+    <h4>Recently Viewed</h4>
+    <ul class="recent-words">
+      ${recent
+        .slice(0, 10)
+        .map(
+          (w) =>
+            `<li>${w.kanji || w.hiragana || w.katakana || "?"} <small>${w.romaji}</small> - ${w.meaning}</li>`
+        )
+        .join("")}
+    </ul>
+  `;
+}
+
 
 // ── Navigation ──────────────────────────────────────────────────
 
@@ -405,10 +471,16 @@ async function finishQuiz() {
 // ── Dictionary ──────────────────────────────────────────────────
 
 async function loadDictionary(searchTerm = "") {
+  dictionaryQuery = String(searchTerm || "").trim();
   const container = document.getElementById("dictionary-content");
+  const suggestions = document.getElementById("dictionary-suggestions");
+  if (suggestions) {
+    suggestions.classList.toggle("hidden", !dictionaryQuery || dictionaryQuery.length < 2);
+  }
+
   try {
-    const params = searchTerm
-      ? `?search=${encodeURIComponent(searchTerm)}`
+    const params = dictionaryQuery
+      ? `?search=${encodeURIComponent(dictionaryQuery)}`
       : "";
     const vocabulary = await api.request("GET", `/dictionary${params}`);
 
@@ -423,6 +495,8 @@ async function loadDictionary(searchTerm = "") {
       const wordEl = createVocabularyElement(word);
       container.appendChild(wordEl);
     });
+    _renderRecentlyViewed();
+    await loadDictionarySuggestions(dictionaryQuery);
   } catch (err) {
     console.error("Failed to load dictionary:", err);
     if (err.status === 401 || err.status === 403) {
@@ -436,13 +510,38 @@ async function loadDictionary(searchTerm = "") {
 }
 
 function createVocabularyElement(word) {
+  const query = dictionaryQuery || "";
+  const highlightedKanji = _highlight(word.kanji || word.hiragana || "", query);
+  const highlightedRomaji = _highlight(word.romaji || "", query);
+  const highlightedMeaning = _highlight(word.meaning || "", query);
+  const highlightedExample = _highlight(word.example_sentence || "", query);
+
   const wordDiv = document.createElement("div");
   wordDiv.className = "vocabulary-entry";
+
+  wordDiv.dataset.wordId = word.id;
+  wordDiv.addEventListener("click", () => {
+    const viewed = JSON.parse(localStorage.getItem("dictionaryViewed") || "[]");
+    const existing = viewed.filter((x) => x.id !== word.id);
+    const next = [
+      {
+        id: word.id,
+        kanji: word.kanji,
+        hiragana: word.hiragana,
+        katakana: word.katakana,
+        romaji: word.romaji,
+        meaning: word.meaning,
+      },
+      ...existing,
+    ].slice(0, 10);
+    localStorage.setItem("dictionaryViewed", JSON.stringify(next));
+    _renderRecentlyViewed(next);
+  });
 
   wordDiv.innerHTML = `
     <div class="vocab-header">
       <div class="vocab-japanese">
-        ${normalizeText(word.kanji || word.hiragana)}
+        ${normalizeText(highlightedKanji)}
         ${
           word.katakana && word.katakana !== word.hiragana
             ? `(${normalizeText(word.katakana)})`
@@ -451,22 +550,54 @@ function createVocabularyElement(word) {
       </div>
       <div class="vocab-romaji">${normalizeText(word.romaji)}</div>
     </div>
-    <div class="vocab-meaning">${word.meaning}</div>
+    <div class="vocab-meaning">${normalizeText(highlightedMeaning)}</div>
     ${
       word.part_of_speech
-        ? `<div class="vocab-pos">${word.part_of_speech}</div>`
+        ? `<div class="vocab-pos">${normalizeText(word.part_of_speech)}</div>`
         : ""
     }
     ${
       word.example_sentence
-        ? `<div class="vocab-example">"${word.example_sentence}"</div>`
+        ? `<div class="vocab-example">"${normalizeText(highlightedExample)}"</div>`
         : ""
     }
   `;
 
   return wordDiv;
 }
+async function loadDictionarySuggestions(searchTerm = "") {
+  const suggestions = document.getElementById("dictionary-suggestions");
+  if (!suggestions) return;
+  const q = String(searchTerm || "").trim();
+  if (!q || q.length < 2) {
+    suggestions.classList.add("hidden");
+    suggestions.innerHTML = "";
+    return;
+  }
 
+  try {
+    const data = await api.request("GET", `/dictionary/search?q=${encodeURIComponent(q)}`);
+    if (!Array.isArray(data) || data.length === 0) {
+      suggestions.innerHTML = "<li>No suggestions found</li>";
+      suggestions.classList.remove("hidden");
+      return;
+    }
+
+    suggestions.innerHTML = data
+      .slice(0, 10)
+      .map(
+        (w) =>
+          `<li data-term="${w.romaji || w.kanji || w.hiragana || w.katakana}">${w.kanji || w.hiragana || w.katakana} (${w.romaji}) — ${w.meaning}</li>`
+      )
+      .join("");
+
+    suggestions.classList.remove("hidden");
+  } catch (err) {
+    console.error("Failed to load dictionary suggestions", err);
+    suggestions.classList.add("hidden");
+    suggestions.innerHTML = "";
+  }
+}
 // ── Event Listeners ─────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -494,10 +625,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
   // Dictionary search
+  const debouncedLookup = debounce((value) => {
+    dictionaryQuery = value.trim();
+    _addSearchHistory(value);
+    loadDictionary(value);
+    loadDictionarySuggestions(value);
+  }, DICTIONARY_DEBOUNCE_TIME);
+
   document
     .getElementById("dictionary-search")
     ?.addEventListener("input", (e) => {
-      loadDictionary(e.target.value);
+      debouncedLookup(e.target.value);
     });
 
   document
@@ -506,6 +644,24 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       await addVocabularyWord();
     });
+
+  document
+    .getElementById("dictionary-suggestions")
+    ?.addEventListener("click", (e) => {
+      const item = e.target.closest("li[data-term]");
+      if (item) {
+        const term = item.dataset.term;
+        const input = document.getElementById("dictionary-search");
+        if (input) input.value = term;
+        dictionaryQuery = term;
+        _addSearchHistory(term);
+        loadDictionary(term);
+        loadDictionarySuggestions(term);
+      }
+    });
+
+  // Show previous history at startup
+  _renderSearchHistory();
 });
 
 async function addVocabularyWord() {

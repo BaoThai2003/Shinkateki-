@@ -14,9 +14,11 @@ const profileRoutes = require("./routes/profile");
 const lessonRoutes = require("./routes/lessons");
 const structuredLessonsRoutes = require("./routes/structuredLessons");
 const dictionaryRoutes = require("./routes/dictionary");
+const structuredLessonsController = require("./controllers/structuredLessonsController");
+const authMiddleware = require("./middleware/auth");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000; // match frontend default API_BASE
 console.log(`Starting server on port ${PORT}`);
 
 // ── Middleware ────────────────────────────────────────────────────
@@ -49,6 +51,13 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/structured-lessons", structuredLessonsRoutes);
 app.use("/api/dictionary", dictionaryRoutes);
+
+// Alias for legacy route and assignment requirement
+app.get(
+  "/api/chapters",
+  authMiddleware.authenticate,
+  structuredLessonsController.getChapters
+);
 
 // ── Health check ──────────────────────────────────────────────────
 

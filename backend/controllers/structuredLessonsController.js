@@ -18,7 +18,7 @@ async function getChapters(req, res) {
         s.description_en as section_description_en, s.description_vi as section_description_vi,
         s.order_index as section_order,
         sl.id as lesson_id, sl.lesson_number, sl.title_en as lesson_title_en, sl.title_vi as lesson_title_vi,
-        sl.type, sl.script_type, sl.prerequisites, sl.unlocks,
+        sl.content_en, sl.content_vi, sl.type, sl.script_type, sl.prerequisites, sl.unlocks,
         ulp.is_completed, ulp.is_unlocked
       FROM chapters c
       LEFT JOIN sections s ON s.chapter_id = c.id
@@ -70,6 +70,10 @@ async function getChapters(req, res) {
           lesson_number: row.lesson_number,
           title:
             userLanguage === "vi" ? row.lesson_title_vi : row.lesson_title_en,
+          content_en: row.content_en,
+          content_vi: row.content_vi,
+          content:
+            userLanguage === "vi" ? row.content_vi : row.content_en,
           type: row.type,
           script_type: row.script_type,
           prerequisites,
@@ -201,7 +205,7 @@ async function getLesson(req, res) {
 async function getReviewQuiz(req, res) {
   try {
     const userLanguage = req.user.language || "en";
-    const size = Math.min(parseInt(req.query.size || "15"), 100);
+    const size = Math.min(Math.max(parseInt(req.query.size || "15"), 10), 20);
     const script = (req.query.script || "").toLowerCase();
 
     const scriptFilter =
