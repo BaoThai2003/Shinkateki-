@@ -8,6 +8,7 @@ const {
   getDictionary,
   getVocabularyByLesson,
   searchVocabulary,
+  addVocabulary,
 } = require("../controllers/dictionaryController");
 
 // All routes require authentication
