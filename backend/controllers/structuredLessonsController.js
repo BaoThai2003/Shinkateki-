@@ -444,3 +444,14 @@ async function saveQuizSession(req, res) {
     return res.status(500).json({ error: "Failed to save quiz session." });
   }
 }
+
+module.exports = {
+  getChapters,
+  getLesson,
+  completeLesson,
+  getLessonQuiz,
+  submitQuizAttempt,
+  getQuizResults,
+  getReviewQuiz,
+  saveQuizSession,
+};
