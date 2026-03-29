@@ -1,5 +1,4 @@
 // config/db.js
-// MySQL connection pool — shared across the entire application
 "use strict";
 
 const mysql = require("mysql2/promise");
@@ -15,12 +14,11 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   charset: "utf8mb4",
-  timezone: "+07:00", // store datetimes as UTC
+  timezone: "+07:00",
 });
 
 /**
- * Thin helper: query(sql, params) → rows[]
- * Automatically borrows a connection, executes, returns rows.
+ * query(sql, params) → rows[]
  */
 async function query(sql, params = []) {
   const [rows] = await pool.execute(sql, params);
@@ -28,8 +26,7 @@ async function query(sql, params = []) {
 }
 
 /**
- * Thin helper for single-row SELECT.
- * Returns the first row or null.
+ * queryOne
  */
 async function queryOne(sql, params = []) {
   const rows = await query(sql, params);
@@ -37,8 +34,7 @@ async function queryOne(sql, params = []) {
 }
 
 /**
- * Run multiple statements inside a single transaction.
- * callback receives a `conn` with .execute()
+ * transaction helper
  */
 async function withTransaction(callback) {
   const conn = await pool.getConnection();
@@ -53,6 +49,28 @@ async function withTransaction(callback) {
   } finally {
     conn.release();
   }
+}
+
+//
+//TEST CONNECTION + QUERY
+//
+async function testDB() {
+  try {
+    const conn = await pool.getConnection();
+    console.log("MySQL connected successfully!");
+
+    const [rows] = await conn.query("SELECT 1");
+    console.log("Query OK:", rows);
+
+    conn.release();
+  } catch (err) {
+    console.error("DB ERROR:", err.message);
+  }
+}
+
+// chỉ chạy test khi KHÔNG phải production
+if (process.env.NODE_ENV !== "production") {
+  testDB();
 }
 
 module.exports = { pool, query, queryOne, withTransaction };
