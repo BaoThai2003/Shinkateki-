@@ -54,7 +54,8 @@ function _renderSearchHistory(hItems) {
 function _renderRecentlyViewed(items) {
   const container = document.getElementById("dictionary-recently-viewed");
   if (!container) return;
-  const recent = items || JSON.parse(localStorage.getItem("dictionaryViewed") || "[]");
+  const recent =
+    items || JSON.parse(localStorage.getItem("dictionaryViewed") || "[]");
   if (!recent.length) {
     container.innerHTML = "<p>No recently viewed words yet.</p>";
     return;
@@ -67,13 +68,14 @@ function _renderRecentlyViewed(items) {
         .slice(0, 10)
         .map(
           (w) =>
-            `<li>${w.kanji || w.hiragana || w.katakana || "?"} <small>${w.romaji}</small> - ${w.meaning}</li>`
+            `<li>${w.kanji || w.hiragana || w.katakana || "?"} <small>${
+              w.romaji
+            }</small> - ${w.meaning}</li>`
         )
         .join("")}
     </ul>
   `;
 }
-
 
 // ── Navigation ──────────────────────────────────────────────────
 
@@ -475,7 +477,10 @@ async function loadDictionary(searchTerm = "") {
   const container = document.getElementById("dictionary-content");
   const suggestions = document.getElementById("dictionary-suggestions");
   if (suggestions) {
-    suggestions.classList.toggle("hidden", !dictionaryQuery || dictionaryQuery.length < 2);
+    suggestions.classList.toggle(
+      "hidden",
+      !dictionaryQuery || dictionaryQuery.length < 2
+    );
   }
 
   try {
@@ -558,7 +563,9 @@ function createVocabularyElement(word) {
     }
     ${
       word.example_sentence
-        ? `<div class="vocab-example">"${normalizeText(highlightedExample)}"</div>`
+        ? `<div class="vocab-example">"${normalizeText(
+            highlightedExample
+          )}"</div>`
         : ""
     }
   `;
@@ -576,7 +583,10 @@ async function loadDictionarySuggestions(searchTerm = "") {
   }
 
   try {
-    const data = await api.request("GET", `/dictionary/search?q=${encodeURIComponent(q)}`);
+    const data = await api.request(
+      "GET",
+      `/dictionary/search?q=${encodeURIComponent(q)}`
+    );
     if (!Array.isArray(data) || data.length === 0) {
       suggestions.innerHTML = "<li>No suggestions found</li>";
       suggestions.classList.remove("hidden");
@@ -587,7 +597,9 @@ async function loadDictionarySuggestions(searchTerm = "") {
       .slice(0, 10)
       .map(
         (w) =>
-          `<li data-term="${w.romaji || w.kanji || w.hiragana || w.katakana}">${w.kanji || w.hiragana || w.katakana} (${w.romaji}) — ${w.meaning}</li>`
+          `<li data-term="${w.romaji || w.kanji || w.hiragana || w.katakana}">${
+            w.kanji || w.hiragana || w.katakana
+          } (${w.romaji}) — ${w.meaning}</li>`
       )
       .join("");
 

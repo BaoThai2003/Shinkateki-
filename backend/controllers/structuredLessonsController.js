@@ -72,8 +72,7 @@ async function getChapters(req, res) {
             userLanguage === "vi" ? row.lesson_title_vi : row.lesson_title_en,
           content_en: row.content_en,
           content_vi: row.content_vi,
-          content:
-            userLanguage === "vi" ? row.content_vi : row.content_en,
+          content: userLanguage === "vi" ? row.content_vi : row.content_en,
           type: row.type,
           script_type: row.script_type,
           prerequisites,

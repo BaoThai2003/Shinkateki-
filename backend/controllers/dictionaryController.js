@@ -4,7 +4,9 @@
 const { query } = require("../config/db");
 
 function _normalizeTerm(term) {
-  return String(term || "").trim().toLowerCase();
+  return String(term || "")
+    .trim()
+    .toLowerCase();
 }
 
 function _levenshtein(a, b) {
@@ -46,7 +48,8 @@ function _fuzzyMatch(word, query) {
   if (normalizedWord.some((source) => source.includes(key))) return true;
 
   const closeEnough = normalizedWord.some(
-    (source) => _levenshtein(source, key) <= Math.max(2, Math.floor(key.length * 0.2))
+    (source) =>
+      _levenshtein(source, key) <= Math.max(2, Math.floor(key.length * 0.2))
   );
 
   return closeEnough;
