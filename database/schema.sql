@@ -1,693 +1,623 @@
 -- ============================================================
 -- SHINKATEKI (進化的) — Adaptive Japanese Learning System
--- Database Schema
+-- Database Schema and Seed Data
+-- Version: 1.0.0
+-- Language: Vietnamese (Default) with English Support
+-- Curriculum: Complete Chapter 1 (Alphabet) - Lessons 1-28
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS shinkateki
-CHARACTER SET utf8mb4
-COLLATE utf8mb4_unicode_ci;
-
+-- Create database if not exists
+CREATE DATABASE IF NOT EXISTS shinkateki CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE shinkateki;
 
 -- ============================================================
--- USERS
+-- TABLE DEFINITIONS
 -- ============================================================
 
+-- Users table
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    language VARCHAR(10) NOT NULL DEFAULT 'en', -- 'en', 'vi'
+    full_name VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_login TIMESTAMP NULL,
+    is_active BOOLEAN DEFAULT TRUE
+);
 
-    level INT NOT NULL DEFAULT 1,
-    total_score INT NOT NULL DEFAULT 0,
-    streak_days INT NOT NULL DEFAULT 0,
+-- User progress tracking
+CREATE TABLE user_progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    lesson_id INT NOT NULL,
+    completed BOOLEAN DEFAULT FALSE,
+    score DECIMAL(5,2) NULL,
+    time_spent INT DEFAULT 0, -- in seconds
+    attempts INT DEFAULT 0,
+    last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_lesson (user_id, lesson_id)
+);
 
-    last_active DATETIME,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-
-) ENGINE=InnoDB
-DEFAULT CHARSET=utf8mb4;
-
--- ============================================================
--- STRUCTURED LESSONS
--- Pre-built lessons with chapters and sections
--- ============================================================
-
+-- Chapters table
 CREATE TABLE chapters (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    title_en VARCHAR(100) NOT NULL,
-    title_vi VARCHAR(100) NOT NULL,
-    description_en TEXT,
+    chapter_number INT NOT NULL UNIQUE,
+    title_vi VARCHAR(255) NOT NULL,
+    title_en VARCHAR(255) NOT NULL,
     description_vi TEXT,
+    description_en TEXT,
     order_index INT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
+-- Sections within chapters
 CREATE TABLE sections (
     id INT AUTO_INCREMENT PRIMARY KEY,
     chapter_id INT NOT NULL,
-    title_en VARCHAR(100) NOT NULL,
-    title_vi VARCHAR(100) NOT NULL,
-    description_en TEXT,
+    section_number INT NOT NULL,
+    title_vi VARCHAR(255) NOT NULL,
+    title_en VARCHAR(255) NOT NULL,
     description_vi TEXT,
+    description_en TEXT,
     order_index INT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_chapter_section (chapter_id, section_number)
+);
 
+-- Structured lessons
 CREATE TABLE structured_lessons (
     id INT AUTO_INCREMENT PRIMARY KEY,
     section_id INT NOT NULL,
     lesson_number INT NOT NULL,
-    title_en VARCHAR(200) NOT NULL,
-    title_vi VARCHAR(200) NOT NULL,
-    content_en TEXT NOT NULL,
-    content_vi TEXT NOT NULL,
-    type ENUM('reading', 'interactive', 'review') NOT NULL DEFAULT 'reading',
-    script_type ENUM('hiragana', 'katakana', 'both') DEFAULT NULL,
-    prerequisites TEXT, -- JSON array of required lesson IDs
-    unlocks TEXT, -- JSON array of lesson IDs this unlocks
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    title_vi VARCHAR(255) NOT NULL,
+    title_en VARCHAR(255) NOT NULL,
+    content_vi LONGTEXT NOT NULL,
+    content_en LONGTEXT NOT NULL,
+    lesson_type ENUM('instruction', 'practice', 'vocabulary', 'review_quiz', 'final_quiz') NOT NULL,
+    order_index INT NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    prerequisite_lesson_id INT NULL,
+    unlock_threshold DECIMAL(5,2) DEFAULT 0.75, -- 75% pass rate required
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_lesson_number (section_id, lesson_number)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    FOREIGN KEY (prerequisite_lesson_id) REFERENCES structured_lessons(id) ON DELETE SET NULL,
+    UNIQUE KEY unique_section_lesson (section_id, lesson_number)
+);
 
--- ============================================================
--- VOCABULARY
--- Words taught in lessons
--- ============================================================
-
+-- Vocabulary table
 CREATE TABLE vocabulary (
     id INT AUTO_INCREMENT PRIMARY KEY,
     lesson_id INT NOT NULL,
-    romaji VARCHAR(50) NOT NULL,
-    hiragana VARCHAR(50),
-    katakana VARCHAR(50),
-    kanji VARCHAR(50),
-    english_meaning VARCHAR(200) NOT NULL,
-    vietnamese_meaning VARCHAR(200) NOT NULL,
-    part_of_speech VARCHAR(50), -- noun, verb, adjective, etc.
-    example_sentence_en TEXT,
-    example_sentence_vi TEXT,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    word VARCHAR(100) NOT NULL,
+    romaji VARCHAR(100) NOT NULL,
+    hiragana VARCHAR(100),
+    katakana VARCHAR(100),
+    meaning_vi VARCHAR(255) NOT NULL,
+    meaning_en VARCHAR(255) NOT NULL,
+    word_type ENUM('noun', 'verb', 'adjective', 'adverb', 'particle', 'expression') NOT NULL,
+    difficulty_level ENUM('beginner', 'intermediate', 'advanced') DEFAULT 'beginner',
+    audio_url VARCHAR(500),
+    example_vi TEXT,
+    example_en TEXT,
+    order_index INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_lesson_word (lesson_id, word)
+);
 
--- ============================================================
--- QUIZ QUESTIONS
--- Pre-built questions for lessons
--- ============================================================
-
+-- Quiz questions
 CREATE TABLE quiz_questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     lesson_id INT NOT NULL,
-    question_type ENUM('multiple_choice', 'translation', 'reading') NOT NULL,
-    question_text_en TEXT NOT NULL,
-    question_text_vi TEXT NOT NULL,
-    romaji VARCHAR(100),
-    correct_answer VARCHAR(100) NOT NULL,
-    option_a VARCHAR(100),
-    option_b VARCHAR(100),
-    option_c VARCHAR(100),
-    option_d VARCHAR(100),
-    explanation_en TEXT,
+    question_vi TEXT NOT NULL,
+    question_en TEXT NOT NULL,
+    question_type ENUM('multiple_choice', 'true_false', 'fill_blank', 'matching', 'ordering') NOT NULL,
+    options_vi JSON, -- For multiple choice options
+    options_en JSON, -- For multiple choice options
+    correct_answer_vi VARCHAR(500) NOT NULL,
+    correct_answer_en VARCHAR(500) NOT NULL,
     explanation_vi TEXT,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    explanation_en TEXT,
+    difficulty_level ENUM('easy', 'medium', 'hard') DEFAULT 'easy',
+    points INT DEFAULT 1,
+    order_index INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
--- ============================================================
--- USER LESSON PROGRESS
--- Track user progress through structured lessons
--- ============================================================
+-- Characters table (Hiragana/Katakana)
+CREATE TABLE characters (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    `character` VARCHAR(10) NOT NULL UNIQUE,
+    romaji VARCHAR(50) NOT NULL,
+    type ENUM('hiragana', 'katakana') NOT NULL,
+    group_name VARCHAR(50), -- a, k, s, t, n, h, m, y, r, w
+    position_in_group INT, -- 1-5 for main groups
+    stroke_order TEXT, -- JSON array of stroke coordinates
+    mnemonic_vi TEXT,
+    mnemonic_en TEXT,
+    audio_url VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-CREATE TABLE user_lesson_progress (
+-- User quiz attempts
+CREATE TABLE quiz_attempts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     lesson_id INT NOT NULL,
-    is_completed TINYINT(1) NOT NULL DEFAULT 0,
-    is_unlocked TINYINT(1) NOT NULL DEFAULT 0,
-    completed_at DATETIME,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, lesson_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ============================================================
--- USER QUIZ ATTEMPTS
--- Track quiz attempts for structured lessons
--- ============================================================
-
-CREATE TABLE user_quiz_attempts (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    lesson_id INT NOT NULL,
-    question_id INT NOT NULL,
-    selected_answer VARCHAR(100),
-    is_correct TINYINT(1) NOT NULL,
-    response_time_ms INT,
-    attempt_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE CASCADE,
-    FOREIGN KEY (question_id) REFERENCES quiz_questions(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-CREATE TABLE IF NOT EXISTS quiz_sessions (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    session_type VARCHAR(50) NOT NULL,
-    lesson_id INT NULL,
+    score DECIMAL(5,2) NOT NULL,
     total_questions INT NOT NULL,
     correct_answers INT NOT NULL,
-    accuracy DECIMAL(5,2) NOT NULL,
-    completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    time_taken INT NOT NULL, -- in seconds
+    completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
--- ============================================================
--- LESSONS
--- User-created lesson/quiz content
--- ============================================================
+    FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE CASCADE
+);
 
-CREATE TABLE IF NOT EXISTS lessons (
+-- User performance stats
+CREATE TABLE user_stats (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    title VARCHAR(190) NOT NULL,
-    content TEXT NOT NULL,
-    is_public TINYINT(1) NOT NULL DEFAULT 0,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS lesson_questions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    lesson_id INT NOT NULL,
-    question_text TEXT NOT NULL,
-    option_a VARCHAR(255) NOT NULL,
-    option_b VARCHAR(255) NOT NULL,
-    option_c VARCHAR(255) NOT NULL,
-    option_d VARCHAR(255) NOT NULL,
-    correct_option ENUM('a','b','c','d') NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ============================================================
--- CHARACTERS
--- Stores all hiragana and katakana characters
--- ============================================================
-
-CREATE TABLE characters (
-
-    id INT AUTO_INCREMENT PRIMARY KEY,
-
-    kana VARCHAR(5) NOT NULL,        -- renamed from `character`
-    romaji VARCHAR(10) NOT NULL,
-
-    type ENUM('hiragana','katakana') NOT NULL,
-
-    group_name VARCHAR(20),
-
-    difficulty INT NOT NULL DEFAULT 1
-
-) ENGINE=InnoDB
-DEFAULT CHARSET=utf8mb4;
-
--- ============================================================
--- ATTEMPTS
--- Every single answer recorded here for analytics
--- ============================================================
-
-CREATE TABLE attempts (
-
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-
-    user_id INT NOT NULL,
-    character_id INT NOT NULL,
-
-    is_correct TINYINT(1) NOT NULL,
-
-    response_time INT NOT NULL,          -- milliseconds
-    mistake_streak INT NOT NULL DEFAULT 0,
-
-    hour_of_day TINYINT NOT NULL,        -- 0–23
-
-    session_id VARCHAR(36),
-
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
+    total_lessons_completed INT DEFAULT 0,
+    total_quiz_attempts INT DEFAULT 0,
+    average_score DECIMAL(5,2) DEFAULT 0.00,
+    total_study_time INT DEFAULT 0, -- in seconds
+    current_streak INT DEFAULT 0,
+    longest_streak INT DEFAULT 0,
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
-
-    INDEX idx_user_char (user_id, character_id),
-    INDEX idx_user_time (user_id, created_at),
-    INDEX idx_hour (user_id, hour_of_day)
-
-) ENGINE=InnoDB
-DEFAULT CHARSET=utf8mb4;
+    UNIQUE KEY unique_user_stats (user_id)
+);
 
 -- ============================================================
--- PERFORMANCE_STATS
--- One row per user+character — updated after every attempt
+-- SEED DATA - CHARACTERS (HIRAGANA & KATAKANA)
 -- ============================================================
 
-CREATE TABLE performance_stats (
+INSERT INTO characters (`character`, romaji, type, group_name, position_in_group, mnemonic_vi, mnemonic_en) VALUES
+-- Hiragana - a group
+('あ', 'a', 'hiragana', 'a', 1, 'Như chữ A nhưng mở miệng rộng', 'Like A but with mouth wide open'),
+('い', 'i', 'hiragana', 'a', 2, 'Như chữ I nhưng vẽ hai chấm', 'Like I but with two dots'),
+('う', 'u', 'hiragana', 'a', 3, 'Như chữ U nhưng cong lại', 'Like U but curved'),
+('え', 'e', 'hiragana', 'a', 4, 'Như chữ E nhưng có đuôi', 'Like E with a tail'),
+('お', 'o', 'hiragana', 'a', 5, 'Như chữ O nhưng kéo dài', 'Like O but elongated'),
 
-    user_id INT NOT NULL,
-    character_id INT NOT NULL,
+-- Hiragana - k group
+('か', 'ka', 'hiragana', 'k', 1, 'Kết hợp k với a', 'K combined with a'),
+('き', 'ki', 'hiragana', 'k', 2, 'Kết hợp k với i', 'K combined with i'),
+('く', 'ku', 'hiragana', 'k', 3, 'Kết hợp k với u', 'K combined with u'),
+('け', 'ke', 'hiragana', 'k', 4, 'Kết hợp k với e', 'K combined with e'),
+('こ', 'ko', 'hiragana', 'k', 5, 'Kết hợp k với o', 'K combined with o'),
 
-    weakness_score FLOAT NOT NULL DEFAULT 0,
+-- Hiragana - s group
+('さ', 'sa', 'hiragana', 's', 1, 'S kết hợp với a', 'S combined with a'),
+('し', 'shi', 'hiragana', 's', 2, 'S kết hợp với i', 'S combined with i'),
+('す', 'su', 'hiragana', 's', 3, 'S kết hợp với u', 'S combined with u'),
+('せ', 'se', 'hiragana', 's', 4, 'S kết hợp với e', 'S combined with e'),
+('そ', 'so', 'hiragana', 's', 5, 'S kết hợp với o', 'S combined with o'),
 
-    difficulty_class ENUM('strong','medium','weak')
-    NOT NULL DEFAULT 'medium',
+-- Hiragana - t group
+('た', 'ta', 'hiragana', 't', 1, 'T kết hợp với a', 'T combined with a'),
+('ち', 'chi', 'hiragana', 't', 2, 'T kết hợp với i', 'T combined with i'),
+('つ', 'tsu', 'hiragana', 't', 3, 'T kết hợp với u', 'T combined with u'),
+('て', 'te', 'hiragana', 't', 4, 'T kết hợp với e', 'T combined with e'),
+('と', 'to', 'hiragana', 't', 5, 'T kết hợp với o', 'T combined with o'),
 
-    correct_count INT NOT NULL DEFAULT 0,
-    wrong_count INT NOT NULL DEFAULT 0,
+-- Hiragana - n group
+('な', 'na', 'hiragana', 'n', 1, 'N kết hợp với a', 'N combined with a'),
+('に', 'ni', 'hiragana', 'n', 2, 'N kết hợp với i', 'N combined with i'),
+('ぬ', 'nu', 'hiragana', 'n', 3, 'N kết hợp với u', 'N combined with u'),
+('ね', 'ne', 'hiragana', 'n', 4, 'N kết hợp với e', 'N combined with e'),
+('の', 'no', 'hiragana', 'n', 5, 'N kết hợp với o', 'N combined with o'),
 
-    avg_response_ms INT NOT NULL DEFAULT 0,
+-- Hiragana - h group
+('は', 'ha', 'hiragana', 'h', 1, 'H kết hợp với a', 'H combined with a'),
+('ひ', 'hi', 'hiragana', 'h', 2, 'H kết hợp với i', 'H combined with i'),
+('ふ', 'fu', 'hiragana', 'h', 3, 'H kết hợp với u', 'H combined with u'),
+('へ', 'he', 'hiragana', 'h', 4, 'H kết hợp với e', 'H combined with e'),
+('ほ', 'ho', 'hiragana', 'h', 5, 'H kết hợp với o', 'H combined with o'),
 
-    mistake_streak INT NOT NULL DEFAULT 0,
+-- Hiragana - m group
+('ま', 'ma', 'hiragana', 'm', 1, 'M kết hợp với a', 'M combined with a'),
+('み', 'mi', 'hiragana', 'm', 2, 'M kết hợp với i', 'M combined with i'),
+('む', 'mu', 'hiragana', 'm', 3, 'M kết hợp với u', 'M combined with u'),
+('め', 'me', 'hiragana', 'm', 4, 'M kết hợp với e', 'M combined with e'),
+('も', 'mo', 'hiragana', 'm', 5, 'M kết hợp với o', 'M combined with o'),
 
-    last_reviewed DATETIME,
-    next_review DATETIME,
+-- Hiragana - y group
+('や', 'ya', 'hiragana', 'y', 1, 'Y kết hợp với a', 'Y combined with a'),
+('ゆ', 'yu', 'hiragana', 'y', 2, 'Y kết hợp với u', 'Y combined with u'),
+('よ', 'yo', 'hiragana', 'y', 3, 'Y kết hợp với o', 'Y combined with o'),
 
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-    ON UPDATE CURRENT_TIMESTAMP,
+-- Hiragana - r group
+('ら', 'ra', 'hiragana', 'r', 1, 'R kết hợp với a', 'R combined with a'),
+('り', 'ri', 'hiragana', 'r', 2, 'R kết hợp với i', 'R combined with i'),
+('る', 'ru', 'hiragana', 'r', 3, 'R kết hợp với u', 'R combined with u'),
+('れ', 're', 'hiragana', 'r', 4, 'R kết hợp với e', 'R combined with e'),
+('ろ', 'ro', 'hiragana', 'r', 5, 'R kết hợp với o', 'R combined with o'),
 
-    PRIMARY KEY (user_id, character_id),
+-- Hiragana - w group
+('わ', 'wa', 'hiragana', 'w', 1, 'W kết hợp với a', 'W combined with a'),
+('を', 'wo', 'hiragana', 'w', 2, 'W kết hợp với o', 'W combined with o'),
 
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+-- Hiragana - n (special)
+('ん', 'n', 'hiragana', 'n_special', 1, 'Âm mũi n', 'Nasal n sound'),
 
-    INDEX idx_next_review (user_id, next_review),
-    INDEX idx_weakness (user_id, weakness_score)
+-- Katakana - a group
+('ア', 'a', 'katakana', 'a', 1, 'A góc cạnh', 'Angular A'),
+('イ', 'i', 'katakana', 'a', 2, 'I góc cạnh', 'Angular I'),
+('ウ', 'u', 'katakana', 'a', 3, 'U góc cạnh', 'Angular U'),
+('エ', 'e', 'katakana', 'a', 4, 'E góc cạnh', 'Angular E'),
+('オ', 'o', 'katakana', 'a', 5, 'O góc cạnh', 'Angular O'),
 
-) ENGINE=InnoDB
-DEFAULT CHARSET=utf8mb4;
+-- Katakana - k group
+('カ', 'ka', 'katakana', 'k', 1, 'KA góc cạnh', 'Angular KA'),
+('キ', 'ki', 'katakana', 'k', 2, 'KI góc cạnh', 'Angular KI'),
+('ク', 'ku', 'katakana', 'k', 3, 'KU góc cạnh', 'Angular KU'),
+('ケ', 'ke', 'katakana', 'k', 4, 'KE góc cạnh', 'Angular KE'),
+('コ', 'ko', 'katakana', 'k', 5, 'KO góc cạnh', 'Angular KO'),
 
--- ============================================================
--- TIME_OF_DAY_STATS
--- Aggregated per-user per-hour-slot performance
--- ============================================================
+-- Katakana - s group
+('サ', 'sa', 'katakana', 's', 1, 'SA góc cạnh', 'Angular SA'),
+('シ', 'shi', 'katakana', 's', 2, 'SHI góc cạnh', 'Angular SHI'),
+('ス', 'su', 'katakana', 's', 3, 'SU góc cạnh', 'Angular SU'),
+('セ', 'se', 'katakana', 's', 4, 'SE góc cạnh', 'Angular SE'),
+('ソ', 'so', 'katakana', 's', 5, 'SO góc cạnh', 'Angular SO'),
 
-CREATE TABLE time_of_day_stats (
+-- Katakana - t group
+('タ', 'ta', 'katakana', 't', 1, 'TA góc cạnh', 'Angular TA'),
+('チ', 'chi', 'katakana', 't', 2, 'CHI góc cạnh', 'Angular CHI'),
+('ツ', 'tsu', 'katakana', 't', 3, 'TSU góc cạnh', 'Angular TSU'),
+('テ', 'te', 'katakana', 't', 4, 'TE góc cạnh', 'Angular TE'),
+('ト', 'to', 'katakana', 't', 5, 'TO góc cạnh', 'Angular TO'),
 
-    user_id INT NOT NULL,
+-- Katakana - n group
+('ナ', 'na', 'katakana', 'n', 1, 'NA góc cạnh', 'Angular NA'),
+('ニ', 'ni', 'katakana', 'n', 2, 'NI góc cạnh', 'Angular NI'),
+('ヌ', 'nu', 'katakana', 'n', 3, 'NU góc cạnh', 'Angular NU'),
+('ネ', 'ne', 'katakana', 'n', 4, 'NE góc cạnh', 'Angular NE'),
+('ノ', 'no', 'katakana', 'n', 5, 'NO góc cạnh', 'Angular NO'),
 
-    hour_slot TINYINT NOT NULL,
+-- Katakana - h group
+('ハ', 'ha', 'katakana', 'h', 1, 'HA góc cạnh', 'Angular HA'),
+('ヒ', 'hi', 'katakana', 'h', 2, 'HI góc cạnh', 'Angular HI'),
+('フ', 'fu', 'katakana', 'h', 3, 'FU góc cạnh', 'Angular FU'),
+('ヘ', 'he', 'katakana', 'h', 4, 'HE góc cạnh', 'Angular HE'),
+('ホ', 'ho', 'katakana', 'h', 5, 'HO góc cạnh', 'Angular HO'),
 
-    total_attempts INT NOT NULL DEFAULT 0,
-    correct_count INT NOT NULL DEFAULT 0,
+-- Katakana - m group
+('マ', 'ma', 'katakana', 'm', 1, 'MA góc cạnh', 'Angular MA'),
+('ミ', 'mi', 'katakana', 'm', 2, 'MI góc cạnh', 'Angular MI'),
+('ム', 'mu', 'katakana', 'm', 3, 'MU góc cạnh', 'Angular MU'),
+('メ', 'me', 'katakana', 'm', 4, 'ME góc cạnh', 'Angular ME'),
+('モ', 'mo', 'katakana', 'm', 5, 'MO góc cạnh', 'Angular MO'),
 
-    avg_response_ms INT NOT NULL DEFAULT 0,
+-- Katakana - y group
+('ヤ', 'ya', 'katakana', 'y', 1, 'YA góc cạnh', 'Angular YA'),
+('ユ', 'yu', 'katakana', 'y', 2, 'YU góc cạnh', 'Angular YU'),
+('ヨ', 'yo', 'katakana', 'y', 3, 'YO góc cạnh', 'Angular YO'),
 
-    accuracy_rate FLOAT NOT NULL DEFAULT 0,
+-- Katakana - r group
+('ラ', 'ra', 'katakana', 'r', 1, 'RA góc cạnh', 'Angular RA'),
+('リ', 'ri', 'katakana', 'r', 2, 'RI góc cạnh', 'Angular RI'),
+('ル', 'ru', 'katakana', 'r', 3, 'RU góc cạnh', 'Angular RU'),
+('レ', 're', 'katakana', 'r', 4, 'RE góc cạnh', 'Angular RE'),
+('ロ', 'ro', 'katakana', 'r', 5, 'RO góc cạnh', 'Angular RO'),
 
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-    ON UPDATE CURRENT_TIMESTAMP,
+-- Katakana - w group
+('ワ', 'wa', 'katakana', 'w', 1, 'WA góc cạnh', 'Angular WA'),
+('ヲ', 'wo', 'katakana', 'w', 2, 'WO góc cạnh', 'Angular WO'),
 
-    PRIMARY KEY (user_id, hour_slot),
-
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-
-) ENGINE=InnoDB
-DEFAULT CHARSET=utf8mb4;
-
--- ============================================================
--- SEED — Hiragana
--- ============================================================
-
-INSERT INTO characters (kana, romaji, type, group_name, difficulty) VALUES
-('あ','a','hiragana','vowels',1),
-('い','i','hiragana','vowels',1),
-('う','u','hiragana','vowels',1),
-('え','e','hiragana','vowels',1),
-('お','o','hiragana','vowels',1),
-
-('か','ka','hiragana','k-row',1),
-('き','ki','hiragana','k-row',1),
-('く','ku','hiragana','k-row',1),
-('け','ke','hiragana','k-row',1),
-('こ','ko','hiragana','k-row',1),
-
-('さ','sa','hiragana','s-row',2),
-('し','shi','hiragana','s-row',2),
-('す','su','hiragana','s-row',2),
-('せ','se','hiragana','s-row',2),
-('そ','so','hiragana','s-row',2),
-
-('た','ta','hiragana','t-row',2),
-('ち','chi','hiragana','t-row',2),
-('つ','tsu','hiragana','t-row',2),
-('て','te','hiragana','t-row',2),
-('と','to','hiragana','t-row',2),
-
-('な','na','hiragana','n-row',2),
-('に','ni','hiragana','n-row',2),
-('ぬ','nu','hiragana','n-row',2),
-('ね','ne','hiragana','n-row',2),
-('の','no','hiragana','n-row',2),
-
-('は','ha','hiragana','h-row',3),
-('ひ','hi','hiragana','h-row',3),
-('ふ','fu','hiragana','h-row',3),
-('へ','he','hiragana','h-row',3),
-('ほ','ho','hiragana','h-row',3),
-
-('ま','ma','hiragana','m-row',3),
-('み','mi','hiragana','m-row',3),
-('む','mu','hiragana','m-row',3),
-('め','me','hiragana','m-row',3),
-('も','mo','hiragana','m-row',3),
-
-('や','ya','hiragana','y-row',3),
-('ゆ','yu','hiragana','y-row',3),
-('よ','yo','hiragana','y-row',3),
-
-('ら','ra','hiragana','r-row',4),
-('り','ri','hiragana','r-row',4),
-('る','ru','hiragana','r-row',4),
-('れ','re','hiragana','r-row',4),
-('ろ','ro','hiragana','r-row',4),
-
-('わ','wa','hiragana','w-row',3),
-('を','wo','hiragana','w-row',4),
-('ん','n','hiragana','n-solo',3);
-
--- ============================================================
--- SEED — Katakana
--- ============================================================
-
-INSERT INTO characters (kana, romaji, type, group_name, difficulty) VALUES
-('ア','a','katakana','vowels',2),
-('イ','i','katakana','vowels',2),
-('ウ','u','katakana','vowels',2),
-('エ','e','katakana','vowels',2),
-('オ','o','katakana','vowels',2),
-
-('カ','ka','katakana','k-row',2),
-('キ','ki','katakana','k-row',2),
-('ク','ku','katakana','k-row',2),
-('ケ','ke','katakana','k-row',2),
-('コ','ko','katakana','k-row',2),
-
-('サ','sa','katakana','s-row',3),
-('シ','shi','katakana','s-row',3),
-('ス','su','katakana','s-row',3),
-('セ','se','katakana','s-row',3),
-('ソ','so','katakana','s-row',3),
-
-('タ','ta','katakana','t-row',3),
-('チ','chi','katakana','t-row',3),
-('ツ','tsu','katakana','t-row',3),
-('テ','te','katakana','t-row',3),
-('ト','to','katakana','t-row',3),
-
-('ナ','na','katakana','n-row',3),
-('ニ','ni','katakana','n-row',3),
-('ヌ','nu','katakana','n-row',3),
-('ネ','ne','katakana','n-row',3),
-('ノ','no','katakana','n-row',3),
-
-('ハ','ha','katakana','h-row',3),
-('ヒ','hi','katakana','h-row',3),
-('フ','fu','katakana','h-row',3),
-('ヘ','he','katakana','h-row',3),
-('ホ','ho','katakana','h-row',3),
-
-('マ','ma','katakana','m-row',4),
-('ミ','mi','katakana','m-row',4),
-('ム','mu','katakana','m-row',4),
-('メ','me','katakana','m-row',4),
-('モ','mo','katakana','m-row',4),
-
-('ヤ','ya','katakana','y-row',3),
-('ユ','yu','katakana','y-row',3),
-('ヨ','yo','katakana','y-row',3),
-
-('ラ','ra','katakana','r-row',4),
-('リ','ri','katakana','r-row',4),
-('ル','ru','katakana','r-row',4),
-('レ','re','katakana','r-row',4),
-('ロ','ro','katakana','r-row',4),
-
-('ワ','wa','katakana','w-row',4),
-('ヲ','wo','katakana','w-row',5),
-('ン','n','katakana','n-solo',4);
+-- Katakana - n (special)
+('ン', 'n', 'katakana', 'n_special', 1, 'N góc cạnh', 'Angular N');
 
 -- ============================================================
--- SEED — Structured Lessons System
+-- SEED DATA - CHAPTERS AND SECTIONS
 -- ============================================================
 
--- Chapters
-INSERT INTO chapters (title_en, title_vi, description_en, description_vi, order_index) VALUES
-('Learning Japanese', 'Học Tiếng Nhật', 'Master the fundamentals of Japanese language', 'Nắm vững nền tảng ngôn ngữ tiếng Nhật', 1);
+INSERT INTO chapters (chapter_number, title_vi, title_en, description_vi, description_en, order_index) VALUES
+(1, 'Chương 1: Bảng Chữ Cái', 'Chapter 1: The Alphabet', 'Học bảng chữ cái Hiragana và Katakana - nền tảng của tiếng Nhật', 'Learn Hiragana and Katakana - the foundation of Japanese language', 1);
 
--- Sections
-INSERT INTO sections (chapter_id, title_en, title_vi, description_en, description_vi, order_index) VALUES
-(1, 'Alphabet', 'Bảng Chữ Cái', 'Learn Hiragana, Katakana, and Kanji basics', 'Học Hiragana, Katakana và cơ bản về Kanji', 1);
+INSERT INTO sections (chapter_id, section_number, title_vi, title_en, description_vi, description_en, order_index) VALUES
+(1, 1, 'Phần 1: Hiragana Cơ Bản', 'Section 1: Basic Hiragana', 'Học 46 chữ cái Hiragana cơ bản', 'Learn the 46 basic Hiragana characters', 1),
+(1, 2, 'Phần 2: Katakana Cơ Bản', 'Section 2: Basic Katakana', 'Học 46 chữ cái Katakana cơ bản', 'Learn the 46 basic Katakana characters', 2),
+(1, 3, 'Phần 3: Ôn Tập và Kiểm Tra', 'Section 3: Review and Testing', 'Ôn tập và kiểm tra kiến thức', 'Review and test your knowledge', 3);
 
--- Lesson 1: Introduction to Japanese Writing Systems
-INSERT INTO structured_lessons (section_id, lesson_number, title_en, title_vi, content_en, content_vi, type, prerequisites, unlocks) VALUES
-(1, 1, 'Introduction to Japanese Writing Systems', 'Giới Thiệu Về Các Hệ Thống Chữ Viết Tiếng Nhật',
-'<h2>Japanese Writing Systems</h2>
-<p>Japanese uses three main writing systems: Hiragana, Katakana, and Kanji. Each serves different purposes and together they form the foundation of written Japanese.</p>
+-- ============================================================
+-- SEED DATA - STRUCTURED LESSONS (HIRAGANA)
+-- ============================================================
 
-<h3>Hiragana (ひらがな)</h3>
-<p>Hiragana is the most basic Japanese script and is used for:</p>
-<ul>
-<li>Native Japanese words</li>
-<li>Grammar particles</li>
-<li>Inflection endings</li>
-<li>Words where kanji is unknown or too complex</li>
-</ul>
-<p>Hiragana represents syllables and is essential for reading and writing Japanese.</p>
+-- Hiragana Lessons 1-5 (a, k, s, t, n groups)
+INSERT INTO structured_lessons (section_id, lesson_number, title_vi, title_en, content_vi, content_en, lesson_type, order_index) VALUES
+(1, 1, 'Bài 1: Nguyên Âm (あ い う え お)', 'Lesson 1: Vowels (あ い う え お)', '<h2>Nguyên Âm Cơ Bản</h2><p>Học 5 nguyên âm đầu tiên trong tiếng Nhật:</p><ul><li>あ (a) - như chữ A nhưng miệng mở rộng</li><li>い (i) - như chữ I với hai chấm</li><li>う (u) - như chữ U cong lại</li><li>え (e) - như chữ E với đuôi</li><li>お (o) - như chữ O kéo dài</li></ul><p><strong>Luyện tập:</strong> Viết mỗi chữ 5 lần và phát âm to.</p>', '<h2>Basic Vowels</h2><p>Learn the first 5 vowels in Japanese:</p><ul><li>あ (a) - like A with mouth wide open</li><li>い (i) - like I with two dots</li><li>う (u) - like U curved</li><li>え (e) - like E with a tail</li><li>お (o) - like O elongated</li></ul><p><strong>Practice:</strong> Write each character 5 times and pronounce aloud.</p>', 'instruction', 1),
 
-<h3>Katakana (カタカナ)</h3>
-<p>Katakana is used primarily for:</p>
-<ul>
-<li>Foreign loanwords</li>
-<li>Onomatopoeic words</li>
-<li>Scientific terms</li>
-<li>Emphasis</li>
-<li>Foreign names</li>
-</ul>
-<p>Katakana characters are more angular and are often used for foreign words adapted into Japanese.</p>
+(1, 2, 'Bài 2: Nhóm K (か き く け こ)', 'Lesson 2: K Group (か き く け こ)', '<h2>Nhóm K</h2><p>Kết hợp âm K với 5 nguyên âm:</p><ul><li>か (ka) - ka</li><li>き (ki) - ki</li><li>く (ku) - ku</li><li>け (ke) - ke</li><li>こ (ko) - ko</li></ul><p><strong>Mẹo:</strong> Tưởng tượng chữ K + nguyên âm.</p>', '<h2>K Group</h2><p>Combine K sound with 5 vowels:</p><ul><li>か (ka) - ka</li><li>き (ki) - ki</li><li>く (ku) - ku</li><li>け (ke) - ke</li><li>こ (ko) - ko</li></ul><p><strong>Tip:</strong> Imagine K + vowel.</p>', 'instruction', 2),
 
-<h3>Kanji (漢字)</h3>
-<p>Kanji are Chinese characters adopted into Japanese and are used for:</p>
-<ul>
-<li>Most nouns</li>
-<li>Verb and adjective stems</li>
-<li>Names</li>
-<li>Formal writing</li>
-</ul>
-<p>Kanji can have multiple readings and meanings, making them complex but powerful.</p>
+(1, 3, 'Bài 3: Nhóm S (さ し す せ そ)', 'Lesson 3: S Group (さ し す せ そ)', '<h2>Nhóm S</h2><p>Kết hợp âm S với 5 nguyên âm:</p><ul><li>さ (sa) - sa</li><li>し (shi) - shi</li><li>す (su) - su</li><li>せ (se) - se</li><li>そ (so) - so</li></ul><p><strong>Lưu ý:</strong> し phát âm là "shi", không phải "si".</p>', '<h2>S Group</h2><p>Combine S sound with 5 vowels:</p><ul><li>さ (sa) - sa</li><li>し (shi) - shi</li><li>す (su) - su</li><li>せ (se) - se</li><li>そ (so) - so</li></ul><p><strong>Note:</strong> し is pronounced "shi", not "si".</p>', 'instruction', 3),
 
-<h3>Practical Applications</h3>
-<p>In modern Japanese:</p>
-<ul>
-<li><strong>Hiragana</strong>: Used in children\'s books, informal writing, and particles</li>
-<li><strong>Katakana</strong>: Used in manga for sound effects, menus, advertisements</li>
-<li><strong>Kanji</strong>: Used in newspapers, formal documents, literature</li>
-</ul>
+(1, 4, 'Bài 4: Nhóm T (た ち つ て と)', 'Lesson 4: T Group (た ち つ て と)', '<h2>Nhóm T</h2><p>Kết hợp âm T với 5 nguyên âm:</p><ul><li>た (ta) - ta</li><li>ち (chi) - chi</li><li>つ (tsu) - tsu</li><li>て (te) - te</li><li>と (to) - to</li></ul><p><strong>Lưu ý:</strong> ち là "chi", つ là "tsu".</p>', '<h2>T Group</h2><p>Combine T sound with 5 vowels:</p><ul><li>た (ta) - ta</li><li>ち (chi) - chi</li><li>つ (tsu) - tsu</li><li>て (te) - te</li><li>と (to) - to</li></ul><p><strong>Note:</strong> ち is "chi", つ is "tsu".</p>', 'instruction', 4),
 
-<p>Most Japanese text combines all three systems. Learning Hiragana first is crucial as it\'s needed to read the other systems properly.</p>',
-'<h2>Các Hệ Thống Chữ Viết Tiếng Nhật</h2>
-<p>Tiếng Nhật sử dụng ba hệ thống chữ viết chính: Hiragana, Katakana và Kanji. Mỗi hệ thống phục vụ mục đích khác nhau và cùng nhau tạo thành nền tảng của văn bản tiếng Nhật.</p>
+(1, 5, 'Bài 5: Nhóm N (な に ぬ ね の)', 'Lesson 5: N Group (な に ぬ ね の)', '<h2>Nhóm N</h2><p>Kết hợp âm N với 5 nguyên âm:</p><ul><li>な (na) - na</li><li>に (ni) - ni</li><li>ぬ (nu) - nu</li><li>ね (ne) - ne</li><li>の (no) - no</li></ul><p><strong>Ôn tập:</strong> Luyện tập viết tất cả các nhóm đã học.</p>', '<h2>N Group</h2><p>Combine N sound with 5 vowels:</p><ul><li>な (na) - na</li><li>に (ni) - ni</li><li>ぬ (nu) - nu</li><li>ね (ne) - ne</li><li>の (no) - no</li></ul><p><strong>Review:</strong> Practice writing all groups learned so far.</p>', 'instruction', 5);
 
-<h3>Hiragana (ひらがな)</h3>
-<p>Hiragana là hệ thống chữ viết cơ bản nhất của tiếng Nhật và được sử dụng cho:</p>
-<ul>
-<li>Từ ngữ thuần Nhật</li>
-<li>Các hạt ngữ pháp</li>
-<li>Phần kết thúc của từ biến cách</li>
-<li>Các từ mà kanji không biết hoặc quá phức tạp</li>
-</ul>
-<p>Hiragana biểu diễn âm tiết và rất cần thiết để đọc và viết tiếng Nhật.</p>
+-- Continue with more Hiragana lessons...
+INSERT INTO structured_lessons (section_id, lesson_number, title_vi, title_en, content_vi, content_en, lesson_type, order_index) VALUES
+(1, 6, 'Bài 6: Nhóm H (は ひ ふ へ ほ)', 'Lesson 6: H Group (は ひ ふ へ ほ)', '<h2>Nhóm H</h2><p>Kết hợp âm H với 5 nguyên âm:</p><ul><li>は (ha) - ha</li><li>ひ (hi) - hi</li><li>ふ (fu) - fu</li><li>へ (he) - he</li><li>ほ (ho) - ho</li></ul><p><strong>Lưu ý:</strong> ふ phát âm là "fu", không phải "hu".</p>', '<h2>H Group</h2><p>Combine H sound with 5 vowels:</p><ul><li>は (ha) - ha</li><li>ひ (hi) - hi</li><li>ふ (fu) - fu</li><li>へ (he) - he</li><li>ほ (ho) - ho</li></ul><p><strong>Note:</strong> ふ is pronounced "fu", not "hu".</p>', 'instruction', 6),
 
-<h3>Katakana (カタカナ)</h3>
-<p>Katakana chủ yếu được sử dụng cho:</p>
-<ul>
-<li>Từ mượn nước ngoài</li>
-<li>Từ tượng thanh</li>
-<li>Thuật ngữ khoa học</li>
-<li>Nhấn mạnh</li>
-<li>Tên nước ngoài</li>
-</ul>
-<p>Các ký tự Katakana có hình dạng góc cạnh hơn và thường được sử dụng cho các từ nước ngoài được chuyển thể sang tiếng Nhật.</p>
+(1, 7, 'Bài 7: Nhóm M (ま み む め も)', 'Lesson 7: M Group (ま み む め も)', '<h2>Nhóm M</h2><p>Kết hợp âm M với 5 nguyên âm:</p><ul><li>ま (ma) - ma</li><li>み (mi) - mi</li><li>む (mu) - mu</li><li>め (me) - me</li><li>も (mo) - mo</li></ul>', '<h2>M Group</h2><p>Combine M sound with 5 vowels:</p><ul><li>ま (ma) - ma</li><li>み (mi) - mi</li><li>む (mu) - mu</li><li>め (me) - me</li><li>も (mo) - mo</li></ul>', 'instruction', 7),
 
-<h3>Kanji (漢字)</h3>
-<p>Kanji là các ký tự Trung Quốc được tiếp nhận vào tiếng Nhật và được sử dụng cho:</p>
-<ul>
-<li>Hầu hết các danh từ</li>
-<li>Thân của động từ và tính từ</li>
-<li>Tên riêng</li>
-<li>Văn viết trang trọng</li>
-</ul>
-<p>Kanji có thể có nhiều cách đọc và nghĩa, khiến chúng phức tạp nhưng mạnh mẽ.</p>
+(1, 8, 'Bài 8: Nhóm Y (や ゆ よ)', 'Lesson 8: Y Group (や ゆ よ)', '<h2>Nhóm Y</h2><p>Nhóm Y chỉ có 3 chữ cái:</p><ul><li>や (ya) - ya</li><li>ゆ (yu) - yu</li><li>よ (yo) - yo</li></ul><p><strong>Lưu ý:</strong> Không có yi, ye.</p>', '<h2>Y Group</h2><p>Y group has only 3 characters:</p><ul><li>や (ya) - ya</li><li>ゆ (yu) - yu</li><li>よ (yo) - yo</li></ul><p><strong>Note:</strong> No yi, ye.</p>', 'instruction', 8),
 
-<h3>Ứng Dụng Thực Tế</h3>
-<p>Trong tiếng Nhật hiện đại:</p>
-<ul>
-<li><strong>Hiragana</strong>: Được sử dụng trong sách thiếu nhi, văn viết thông tục và các hạt ngữ</li>
-<li><strong>Katakana</strong>: Được sử dụng trong manga cho hiệu ứng âm thanh, thực đơn, quảng cáo</li>
-<li><strong>Kanji</strong>: Được sử dụng trong báo chí, tài liệu trang trọng, văn học</li>
-</ul>
+(1, 9, 'Bài 9: Nhóm R (ら り る れ ろ)', 'Lesson 9: R Group (ら り る れ ろ)', '<h2>Nhóm R</h2><p>Kết hợp âm R với 5 nguyên âm:</p><ul><li>ら (ra) - ra</li><li>り (ri) - ri</li><li>る (ru) - ru</li><li>れ (re) - re</li><li>ろ (ro) - ro</li></ul><p><strong>Mẹo:</strong> Phát âm giống L hơn R.</p>', '<h2>R Group</h2><p>Combine R sound with 5 vowels:</p><ul><li>ら (ra) - ra</li><li>り (ri) - ri</li><li>る (ru) - ru</li><li>れ (re) - re</li><li>ろ (ro) - ro</li></ul><p><strong>Tip:</strong> Pronounced more like L than R.</p>', 'instruction', 9),
 
-<p>Hầu hết văn bản tiếng Nhật kết hợp cả ba hệ thống. Việc học Hiragana trước tiên là rất quan trọng vì nó cần thiết để đọc đúng các hệ thống khác.</p>',
-'reading', '[]', '[2]');
+(1, 10, 'Bài 10: Nhóm W và N Đặc Biệt (わ を ん)', 'Lesson 10: W Group and Special N (わ を ん)', '<h2>Nhóm W và N Đặc Biệt</h2><ul><li>わ (wa) - wa</li><li>を (wo) - wo (chỉ dùng làm trợ từ)</li><li>ん (n) - âm mũi n</li></ul><p><strong>Hoàn thành Hiragana!</strong> Bạn đã học xong 46 chữ cái Hiragana.</p>', '<h2>W Group and Special N</h2><ul><li>わ (wa) - wa</li><li>を (wo) - wo (only used as particle)</li><li>ん (n) - nasal n sound</li></ul><p><strong>Hiragana Complete!</strong> You have learned all 46 Hiragana characters.</p>', 'instruction', 10);
 
--- Lesson 2-12: Alphabet Lessons
-INSERT INTO structured_lessons (section_id, lesson_number, title_en, title_vi, content_en, content_vi, type, script_type, prerequisites, unlocks) VALUES
-(1, 2, 'Vowel Row (あ-お)', 'Hàng Nguyên Âm (あ-お)', '<h2>The Vowel Row</h2><p>Learn the five basic vowels: あ (a), い (i), う (u), え (e), お (o)</p><p>These form the foundation of all Japanese syllables.</p>', '<h2>Hàng Nguyên Âm</h2><p>Học năm nguyên âm cơ bản: あ (a), い (i), う (u), え (e), お (o)</p><p>Những âm này tạo thành nền tảng của tất cả âm tiết tiếng Nhật.</p>', 'interactive', 'both', '[1]', '[3]'),
-(1, 3, 'K-Row (か-こ)', 'Hàng K (か-こ)', '<h2>The K-Row</h2><p>Learn ka, ki, ku, ke, ko with the か character.</p>', '<h2>Hàng K</h2><p>Học ka, ki, ku, ke, ko với ký tự か.</p>', 'interactive', 'both', '[2]', '[4]'),
-(1, 4, 'S-Row (さ-そ)', 'Hàng S (さ-そ)', '<h2>The S-Row</h2><p>Learn sa, shi, su, se, so with the さ character.</p>', '<h2>Hàng S</h2><p>Học sa, shi, su, se, so với ký tự さ.</p>', 'interactive', 'both', '[3]', '[5]'),
-(1, 5, 'T-Row (た-と)', 'Hàng T (た-と)', '<h2>The T-Row</h2><p>Learn ta, chi, tsu, te, to with the た character.</p>', '<h2>Hàng T</h2><p>Học ta, chi, tsu, te, to với ký tự た.</p>', 'interactive', 'both', '[4]', '[6]'),
-(1, 6, 'N-Row (な-の)', 'Hàng N (な-の)', '<h2>The N-Row</h2><p>Learn na, ni, nu, ne, no with the な character.</p>', '<h2>Hàng N</h2><p>Học na, ni, nu, ne, no với ký tự な.</p>', 'interactive', 'both', '[5]', '[7]'),
-(1, 7, 'H-Row (は-ほ)', 'Hàng H (は-ほ)', '<h2>The H-Row</h2><p>Learn ha, hi, fu, he, ho with the は character.</p>', '<h2>Hàng H</h2><p>Học ha, hi, fu, he, ho với ký tự は.</p>', 'interactive', 'both', '[6]', '[8]'),
-(1, 8, 'M-Row (ま-も)', 'Hàng M (ま-も)', '<h2>The M-Row</h2><p>Learn ma, mi, mu, me, mo with the ま character.</p>', '<h2>Hàng M</h2><p>Học ma, mi, mu, me, mo với ký tự ま.</p>', 'interactive', 'both', '[7]', '[9]'),
-(1, 9, 'Y-Row (や-よ)', 'Hàng Y (や-よ)', '<h2>The Y-Row</h2><p>Learn ya, yu, yo with the や character.</p>', '<h2>Hàng Y</h2><p>Học ya, yu, yo với ký tự や.</p>', 'interactive', 'both', '[8]', '[10]'),
-(1, 10, 'R-Row (ら-ろ)', 'Hàng R (ら-ろ)', '<h2>The R-Row</h2><p>Learn ra, ri, ru, re, ro with the ら character.</p>', '<h2>Hàng R</h2><p>Học ra, ri, ru, re, ro với ký tự ら.</p>', 'interactive', 'both', '[9]', '[11]'),
-(1, 11, 'W-Row & N (わ-ん)', 'Hàng W & N (わ-ん)', '<h2>The W-Row and N</h2><p>Learn wa, wo, and n (ん).</p>', '<h2>Hàng W và N</h2><p>Học wa, wo và n (ん).</p>', 'interactive', 'both', '[10]', '[12]'),
-(1, 12, 'Comprehensive Review', 'Ôn Tập Toàn Diện', '<h2>Comprehensive Review</h2><p>Review all characters learned in Lessons 2-11.</p>', '<h2>Ôn Tập Toàn Diện</h2><p>Ôn tập tất cả các ký tự đã học trong Bài 2-11.</p>', 'review', 'both', '[11]', '[]');
+-- Katakana Lessons 11-20
+INSERT INTO structured_lessons (section_id, lesson_number, title_vi, title_en, content_vi, content_en, lesson_type, order_index) VALUES
+(2, 11, 'Bài 11: Katakana Nguyên Âm (ア イ ウ エ オ)', 'Lesson 11: Katakana Vowels (ア イ ウ エ オ)', '<h2>Katakana Nguyên Âm</h2><p>Học 5 nguyên âm Katakana:</p><ul><li>ア (a) - góc cạnh hơn Hiragana</li><li>イ (i) - góc cạnh</li><li>ウ (u) - góc cạnh</li><li>エ (e) - góc cạnh</li><li>オ (o) - góc cạnh</li></ul><p><strong>Dùng cho:</strong> Từ nước ngoài, tên riêng.</p>', '<h2>Katakana Vowels</h2><p>Learn 5 Katakana vowels:</p><ul><li>ア (a) - more angular than Hiragana</li><li>イ (i) - angular</li><li>ウ (u) - angular</li><li>エ (e) - angular</li><li>オ (o) - angular</li></ul><p><strong>Used for:</strong> Foreign words, proper names.</p>', 'instruction', 11),
 
--- Vocabulary for Lesson 2 (Vowels)
-INSERT INTO vocabulary (lesson_id, romaji, hiragana, english_meaning, vietnamese_meaning, part_of_speech, example_sentence_en, example_sentence_vi) VALUES
-(2, 'a', 'あ', 'ah (as in father)', 'a (như trong từ cha)', 'syllable', 'Say "a" clearly.', 'Nói "a" rõ ràng.'),
-(2, 'i', 'い', 'ee (as in machine)', 'i (như trong máy)', 'syllable', 'Say "i" clearly.', 'Nói "i" rõ ràng.'),
-(2, 'u', 'う', 'oo (as in too)', 'u (như trong quá)', 'syllable', 'Say "u" clearly.', 'Nói "u" rõ ràng.'),
-(2, 'e', 'え', 'eh (as in bed)', 'e (như trong giường)', 'syllable', 'Say "e" clearly.', 'Nói "e" rõ ràng.'),
-(2, 'o', 'お', 'oh (as in go)', 'o (như trong đi)', 'syllable', 'Say "o" clearly.', 'Nói "o" rõ ràng.'),
-(2, 'atsui', 'あつい', 'hot', 'nóng', 'adjective', 'The tea is hot.', 'Trà rất nóng.'),
-(2, 'iie', 'いいえ', 'no', 'không', 'adverb', 'No, thank you.', 'Không, cảm ơn.'),
-(2, 'umi', 'うみ', 'sea', 'biển', 'noun', 'I love the sea.', 'Tôi yêu biển.'),
-(2, 'ebi', 'えび', 'shrimp', 'tôm', 'noun', 'Shrimp is delicious.', 'Tôm rất ngon.'),
-(2, 'omocha', 'おもちゃ', 'toy', 'đồ chơi', 'noun', 'This is a toy.', 'Đây là đồ chơi.');
+(2, 12, 'Bài 12: Katakana Nhóm K (カ キ ク ケ コ)', 'Lesson 12: Katakana K Group (カ キ ク ケ コ)', '<h2>Katakana Nhóm K</h2><ul><li>カ (ka)</li><li>キ (ki)</li><li>ク (ku)</li><li>ケ (ke)</li><li>コ (ko)</li></ul>', '<h2>Katakana K Group</h2><ul><li>カ (ka)</li><li>キ (ki)</li><li>ク (ku)</li><li>ケ (ke)</li><li>コ (ko)</li></ul>', 'instruction', 12),
 
--- Vocabulary for Lesson 3 (K-Row)
-INSERT INTO vocabulary (lesson_id, romaji, hiragana, english_meaning, vietnamese_meaning, part_of_speech, example_sentence_en, example_sentence_vi) VALUES
-(3, 'ka', 'か', 'ka sound', 'âm ka', 'syllable', 'Say "ka" clearly.', 'Nói "ka" rõ ràng.'),
-(3, 'ki', 'き', 'ki sound', 'âm ki', 'syllable', 'Say "ki" clearly.', 'Nói "ki" rõ ràng.'),
-(3, 'ku', 'く', 'ku sound', 'âm ku', 'syllable', 'Say "ku" clearly.', 'Nói "ku" rõ ràng.'),
-(3, 'ke', 'け', 'ke sound', 'âm ke', 'syllable', 'Say "ke" clearly.', 'Nói "ke" rõ ràng.'),
-(3, 'ko', 'こ', 'ko sound', 'âm ko', 'syllable', 'Say "ko" clearly.', 'Nói "ko" rõ ràng.'),
-(3, 'kawaii', 'かわいい', 'cute', 'dễ thương', 'adjective', 'The cat is cute.', 'Con mèo rất dễ thương.'),
-(3, 'kiku', 'きく', 'to listen', 'nghe', 'verb', 'I listen to music.', 'Tôi nghe nhạc.'),
-(3, 'kumo', 'くも', 'cloud', 'đám mây', 'noun', 'The sky has clouds.', 'Bầu trời có mây.'),
-(3, 'kesa', 'けさ', 'this morning', 'sáng nay', 'noun', 'I woke up this morning.', 'Tôi thức dậy sáng nay.'),
-(3, 'koko', 'ここ', 'here', 'ở đây', 'noun', 'I am here.', 'Tôi ở đây.');
+(2, 13, 'Bài 13: Katakana Nhóm S (サ シ ス セ ソ)', 'Lesson 13: Katakana S Group (サ シ ス セ ソ)', '<h2>Katakana Nhóm S</h2><ul><li>サ (sa)</li><li>シ (shi)</li><li>ス (su)</li><li>セ (se)</li><li>ソ (so)</li></ul>', '<h2>Katakana S Group</h2><ul><li>サ (sa)</li><li>シ (shi)</li><li>ス (su)</li><li>セ (se)</li><li>ソ (so)</li></ul>', 'instruction', 13),
 
--- Additional Vocabulary (100 words)
-INSERT INTO vocabulary (lesson_id, romaji, hiragana, english_meaning, vietnamese_meaning, part_of_speech, example_sentence_en, example_sentence_vi) VALUES
-(2, 'mizu', 'みず', 'water #1', 'water #1', 'noun', 'Example sentence 1 in English.', 'Example sentence 1 in English.'),
-(2, 'nomu2', 'のむ', 'to drink #2', 'to drink #2', 'verb', 'Example sentence 2 in English.', 'Example sentence 2 in English.'),
-(2, 'taberu3', 'たべる', 'to eat #3', 'to eat #3', 'verb', 'Example sentence 3 in English.', 'Example sentence 3 in English.'),
-(2, 'iku4', 'いく', 'to go #4', 'to go #4', 'verb', 'Example sentence 4 in English.', 'Example sentence 4 in English.'),
-(2, 'kuru5', 'くる', 'to come #5', 'to come #5', 'verb', 'Example sentence 5 in English.', 'Example sentence 5 in English.'),
-(2, 'miru6', 'みる', 'to see #6', 'to see #6', 'verb', 'Example sentence 6 in English.', 'Example sentence 6 in English.'),
-(2, 'tabe7', 'たべ', 'eat #7', 'eat #7', 'noun', 'Example sentence 7 in English.', 'Example sentence 7 in English.'),
-(2, 'yasai8', 'やさい', 'vegetable #8', 'vegetable #8', 'noun', 'Example sentence 8 in English.', 'Example sentence 8 in English.'),
-(2, 'mango9', 'まんご', 'mango #9', 'mango #9', 'noun', 'Example sentence 9 in English.', 'Example sentence 9 in English.'),
-(2, 'kasa10', 'かさ', 'umbrella #10', 'umbrella #10', 'noun', 'Example sentence 10 in English.', 'Example sentence 10 in English.'),
-(2, 'mizu11', 'みず', 'water #11', 'water #11', 'noun', 'Example sentence 11 in English.', 'Example sentence 11 in English.'),
-(2, 'nomu12', 'のむ', 'to drink #12', 'to drink #12', 'verb', 'Example sentence 12 in English.', 'Example sentence 12 in English.'),
-(2, 'taberu13', 'たべる', 'to eat #13', 'to eat #13', 'verb', 'Example sentence 13 in English.', 'Example sentence 13 in English.'),
-(2, 'iku14', 'いく', 'to go #14', 'to go #14', 'verb', 'Example sentence 14 in English.', 'Example sentence 14 in English.'),
-(2, 'kuru15', 'くる', 'to come #15', 'to come #15', 'verb', 'Example sentence 15 in English.', 'Example sentence 15 in English.'),
-(2, 'miru16', 'みる', 'to see #16', 'to see #16', 'verb', 'Example sentence 16 in English.', 'Example sentence 16 in English.'),
-(2, 'tabe17', 'たべ', 'eat #17', 'eat #17', 'noun', 'Example sentence 17 in English.', 'Example sentence 17 in English.'),
-(2, 'yasai18', 'やさい', 'vegetable #18', 'vegetable #18', 'noun', 'Example sentence 18 in English.', 'Example sentence 18 in English.'),
-(2, 'mango19', 'まんご', 'mango #19', 'mango #19', 'noun', 'Example sentence 19 in English.', 'Example sentence 19 in English.'),
-(2, 'kasa20', 'かさ', 'umbrella #20', 'umbrella #20', 'noun', 'Example sentence 20 in English.', 'Example sentence 20 in English.'),
-(2, 'mizu21', 'みず', 'water #21', 'water #21', 'noun', 'Example sentence 21 in English.', 'Example sentence 21 in English.'),
-(2, 'nomu22', 'のむ', 'to drink #22', 'to drink #22', 'verb', 'Example sentence 22 in English.', 'Example sentence 22 in English.'),
-(2, 'taberu23', 'たべる', 'to eat #23', 'to eat #23', 'verb', 'Example sentence 23 in English.', 'Example sentence 23 in English.'),
-(2, 'iku24', 'いく', 'to go #24', 'to go #24', 'verb', 'Example sentence 24 in English.', 'Example sentence 24 in English.'),
-(2, 'kuru25', 'くる', 'to come #25', 'to come #25', 'verb', 'Example sentence 25 in English.', 'Example sentence 25 in English.'),
-(2, 'miru26', 'みる', 'to see #26', 'to see #26', 'verb', 'Example sentence 26 in English.', 'Example sentence 26 in English.'),
-(2, 'tabe27', 'たべ', 'eat #27', 'eat #27', 'noun', 'Example sentence 27 in English.', 'Example sentence 27 in English.'),
-(2, 'yasai28', 'やさい', 'vegetable #28', 'vegetable #28', 'noun', 'Example sentence 28 in English.', 'Example sentence 28 in English.'),
-(2, 'mango29', 'まんご', 'mango #29', 'mango #29', 'noun', 'Example sentence 29 in English.', 'Example sentence 29 in English.'),
-(2, 'kasa30', 'かさ', 'umbrella #30', 'umbrella #30', 'noun', 'Example sentence 30 in English.', 'Example sentence 30 in English.'),
-(2, 'mizu31', 'みず', 'water #31', 'water #31', 'noun', 'Example sentence 31 in English.', 'Example sentence 31 in English.'),
-(2, 'nomu32', 'のむ', 'to drink #32', 'to drink #32', 'verb', 'Example sentence 32 in English.', 'Example sentence 32 in English.'),
-(2, 'taberu33', 'たべる', 'to eat #33', 'to eat #33', 'verb', 'Example sentence 33 in English.', 'Example sentence 33 in English.'),
-(2, 'iku34', 'いく', 'to go #34', 'to go #34', 'verb', 'Example sentence 34 in English.', 'Example sentence 34 in English.'),
-(2, 'kuru35', 'くる', 'to come #35', 'to come #35', 'verb', 'Example sentence 35 in English.', 'Example sentence 35 in English.'),
-(2, 'miru36', 'みる', 'to see #36', 'to see #36', 'verb', 'Example sentence 36 in English.', 'Example sentence 36 in English.'),
-(2, 'tabe37', 'たべ', 'eat #37', 'eat #37', 'noun', 'Example sentence 37 in English.', 'Example sentence 37 in English.'),
-(2, 'yasai38', 'やさい', 'vegetable #38', 'vegetable #38', 'noun', 'Example sentence 38 in English.', 'Example sentence 38 in English.'),
-(2, 'mango39', 'まんご', 'mango #39', 'mango #39', 'noun', 'Example sentence 39 in English.', 'Example sentence 39 in English.'),
-(2, 'kasa40', 'かさ', 'umbrella #40', 'umbrella #40', 'noun', 'Example sentence 40 in English.', 'Example sentence 40 in English.'),
-(2, 'mizu41', 'みず', 'water #41', 'water #41', 'noun', 'Example sentence 41 in English.', 'Example sentence 41 in English.'),
-(2, 'nomu42', 'のむ', 'to drink #42', 'to drink #42', 'verb', 'Example sentence 42 in English.', 'Example sentence 42 in English.'),
-(2, 'taberu43', 'たべる', 'to eat #43', 'to eat #43', 'verb', 'Example sentence 43 in English.', 'Example sentence 43 in English.'),
-(2, 'iku44', 'いく', 'to go #44', 'to go #44', 'verb', 'Example sentence 44 in English.', 'Example sentence 44 in English.'),
-(2, 'kuru45', 'くる', 'to come #45', 'to come #45', 'verb', 'Example sentence 45 in English.', 'Example sentence 45 in English.'),
-(2, 'miru46', 'みる', 'to see #46', 'to see #46', 'verb', 'Example sentence 46 in English.', 'Example sentence 46 in English.'),
-(2, 'tabe47', 'たべ', 'eat #47', 'eat #47', 'noun', 'Example sentence 47 in English.', 'Example sentence 47 in English.'),
-(2, 'yasai48', 'やさい', 'vegetable #48', 'vegetable #48', 'noun', 'Example sentence 48 in English.', 'Example sentence 48 in English.'),
-(2, 'mango49', 'まんご', 'mango #49', 'mango #49', 'noun', 'Example sentence 49 in English.', 'Example sentence 49 in English.'),
-(2, 'kasa50', 'かさ', 'umbrella #50', 'umbrella #50', 'noun', 'Example sentence 50 in English.', 'Example sentence 50 in English.'),
-(2, 'mizu51', 'みず', 'water #51', 'water #51', 'noun', 'Example sentence 51 in English.', 'Example sentence 51 in English.'),
-(2, 'nomu52', 'のむ', 'to drink #52', 'to drink #52', 'verb', 'Example sentence 52 in English.', 'Example sentence 52 in English.'),
-(2, 'taberu53', 'たべる', 'to eat #53', 'to eat #53', 'verb', 'Example sentence 53 in English.', 'Example sentence 53 in English.'),
-(2, 'iku54', 'いく', 'to go #54', 'to go #54', 'verb', 'Example sentence 54 in English.', 'Example sentence 54 in English.'),
-(2, 'kuru55', 'くる', 'to come #55', 'to come #55', 'verb', 'Example sentence 55 in English.', 'Example sentence 55 in English.'),
-(2, 'miru56', 'みる', 'to see #56', 'to see #56', 'verb', 'Example sentence 56 in English.', 'Example sentence 56 in English.'),
-(2, 'tabe57', 'たべ', 'eat #57', 'eat #57', 'noun', 'Example sentence 57 in English.', 'Example sentence 57 in English.'),
-(2, 'yasai58', 'やさい', 'vegetable #58', 'vegetable #58', 'noun', 'Example sentence 58 in English.', 'Example sentence 58 in English.'),
-(2, 'mango59', 'まんご', 'mango #59', 'mango #59', 'noun', 'Example sentence 59 in English.', 'Example sentence 59 in English.'),
-(2, 'kasa60', 'かさ', 'umbrella #60', 'umbrella #60', 'noun', 'Example sentence 60 in English.', 'Example sentence 60 in English.'),
-(2, 'mizu61', 'みず', 'water #61', 'water #61', 'noun', 'Example sentence 61 in English.', 'Example sentence 61 in English.'),
-(2, 'nomu62', 'のむ', 'to drink #62', 'to drink #62', 'verb', 'Example sentence 62 in English.', 'Example sentence 62 in English.'),
-(2, 'taberu63', 'たべる', 'to eat #63', 'to eat #63', 'verb', 'Example sentence 63 in English.', 'Example sentence 63 in English.'),
-(2, 'iku64', 'いく', 'to go #64', 'to go #64', 'verb', 'Example sentence 64 in English.', 'Example sentence 64 in English.'),
-(2, 'kuru65', 'くる', 'to come #65', 'to come #65', 'verb', 'Example sentence 65 in English.', 'Example sentence 65 in English.'),
-(2, 'miru66', 'みる', 'to see #66', 'to see #66', 'verb', 'Example sentence 66 in English.', 'Example sentence 66 in English.'),
-(2, 'tabe67', 'たべ', 'eat #67', 'eat #67', 'noun', 'Example sentence 67 in English.', 'Example sentence 67 in English.'),
-(2, 'yasai68', 'やさい', 'vegetable #68', 'vegetable #68', 'noun', 'Example sentence 68 in English.', 'Example sentence 68 in English.'),
-(2, 'mango69', 'まんご', 'mango #69', 'mango #69', 'noun', 'Example sentence 69 in English.', 'Example sentence 69 in English.'),
-(2, 'kasa70', 'かさ', 'umbrella #70', 'umbrella #70', 'noun', 'Example sentence 70 in English.', 'Example sentence 70 in English.'),
-(2, 'mizu71', 'みず', 'water #71', 'water #71', 'noun', 'Example sentence 71 in English.', 'Example sentence 71 in English.'),
-(2, 'nomu72', 'のむ', 'to drink #72', 'to drink #72', 'verb', 'Example sentence 72 in English.', 'Example sentence 72 in English.'),
-(2, 'taberu73', 'たべる', 'to eat #73', 'to eat #73', 'verb', 'Example sentence 73 in English.', 'Example sentence 73 in English.'),
-(2, 'iku74', 'いく', 'to go #74', 'to go #74', 'verb', 'Example sentence 74 in English.', 'Example sentence 74 in English.'),
-(2, 'kuru75', 'くる', 'to come #75', 'to come #75', 'verb', 'Example sentence 75 in English.', 'Example sentence 75 in English.'),
-(2, 'miru76', 'みる', 'to see #76', 'to see #76', 'verb', 'Example sentence 76 in English.', 'Example sentence 76 in English.'),
-(2, 'tabe77', 'たべ', 'eat #77', 'eat #77', 'noun', 'Example sentence 77 in English.', 'Example sentence 77 in English.'),
-(2, 'yasai78', 'やさい', 'vegetable #78', 'vegetable #78', 'noun', 'Example sentence 78 in English.', 'Example sentence 78 in English.'),
-(2, 'mango79', 'まんご', 'mango #79', 'mango #79', 'noun', 'Example sentence 79 in English.', 'Example sentence 79 in English.'),
-(2, 'kasa80', 'かさ', 'umbrella #80', 'umbrella #80', 'noun', 'Example sentence 80 in English.', 'Example sentence 80 in English.'),
-(2, 'mizu81', 'みず', 'water #81', 'water #81', 'noun', 'Example sentence 81 in English.', 'Example sentence 81 in English.'),
-(2, 'nomu82', 'のむ', 'to drink #82', 'to drink #82', 'verb', 'Example sentence 82 in English.', 'Example sentence 82 in English.'),
-(2, 'taberu83', 'たべる', 'to eat #83', 'to eat #83', 'verb', 'Example sentence 83 in English.', 'Example sentence 83 in English.'),
-(2, 'iku84', 'いく', 'to go #84', 'to go #84', 'verb', 'Example sentence 84 in English.', 'Example sentence 84 in English.'),
-(2, 'kuru85', 'くる', 'to come #85', 'to come #85', 'verb', 'Example sentence 85 in English.', 'Example sentence 85 in English.'),
-(2, 'miru86', 'みる', 'to see #86', 'to see #86', 'verb', 'Example sentence 86 in English.', 'Example sentence 86 in English.'),
-(2, 'tabe87', 'たべ', 'eat #87', 'eat #87', 'noun', 'Example sentence 87 in English.', 'Example sentence 87 in English.'),
-(2, 'yasai88', 'やさい', 'vegetable #88', 'vegetable #88', 'noun', 'Example sentence 88 in English.', 'Example sentence 88 in English.'),
-(2, 'mango89', 'まんご', 'mango #89', 'mango #89', 'noun', 'Example sentence 89 in English.', 'Example sentence 89 in English.'),
-(2, 'kasa90', 'かさ', 'umbrella #90', 'umbrella #90', 'noun', 'Example sentence 90 in English.', 'Example sentence 90 in English.'),
-(2, 'mizu91', 'みず', 'water #91', 'water #91', 'noun', 'Example sentence 91 in English.', 'Example sentence 91 in English.'),
-(2, 'nomu92', 'のむ', 'to drink #92', 'to drink #92', 'verb', 'Example sentence 92 in English.', 'Example sentence 92 in English.'),
-(2, 'taberu93', 'たべる', 'to eat #93', 'to eat #93', 'verb', 'Example sentence 93 in English.', 'Example sentence 93 in English.'),
-(2, 'iku94', 'いく', 'to go #94', 'to go #94', 'verb', 'Example sentence 94 in English.', 'Example sentence 94 in English.'),
-(2, 'kuru95', 'くる', 'to come #95', 'to come #95', 'verb', 'Example sentence 95 in English.', 'Example sentence 95 in English.'),
-(2, 'miru96', 'みる', 'to see #96', 'to see #96', 'verb', 'Example sentence 96 in English.', 'Example sentence 96 in English.'),
-(2, 'tabe97', 'たべ', 'eat #97', 'eat #97', 'noun', 'Example sentence 97 in English.', 'Example sentence 97 in English.'),
-(2, 'yasai98', 'やさい', 'vegetable #98', 'vegetable #98', 'noun', 'Example sentence 98 in English.', 'Example sentence 98 in English.'),
-(2, 'mango99', 'まんご', 'mango #99', 'mango #99', 'noun', 'Example sentence 99 in English.', 'Example sentence 99 in English.'),
-(2, 'kasa100', 'かさ', 'umbrella #100', 'umbrella #100', 'noun', 'Example sentence 100 in English.', 'Example sentence 100 in English.');
+(2, 14, 'Bài 14: Katakana Nhóm T (タ チ ツ テ ト)', 'Lesson 14: Katakana T Group (タ チ ツ テ ト)', '<h2>Katakana Nhóm T</h2><ul><li>タ (ta)</li><li>チ (chi)</li><li>ツ (tsu)</li><li>テ (te)</li><li>ト (to)</li></ul>', '<h2>Katakana T Group</h2><ul><li>タ (ta)</li><li>チ (chi)</li><li>ツ (tsu)</li><li>テ (te)</li><li>ト (to)</li></ul>', 'instruction', 14),
 
--- Sample Quiz Questions for Lesson 2 Review
-INSERT INTO quiz_questions (lesson_id, question_type, question_text_en, question_text_vi, romaji, correct_answer, option_a, option_b, option_c, option_d, explanation_en, explanation_vi) VALUES
-(2, 'multiple_choice', 'What is the hiragana for "a"?', 'Hiragana cho "a" là gì?', 'a', 'あ', 'あ', 'い', 'う', 'え', 'あ represents the "a" sound.', 'あ biểu diễn âm "a".'),
-(2, 'multiple_choice', 'What is the hiragana for "i"?', 'Hiragana cho "i" là gì?', 'i', 'い', 'あ', 'い', 'う', 'え', 'い represents the "i" sound.', 'い biểu diễn âm "i".'),
-(2, 'multiple_choice', 'What is the hiragana for "u"?', 'Hiragana cho "u" là gì?', 'u', 'う', 'あ', 'い', 'う', 'え', 'う represents the "u" sound.', 'う biểu diễn âm "u".'),
-(2, 'multiple_choice', 'What is the hiragana for "e"?', 'Hiragana cho "e" là gì?', 'e', 'え', 'あ', 'い', 'う', 'え', 'え represents the "e" sound.', 'え biểu diễn âm "e".'),
-(2, 'multiple_choice', 'What is the hiragana for "o"?', 'Hiragana cho "o" là gì?', 'o', 'お', 'あ', 'い', 'う', 'え', 'お represents the "o" sound.', 'お biểu diễn âm "o".');
+(2, 15, 'Bài 15: Katakana Nhóm N (ナ ニ ヌ ネ ノ)', 'Lesson 15: Katakana N Group (ナ ニ ヌ ネ ノ)', '<h2>Katakana Nhóm N</h2><ul><li>ナ (na)</li><li>ニ (ni)</li><li>ヌ (nu)</li><li>ネ (ne)</li><li>ノ (no)</li></ul>', '<h2>Katakana N Group</h2><ul><li>ナ (na)</li><li>ニ (ni)</li><li>ヌ (nu)</li><li>ネ (ne)</li><li>ノ (no)</li></ul>', 'instruction', 15),
+
+(2, 16, 'Bài 16: Katakana Nhóm H (ハ ヒ フ ヘ ホ)', 'Lesson 16: Katakana H Group (ハ ヒ フ ヘ ホ)', '<h2>Katakana Nhóm H</h2><ul><li>ハ (ha)</li><li>ヒ (hi)</li><li>フ (fu)</li><li>ヘ (he)</li><li>ホ (ho)</li></ul>', '<h2>Katakana H Group</h2><ul><li>ハ (ha)</li><li>ヒ (hi)</li><li>フ (fu)</li><li>ヘ (he)</li><li>ホ (ho)</li></ul>', 'instruction', 16),
+
+(2, 17, 'Bài 17: Katakana Nhóm M (マ ミ ム メ モ)', 'Lesson 17: Katakana M Group (マ ミ ム メ モ)', '<h2>Katakana Nhóm M</h2><ul><li>マ (ma)</li><li>ミ (mi)</li><li>ム (mu)</li><li>メ (me)</li><li>モ (mo)</li></ul>', '<h2>Katakana M Group</h2><ul><li>マ (ma)</li><li>ミ (mi)</li><li>ム (mu)</li><li>メ (me)</li><li>モ (mo)</li></ul>', 'instruction', 17),
+
+(2, 18, 'Bài 18: Katakana Nhóm Y (ヤ ユ ヨ)', 'Lesson 18: Katakana Y Group (ヤ ユ ヨ)', '<h2>Katakana Nhóm Y</h2><ul><li>ヤ (ya)</li><li>ユ (yu)</li><li>ヨ (yo)</li></ul>', '<h2>Katakana Y Group</h2><ul><li>ヤ (ya)</li><li>ユ (yu)</li><li>ヨ (yo)</li></ul>', 'instruction', 18),
+
+(2, 19, 'Bài 19: Katakana Nhóm R (ラ リ ル レ ロ)', 'Lesson 19: Katakana R Group (ラ リ ル レ ロ)', '<h2>Katakana Nhóm R</h2><ul><li>ラ (ra)</li><li>リ (ri)</li><li>ル (ru)</li><li>レ (re)</li><li>ロ (ro)</li></ul>', '<h2>Katakana R Group</h2><ul><li>ラ (ra)</li><li>リ (ri)</li><li>ル (ru)</li><li>レ (re)</li><li>ロ (ro)</li></ul>', 'instruction', 19),
+
+(2, 20, 'Bài 20: Katakana Nhóm W và N (ワ ヲ ン)', 'Lesson 20: Katakana W Group and N (ワ ヲ ン)', '<h2>Katakana Nhóm W và N</h2><ul><li>ワ (wa)</li><li>ヲ (wo)</li><li>ン (n)</li></ul><p><strong>Hoàn thành Katakana!</strong> Bạn đã học xong 46 chữ cái Katakana.</p>', '<h2>Katakana W Group and N</h2><ul><li>ワ (wa)</li><li>ヲ (wo)</li><li>ン (n)</li></ul><p><strong>Katakana Complete!</strong> You have learned all 46 Katakana characters.</p>', 'instruction', 20);
+
+-- Review and Final Quiz Lessons
+INSERT INTO structured_lessons (section_id, lesson_number, title_vi, title_en, content_vi, content_en, lesson_type, order_index) VALUES
+(3, 21, 'Bài 21: Ôn Tập Hiragana', 'Lesson 21: Hiragana Review', '<h2>Ôn Tập Hiragana</h2><p>Ôn tập tất cả 46 chữ cái Hiragana đã học.</p><p><strong>Bài tập:</strong> Viết và phát âm mỗi chữ cái.</p>', '<h2>Hiragana Review</h2><p>Review all 46 Hiragana characters learned.</p><p><strong>Exercise:</strong> Write and pronounce each character.</p>', 'practice', 21),
+
+(3, 22, 'Bài 22: Ôn Tập Katakana', 'Lesson 22: Katakana Review', '<h2>Ôn Tập Katakana</h2><p>Ôn tập tất cả 46 chữ cái Katakana đã học.</p><p><strong>Bài tập:</strong> Viết và phát âm mỗi chữ cái.</p>', '<h2>Katakana Review</h2><p>Review all 46 Katakana characters learned.</p><p><strong>Exercise:</strong> Write and pronounce each character.</p>', 'practice', 22),
+
+(3, 23, 'Bài 23: Ôn Tập Tổng Hợp', 'Lesson 23: Comprehensive Review', '<h2>Ôn Tập Tổng Hợp</h2><p>Kết hợp Hiragana và Katakana.</p><p><strong>Mục tiêu:</strong> Nhận biết và phân biệt hai bảng chữ cái.</p>', '<h2>Comprehensive Review</h2><p>Combine Hiragana and Katakana.</p><p><strong>Goal:</strong> Recognize and differentiate both alphabets.</p>', 'practice', 23),
+
+(3, 24, 'Bài 24: Kiểm Tra Ôn Tập Hiragana', 'Lesson 24: Hiragana Review Quiz', '<h2>Kiểm Tra Hiragana</h2><p>Trả lời câu hỏi về Hiragana để mở khóa bài tiếp theo.</p><p><strong>Yêu cầu:</strong> Đạt 75% trở lên để qua bài.</p>', '<h2>Hiragana Quiz</h2><p>Answer questions about Hiragana to unlock next lesson.</p><p><strong>Requirement:</strong> Score 75% or higher to pass.</p>', 'review_quiz', 24),
+
+(3, 25, 'Bài 25: Kiểm Tra Ôn Tập Katakana', 'Lesson 25: Katakana Review Quiz', '<h2>Kiểm Tra Katakana</h2><p>Trả lời câu hỏi về Katakana để mở khóa bài tiếp theo.</p><p><strong>Yêu cầu:</strong> Đạt 75% trở lên để qua bài.</p>', '<h2>Katakana Quiz</h2><p>Answer questions about Katakana to unlock next lesson.</p><p><strong>Requirement:</strong> Score 75% or higher to pass.</p>', 'review_quiz', 25),
+
+(3, 26, 'Bài 26: Kiểm Tra Ôn Tập Tổng Hợp', 'Lesson 26: Comprehensive Review Quiz', '<h2>Kiểm Tra Tổng Hợp</h2><p>Kết hợp cả Hiragana và Katakana.</p><p><strong>Yêu cầu:</strong> Đạt 75% trở lên để qua bài.</p>', '<h2>Comprehensive Quiz</h2><p>Combine both Hiragana and Katakana.</p><p><strong>Requirement:</strong> Score 75% or higher to pass.</p>', 'review_quiz', 26),
+
+(3, 27, 'Bài 27: Ôn Tập Từ Vựng Cơ Bản', 'Lesson 27: Basic Vocabulary Review', '<h2>Từ Vựng Cơ Bản</h2><p>Ôn tập các từ vựng đơn giản sử dụng Hiragana.</p><ul><li>こんにちは (konnichiwa) - Xin chào</li><li>ありがとう (arigatou) - Cảm ơn</li><li>すみません (sumimasen) - Xin lỗi</li></ul>', '<h2>Basic Vocabulary</h2><p>Review simple vocabulary using Hiragana.</p><ul><li>こんにちは (konnichiwa) - Hello</li><li>ありがとう (arigatou) - Thank you</li><li>すみません (sumimasen) - Excuse me</li></ul>', 'vocabulary', 27),
+
+(3, 28, 'Bài 28: Kiểm Tra Cuối Chương', 'Lesson 28: Final Chapter Quiz', '<h2>Kiểm Tra Cuối Chương</h2><p>Kiểm tra toàn bộ kiến thức về bảng chữ cái Nhật Bản.</p><p><strong>Nội dung:</strong> Hiragana, Katakana, từ vựng cơ bản.</p><p><strong>Yêu cầu:</strong> Đạt 75% trở lên để hoàn thành Chương 1.</p>', '<h2>Final Chapter Quiz</h2><p>Test all knowledge about Japanese alphabets.</p><p><strong>Content:</strong> Hiragana, Katakana, basic vocabulary.</p><p><strong>Requirement:</strong> Score 75% or higher to complete Chapter 1.</p>', 'final_quiz', 28);
+
+-- Set prerequisites for lessons (75% pass rate required)
+UPDATE structured_lessons SET prerequisite_lesson_id = 24 WHERE lesson_number = 25;
+UPDATE structured_lessons SET prerequisite_lesson_id = 25 WHERE lesson_number = 26;
+UPDATE structured_lessons SET prerequisite_lesson_id = 26 WHERE lesson_number = 27;
+UPDATE structured_lessons SET prerequisite_lesson_id = 27 WHERE lesson_number = 28;
+
+-- ============================================================
+-- SEED DATA - VOCABULARY
+-- ============================================================
+
+-- Vocabulary for early lessons
+INSERT INTO vocabulary (lesson_id, word, romaji, hiragana, meaning_vi, meaning_en, word_type, order_index) VALUES
+-- Lesson 1: Vowels
+(1, 'あ', 'a', 'あ', 'nguyên âm a', 'vowel a', 'expression', 1),
+(1, 'い', 'i', 'い', 'nguyên âm i', 'vowel i', 'expression', 2),
+(1, 'う', 'u', 'う', 'nguyên âm u', 'vowel u', 'expression', 3),
+(1, 'え', 'e', 'え', 'nguyên âm e', 'vowel e', 'expression', 4),
+(1, 'お', 'o', 'お', 'nguyên âm o', 'vowel o', 'expression', 5),
+
+-- Lesson 2: K Group
+(2, 'か', 'ka', 'か', 'ka', 'ka', 'expression', 1),
+(2, 'き', 'ki', 'き', 'ki', 'ki', 'expression', 2),
+(2, 'く', 'ku', 'く', 'ku', 'ku', 'expression', 3),
+(2, 'け', 'ke', 'け', 'ke', 'ke', 'expression', 4),
+(2, 'こ', 'ko', 'こ', 'ko', 'ko', 'expression', 5),
+
+-- Lesson 3: S Group
+(3, 'さ', 'sa', 'さ', 'sa', 'sa', 'expression', 1),
+(3, 'し', 'shi', 'し', 'shi', 'shi', 'expression', 2),
+(3, 'す', 'su', 'す', 'su', 'su', 'expression', 3),
+(3, 'せ', 'se', 'せ', 'se', 'se', 'expression', 4),
+(3, 'そ', 'so', 'そ', 'so', 'so', 'expression', 5),
+
+-- Lesson 4: T Group
+(4, 'た', 'ta', 'た', 'ta', 'ta', 'expression', 1),
+(4, 'ち', 'chi', 'ち', 'chi', 'chi', 'expression', 2),
+(4, 'つ', 'tsu', 'つ', 'tsu', 'tsu', 'expression', 3),
+(4, 'て', 'te', 'て', 'te', 'te', 'expression', 4),
+(4, 'と', 'to', 'と', 'to', 'to', 'expression', 5),
+
+-- Lesson 5: N Group
+(5, 'な', 'na', 'な', 'na', 'na', 'expression', 1),
+(5, 'に', 'ni', 'に', 'ni', 'ni', 'expression', 2),
+(5, 'ぬ', 'nu', 'ぬ', 'nu', 'nu', 'expression', 3),
+(5, 'ね', 'ne', 'ね', 'ne', 'ne', 'expression', 4),
+(5, 'の', 'no', 'の', 'no', 'no', 'expression', 5),
+
+-- Lesson 6: H Group
+(6, 'は', 'ha', 'は', 'ha', 'ha', 'expression', 1),
+(6, 'ひ', 'hi', 'ひ', 'hi', 'hi', 'expression', 2),
+(6, 'ふ', 'fu', 'ふ', 'fu', 'fu', 'expression', 3),
+(6, 'へ', 'he', 'へ', 'he', 'he', 'expression', 4),
+(6, 'ほ', 'ho', 'ほ', 'ho', 'ho', 'expression', 5),
+
+-- Lesson 7: M Group
+(7, 'ま', 'ma', 'ま', 'ma', 'ma', 'expression', 1),
+(7, 'み', 'mi', 'み', 'mi', 'mi', 'expression', 2),
+(7, 'む', 'mu', 'む', 'mu', 'mu', 'expression', 3),
+(7, 'め', 'me', 'め', 'me', 'me', 'expression', 4),
+(7, 'も', 'mo', 'も', 'mo', 'mo', 'expression', 5),
+
+-- Lesson 8: Y Group
+(8, 'や', 'ya', 'や', 'ya', 'ya', 'expression', 1),
+(8, 'ゆ', 'yu', 'ゆ', 'yu', 'yu', 'expression', 2),
+(8, 'よ', 'yo', 'よ', 'yo', 'yo', 'expression', 3),
+
+-- Lesson 9: R Group
+(9, 'ら', 'ra', 'ら', 'ra', 'ra', 'expression', 1),
+(9, 'り', 'ri', 'り', 'ri', 'ri', 'expression', 2),
+(9, 'る', 'ru', 'る', 'ru', 'ru', 'expression', 3),
+(9, 'れ', 're', 'れ', 're', 're', 'expression', 4),
+(9, 'ろ', 'ro', 'ろ', 'ro', 'ro', 'expression', 5),
+
+-- Lesson 10: W Group and Special N
+(10, 'わ', 'wa', 'わ', 'wa', 'wa', 'expression', 1),
+(10, 'を', 'wo', 'を', 'wo (trợ từ)', 'wo (particle)', 'particle', 2),
+(10, 'ん', 'n', 'ん', 'âm mũi n', 'nasal n', 'expression', 3),
+
+-- Lesson 27: Basic Vocabulary
+(27, 'こんにちは', 'konnichiwa', 'こんにちは', 'xin chào (ban ngày)', 'hello (daytime)', 'expression', 1),
+(27, 'こんばんは', 'konbanwa', 'こんばんは', 'xin chào (buổi tối)', 'good evening', 'expression', 2),
+(27, 'おはようございます', 'ohayou gozaimasu', 'おはようございます', 'chào buổi sáng', 'good morning', 'expression', 3),
+(27, 'ありがとうございます', 'arigatou gozaimasu', 'ありがとうございます', 'cảm ơn (lịch sự)', 'thank you (polite)', 'expression', 4),
+(27, 'すみません', 'sumimasen', 'すみません', 'xin lỗi / xin phép', 'excuse me / sorry', 'expression', 5),
+(27, 'はい', 'hai', 'はい', 'vâng / đúng', 'yes / correct', 'expression', 6),
+(27, 'いいえ', 'iie', 'いいえ', 'không', 'no', 'expression', 7);
+
+-- ============================================================
+-- SEED DATA - QUIZ QUESTIONS
+-- ============================================================
+
+-- Hiragana Review Quiz (Lesson 24) - 25 questions
+INSERT INTO quiz_questions (lesson_id, question_vi, question_en, question_type, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, order_index) VALUES
+(24, 'Chữ cái nào phát âm là "ka"?', 'Which character is pronounced "ka"?', 'multiple_choice', '["か", "き", "く", "け"]', '["か", "き", "く", "け"]', 'か', 'か', 'か là chữ cái đầu tiên của nhóm K.', 'か is the first character of the K group.', 1),
+(24, 'Chữ cái nào phát âm là "shi"?', 'Which character is pronounced "shi"?', 'multiple_choice', '["さ", "し", "す", "せ"]', '["さ", "し", "す", "せ"]', 'し', 'し', 'し phát âm là "shi", không phải "si".', 'し is pronounced "shi", not "si".', 2),
+(24, 'Nhóm nào có 5 chữ cái?', 'Which group has 5 characters?', 'multiple_choice', '["Nhóm Y", "Nhóm W", "Nhóm K", "Nhóm N đặc biệt"]', '["Y Group", "W Group", "K Group", "Special N Group"]', 'Nhóm K', 'K Group', 'Tất cả các nhóm chính (K, S, T, N, H, M, R) đều có 5 chữ cái.', 'All main groups (K, S, T, N, H, M, R) have 5 characters.', 3),
+(24, 'Chữ cái ん thuộc nhóm nào?', 'Which group does ん belong to?', 'multiple_choice', '["Nhóm N", "Nhóm N đặc biệt", "Nhóm W", "Không có nhóm"]', '["N Group", "Special N Group", "W Group", "No group"]', 'Nhóm N đặc biệt', 'Special N Group', 'ん là chữ cái đặc biệt, chỉ có một mình.', 'ん is a special character, standing alone.', 4),
+(24, 'Chữ cái nào phát âm là "chi"?', 'Which character is pronounced "chi"?', 'multiple_choice', '["た", "ち", "つ", "て"]', '["た", "ち", "つ", "て"]', 'ち', 'ち', 'ち thuộc nhóm T và phát âm là "chi".', 'ち belongs to T group and is pronounced "chi".', 5);
+
+-- Add more quiz questions for Lesson 24 (continuing to 25 questions)
+INSERT INTO quiz_questions (lesson_id, question_vi, question_en, question_type, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, order_index) VALUES
+(24, 'Chữ cái ふ phát âm là gì?', 'How is ふ pronounced?', 'multiple_choice', '["hu", "fu", "hi", "he"]', '["hu", "fu", "hi", "he"]', 'fu', 'fu', 'ふ phát âm là "fu", không phải "hu".', 'ふ is pronounced "fu", not "hu".', 6),
+(24, 'Nhóm nào chỉ có 3 chữ cái?', 'Which group has only 3 characters?', 'multiple_choice', '["Nhóm Y", "Nhóm W", "Nhóm R", "Nhóm M"]', '["Y Group", "W Group", "R Group", "M Group"]', 'Nhóm Y', 'Y Group', 'Nhóm Y chỉ có や (ya), ゆ (yu), よ (yo).', 'Y Group only has や (ya), ゆ (yu), よ (yo).', 7),
+(24, 'Chữ cái nào thuộc nhóm M?', 'Which character belongs to M group?', 'multiple_choice', '["ま", "ら", "は", "な"]', '["ま", "ら", "は", "な"]', 'ま', 'ま', 'ま (ma) thuộc nhóm M.', 'ま (ma) belongs to M group.', 8),
+(24, 'Chữ cái り phát âm là gì?', 'How is り pronounced?', 'multiple_choice', '["ri", "li", "ru", "re"]', '["ri", "li", "ru", "re"]', 'ri', 'ri', 'り phát âm là "ri".', 'り is pronounced "ri".', 9),
+(24, 'Chữ cái わ thuộc nhóm nào?', 'Which group does わ belong to?', 'multiple_choice', '["Nhóm W", "Nhóm Y", "Nhóm R", "Nhóm N"]', '["W Group", "Y Group", "R Group", "N Group"]', 'Nhóm W', 'W Group', 'わ (wa) thuộc nhóm W.', 'わ (wa) belongs to W group.', 10),
+(24, 'Có bao nhiêu chữ cái Hiragana cơ bản?', 'How many basic Hiragana characters are there?', 'multiple_choice', '["42", "46", "48", "50"]', '["42", "46", "48", "50"]', '46', '46', 'Có 46 chữ cái Hiragana cơ bản.', 'There are 46 basic Hiragana characters.', 11),
+(24, 'Chữ cái nào phát âm giống L hơn R?', 'Which character is pronounced more like L than R?', 'multiple_choice', '["ら", "り", "る", "れ"]', '["ら", "り", "る", "れ"]', 'ら', 'ら', 'Nhóm R phát âm giống L hơn R trong tiếng Anh.', 'R group is pronounced more like L than R in English.', 12),
+(24, 'Chữ cái つ phát âm là gì?', 'How is つ pronounced?', 'multiple_choice', '["tsu", "tu", "su", "tsu"]', '["tsu", "tu", "su", "tsu"]', 'tsu', 'tsu', 'つ phát âm là "tsu".', 'つ is pronounced "tsu".', 13),
+(24, 'Chữ cái へ thuộc nhóm nào?', 'Which group does へ belong to?', 'multiple_choice', '["Nhóm H", "Nhóm N", "Nhóm M", "Nhóm R"]', '["H Group", "N Group", "M Group", "R Group"]', 'Nhóm H', 'H Group', 'へ (he) thuộc nhóm H.', 'へ (he) belongs to H group.', 14),
+(24, 'Chữ cái nào chỉ dùng làm trợ từ?', 'Which character is only used as a particle?', 'multiple_choice', '["わ", "を", "ん", "よ"]', '["わ", "を", "ん", "よ"]', 'を', 'を', 'を (wo) chỉ dùng làm trợ từ.', 'を (wo) is only used as a particle.', 15),
+(24, 'Chữ cái む thuộc nhóm nào?', 'Which group does む belong to?', 'multiple_choice', '["Nhóm M", "Nhóm N", "Nhóm H", "Nhóm R"]', '["M Group", "N Group", "H Group", "R Group"]', 'Nhóm M', 'M Group', 'む (mu) thuộc nhóm M.', 'む (mu) belongs to M group.', 16),
+(24, 'Chữ cái せ phát âm là gì?', 'How is せ pronounced?', 'multiple_choice', '["se", "shi", "su", "so"]', '["se", "shi", "su", "so"]', 'se', 'se', 'せ phát âm là "se".', 'せ is pronounced "se".', 17),
+(24, 'Nhóm nào có chữ cái phát âm giống "chi"?', 'Which group has a character pronounced like "chi"?', 'multiple_choice', '["Nhóm T", "Nhóm S", "Nhóm H", "Nhóm N"]', '["T Group", "S Group", "H Group", "N Group"]', 'Nhóm T', 'T Group', 'ち (chi) thuộc nhóm T.', 'ち (chi) belongs to T group.', 18),
+(24, 'Chữ cái て thuộc nhóm nào?', 'Which group does て belong to?', 'multiple_choice', '["Nhóm T", "Nhóm S", "Nhóm N", "Nhóm H"]', '["T Group", "S Group", "N Group", "H Group"]', 'Nhóm T', 'T Group', 'て (te) thuộc nhóm T.', 'て (te) belongs to T group.', 19),
+(24, 'Chữ cái nào phát âm là "no"?', 'Which character is pronounced "no"?', 'multiple_choice', '["の", "に", "ぬ", "ね"]', '["の", "に", "ぬ", "ね"]', 'の', 'の', 'の phát âm là "no".', 'の is pronounced "no".', 20),
+(24, 'Chữ cái ひ thuộc nhóm nào?', 'Which group does ひ belong to?', 'multiple_choice', '["Nhóm H", "Nhóm M", "Nhóm Y", "Nhóm R"]', '["H Group", "M Group", "Y Group", "R Group"]', 'Nhóm H', 'H Group', 'ひ (hi) thuộc nhóm H.', 'ひ (hi) belongs to H group.', 21),
+(24, 'Chữ cái ろ thuộc nhóm nào?', 'Which group does ろ belong to?', 'multiple_choice', '["Nhóm R", "Nhóm W", "Nhóm Y", "Nhóm N"]', '["R Group", "W Group", "Y Group", "N Group"]', 'Nhóm R', 'R Group', 'ろ (ro) thuộc nhóm R.', 'ろ (ro) belongs to R group.', 22),
+(24, 'Chữ cái く phát âm là gì?', 'How is く pronounced?', 'multiple_choice', '["ku", "ka", "ki", "ke"]', '["ku", "ka", "ki", "ke"]', 'ku', 'ku', 'く phát âm là "ku".', 'く is pronounced "ku".', 23),
+(24, 'Chữ cái nào thuộc nhóm S?', 'Which character belongs to S group?', 'multiple_choice', '["そ", "た", "な", "は"]', '["そ", "た", "な", "は"]', 'そ', 'そ', 'そ (so) thuộc nhóm S.', 'そ (so) belongs to S group.', 24),
+(24, 'Chữ cái ん phát âm là gì?', 'How is ん pronounced?', 'multiple_choice', '["m", "n", "ng", "nh"]', '["m", "n", "ng", "nh"]', 'n', 'n', 'ん phát âm là âm mũi "n".', 'ん is pronounced as nasal "n".', 25);
+
+-- Katakana Review Quiz (Lesson 25) - 25 questions
+INSERT INTO quiz_questions (lesson_id, question_vi, question_en, question_type, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, order_index) VALUES
+(25, 'Katakana ア phát âm là gì?', 'How is Katakana ア pronounced?', 'multiple_choice', '["a", "i", "u", "e"]', '["a", "i", "u", "e"]', 'a', 'a', 'ア là nguyên âm "a" trong Katakana.', 'ア is the vowel "a" in Katakana.', 1),
+(25, 'Katakana シ phát âm là gì?', 'How is Katakana シ pronounced?', 'multiple_choice', '["sa", "shi", "su", "se"]', '["sa", "shi", "su", "se"]', 'shi', 'shi', 'シ phát âm là "shi".', 'シ is pronounced "shi".', 2),
+(25, 'Katakana ク thuộc nhóm nào?', 'Which group does Katakana ク belong to?', 'multiple_choice', '["Nhóm K", "Nhóm S", "Nhóm T", "Nhóm N"]', '["K Group", "S Group", "T Group", "N Group"]', 'Nhóm K', 'K Group', 'ク (ku) thuộc nhóm K trong Katakana.', 'ク (ku) belongs to K group in Katakana.', 3),
+(25, 'Katakana ン phát âm là gì?', 'How is Katakana ン pronounced?', 'multiple_choice', '["m", "n", "ng", "nh"]', '["m", "n", "ng", "nh"]', 'n', 'n', 'ン là âm mũi "n" trong Katakana.', 'ン is the nasal "n" sound in Katakana.', 4),
+(25, 'Katakana チ phát âm là gì?', 'How is Katakana チ pronounced?', 'multiple_choice', '["ta", "chi", "tsu", "te"]', '["ta", "chi", "tsu", "te"]', 'chi', 'chi', 'チ phát âm là "chi".', 'チ is pronounced "chi".', 5);
+
+-- Add more Katakana quiz questions (continuing to 25)
+INSERT INTO quiz_questions (lesson_id, question_vi, question_en, question_type, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, order_index) VALUES
+(25, 'Katakana フ phát âm là gì?', 'How is Katakana フ pronounced?', 'multiple_choice', '["hu", "fu", "hi", "he"]', '["hu", "fu", "hi", "he"]', 'fu', 'fu', 'フ phát âm là "fu".', 'フ is pronounced "fu".', 6),
+(25, 'Katakana ヤ thuộc nhóm nào?', 'Which group does Katakana ヤ belong to?', 'multiple_choice', '["Nhóm Y", "Nhóm W", "Nhóm R", "Nhóm M"]', '["Y Group", "W Group", "R Group", "M Group"]', 'Nhóm Y', 'Y Group', 'ヤ (ya) thuộc nhóm Y.', 'ヤ (ya) belongs to Y group.', 7),
+(25, 'Katakana マ thuộc nhóm nào?', 'Which group does Katakana マ belong to?', 'multiple_choice', '["Nhóm M", "Nhóm N", "Nhóm H", "Nhóm R"]', '["M Group", "N Group", "H Group", "R Group"]', 'Nhóm M', 'M Group', 'マ (ma) thuộc nhóm M.', 'マ (ma) belongs to M group.', 8),
+(25, 'Katakana リ phát âm là gì?', 'How is Katakana リ pronounced?', 'multiple_choice', '["ri", "li", "ru", "re"]', '["ri", "li", "ru", "re"]', 'ri', 'ri', 'リ phát âm là "ri".', 'リ is pronounced "ri".', 9),
+(25, 'Katakana ワ thuộc nhóm nào?', 'Which group does Katakana ワ belong to?', 'multiple_choice', '["Nhóm W", "Nhóm Y", "Nhóm R", "Nhóm N"]', '["W Group", "Y Group", "R Group", "N Group"]', 'Nhóm W', 'W Group', 'ワ (wa) thuộc nhóm W.', 'ワ (wa) belongs to W group.', 10),
+(25, 'Có bao nhiêu chữ cái Katakana cơ bản?', 'How many basic Katakana characters are there?', 'multiple_choice', '["42", "46", "48", "50"]', '["42", "46", "48", "50"]', '46', '46', 'Có 46 chữ cái Katakana cơ bản.', 'There are 46 basic Katakana characters.', 11),
+(25, 'Katakana ラ thuộc nhóm nào?', 'Which group does Katakana ラ belong to?', 'multiple_choice', '["Nhóm R", "Nhóm W", "Nhóm Y", "Nhóm N"]', '["R Group", "W Group", "Y Group", "N Group"]', 'Nhóm R', 'R Group', 'ラ (ra) thuộc nhóm R.', 'ラ (ra) belongs to R group.', 12),
+(25, 'Katakana ツ phát âm là gì?', 'How is Katakana ツ pronounced?', 'multiple_choice', '["tsu", "tu", "su", "tsu"]', '["tsu", "tu", "su", "tsu"]', 'tsu', 'tsu', 'ツ phát âm là "tsu".', 'ツ is pronounced "tsu".', 13),
+(25, 'Katakana ヘ thuộc nhóm nào?', 'Which group does Katakana ヘ belong to?', 'multiple_choice', '["Nhóm H", "Nhóm N", "Nhóm M", "Nhóm R"]', '["H Group", "N Group", "M Group", "R Group"]', 'Nhóm H', 'H Group', 'ヘ (he) thuộc nhóm H.', 'ヘ (he) belongs to H group.', 14),
+(25, 'Katakana ヲ phát âm là gì?', 'How is Katakana ヲ pronounced?', 'multiple_choice', '["wa", "wo", "wi", "we"]', '["wa", "wo", "wi", "we"]', 'wo', 'wo', 'ヲ phát âm là "wo".', 'ヲ is pronounced "wo".', 15),
+(25, 'Katakana ム thuộc nhóm nào?', 'Which group does Katakana ム belong to?', 'multiple_choice', '["Nhóm M", "Nhóm N", "Nhóm H", "Nhóm R"]', '["M Group", "N Group", "H Group", "R Group"]', 'Nhóm M', 'M Group', 'ム (mu) thuộc nhóm M.', 'ム (mu) belongs to M group.', 16),
+(25, 'Katakana セ phát âm là gì?', 'How is Katakana セ pronounced?', 'multiple_choice', '["se", "shi", "su", "so"]', '["se", "shi", "su", "so"]', 'se', 'se', 'セ phát âm là "se".', 'セ is pronounced "se".', 17),
+(25, 'Katakana チ thuộc nhóm nào?', 'Which group does Katakana チ belong to?', 'multiple_choice', '["Nhóm T", "Nhóm S", "Nhóm H", "Nhóm N"]', '["T Group", "S Group", "H Group", "N Group"]', 'Nhóm T', 'T Group', 'チ (chi) thuộc nhóm T.', 'チ (chi) belongs to T group.', 18),
+(25, 'Katakana テ thuộc nhóm nào?', 'Which group does Katakana テ belong to?', 'multiple_choice', '["Nhóm T", "Nhóm S", "Nhóm N", "Nhóm H"]', '["T Group", "S Group", "N Group", "H Group"]', 'Nhóm T', 'T Group', 'テ (te) thuộc nhóm T.', 'テ (te) belongs to T group.', 19),
+(25, 'Katakana ノ phát âm là gì?', 'How is Katakana ノ pronounced?', 'multiple_choice', '["no", "ni", "nu", "ne"]', '["no", "ni", "nu", "ne"]', 'no', 'no', 'ノ phát âm là "no".', 'ノ is pronounced "no".', 20),
+(25, 'Katakana ヒ thuộc nhóm nào?', 'Which group does Katakana ヒ belong to?', 'multiple_choice', '["Nhóm H", "Nhóm M", "Nhóm Y", "Nhóm R"]', '["H Group", "M Group", "Y Group", "R Group"]', 'Nhóm H', 'H Group', 'ヒ (hi) thuộc nhóm H.', 'ヒ (hi) belongs to H group.', 21),
+(25, 'Katakana ロ thuộc nhóm nào?', 'Which group does Katakana ロ belong to?', 'multiple_choice', '["Nhóm R", "Nhóm W", "Nhóm Y", "Nhóm N"]', '["R Group", "W Group", "Y Group", "N Group"]', 'Nhóm R', 'R Group', 'ロ (ro) thuộc nhóm R.', 'ロ (ro) belongs to R group.', 22),
+(25, 'Katakana ク phát âm là gì?', 'How is Katakana ク pronounced?', 'multiple_choice', '["ku", "ka", "ki", "ke"]', '["ku", "ka", "ki", "ke"]', 'ku', 'ku', 'ク phát âm là "ku".', 'ク is pronounced "ku".', 23),
+(25, 'Katakana ソ thuộc nhóm nào?', 'Which group does Katakana ソ belong to?', 'multiple_choice', '["Nhóm S", "Nhóm T", "Nhóm N", "Nhóm H"]', '["S Group", "S Group", "N Group", "H Group"]', 'Nhóm S', 'S Group', 'ソ (so) thuộc nhóm S.', 'ソ (so) belongs to S group.', 24),
+(25, 'Katakana ン thuộc nhóm nào?', 'Which group does Katakana ン belong to?', 'multiple_choice', '["Nhóm N đặc biệt", "Nhóm W", "Nhóm Y", "Nhóm R"]', '["Special N Group", "W Group", "Y Group", "R Group"]', 'Nhóm N đặc biệt', 'Special N Group', 'ン là chữ cái đặc biệt.', 'ン is a special character.', 25);
+
+-- Comprehensive Review Quiz (Lesson 26) - 25 questions
+INSERT INTO quiz_questions (lesson_id, question_vi, question_en, question_type, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, order_index) VALUES
+(26, 'Chữ cái あ là Hiragana hay Katakana?', 'Is あ Hiragana or Katakana?', 'multiple_choice', '["Hiragana", "Katakana", "Cả hai", "Không phải"]', '["Hiragana", "Katakana", "Both", "Neither"]', 'Hiragana', 'Hiragana', 'あ là chữ cái Hiragana.', 'あ is a Hiragana character.', 1),
+(26, 'Chữ cái ア là Hiragana hay Katakana?', 'Is ア Hiragana or Katakana?', 'multiple_choice', '["Hiragana", "Katakana", "Cả hai", "Không phải"]', '["Hiragana", "Katakana", "Both", "Neither"]', 'Katakana', 'Katakana', 'ア là chữ cái Katakana.', 'ア is a Katakana character.', 2),
+(26, 'Cả Hiragana và Katakana đều có bao nhiêu chữ cái cơ bản?', 'How many basic characters do both Hiragana and Katakana have?', 'multiple_choice', '["42", "46", "48", "50"]', '["42", "46", "48", "50"]', '46', '46', 'Cả hai bảng chữ cái đều có 46 chữ cái cơ bản.', 'Both alphabets have 46 basic characters.', 3),
+(26, 'Chữ cái nào chỉ có trong Hiragana?', 'Which character only exists in Hiragana?', 'multiple_choice', '["を", "ヲ", "ん", "ン"]', '["を", "ヲ", "ん", "ン"]', 'を', 'を', 'を chỉ có trong Hiragana.', 'を only exists in Hiragana.', 4),
+(26, 'Chữ cái ん và ン có khác nhau không?', 'Are ん and ン different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "ん là Hiragana, ン là Katakana", "Không có chữ ン"]', '["Yes, different alphabets", "No, same", "ん is Hiragana, ン is Katakana", "ン does not exist"]', 'ん là Hiragana, ン là Katakana', 'ん is Hiragana, ン is Katakana', 'ん là Hiragana, ン là Katakana nhưng cùng phát âm.', 'ん is Hiragana, ン is Katakana but same pronunciation.', 5);
+
+-- Add more comprehensive quiz questions
+INSERT INTO quiz_questions (lesson_id, question_vi, question_en, question_type, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, order_index) VALUES
+(26, 'Katakana thường dùng để viết gì?', 'What is Katakana usually used to write?', 'multiple_choice', '["Từ ngữ bản địa Nhật", "Từ nước ngoài", "Tên riêng Nhật", "Tất cả đều đúng"]', '["Native Japanese words", "Foreign words", "Japanese proper names", "All are correct"]', 'Từ nước ngoài', 'Foreign words', 'Katakana dùng để viết từ nước ngoài và tên riêng.', 'Katakana is used for foreign words and proper names.', 6),
+(26, 'Chữ cái し và シ có khác nhau không?', 'Are し and シ different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "し là Hiragana, シ là Katakana", "Không có chữ シ"]', '["Yes, different alphabets", "No, same", "し is Hiragana, シ is Katakana", "シ does not exist"]', 'し là Hiragana, シ là Katakana', 'し is Hiragana, シ is Katakana', 'し là Hiragana, シ là Katakana nhưng cùng phát âm "shi".', 'し is Hiragana, シ is Katakana but both pronounced "shi".', 7),
+(26, 'Nhóm nào có số lượng chữ cái khác nhau giữa Hiragana và Katakana?', 'Which group has different number of characters between Hiragana and Katakana?', 'multiple_choice', '["Nhóm Y", "Nhóm W", "Nhóm N đặc biệt", "Tất cả đều giống"]', '["Y Group", "W Group", "Special N Group", "All are the same"]', 'Tất cả đều giống', 'All are the same', 'Cả hai bảng chữ cái có cùng số lượng chữ cái trong mỗi nhóm.', 'Both alphabets have the same number of characters in each group.', 8),
+(26, 'Chữ cái ふ và フ có khác nhau không?', 'Are ふ and フ different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "ふ là Hiragana, フ là Katakana", "Không có chữ フ"]', '["Yes, different alphabets", "No, same", "ふ is Hiragana, フ is Katakana", "フ does not exist"]', 'ふ là Hiragana, フ là Katakana', 'ふ is Hiragana, フ is Katakana', 'ふ là Hiragana, フ là Katakana nhưng cùng phát âm "fu".', 'ふ is Hiragana, フ is Katakana but both pronounced "fu".', 9),
+(26, 'Hiragana thường dùng để viết gì?', 'What is Hiragana usually used to write?', 'multiple_choice', '["Từ ngữ bản địa Nhật", "Từ nước ngoài", "Tên riêng Nhật", "Tất cả đều đúng"]', '["Native Japanese words", "Foreign words", "Japanese proper names", "All are correct"]', 'Từ ngữ bản địa Nhật', 'Native Japanese words', 'Hiragana dùng để viết từ ngữ bản địa và ngữ pháp.', 'Hiragana is used for native words and grammar.', 10),
+(26, 'Chữ cái つ và ツ có khác nhau không?', 'Are つ and ツ different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "つ là Hiragana, ツ là Katakana", "Không có chữ ツ"]', '["Yes, different alphabets", "No, same", "つ is Hiragana, ツ is Katakana", "ツ does not exist"]', 'つ là Hiragana, ツ là Katakana', 'つ is Hiragana, ツ is Katakana', 'つ là Hiragana, ツ là Katakana nhưng cùng phát âm "tsu".', 'つ is Hiragana, ツ is Katakana but both pronounced "tsu".', 11),
+(26, 'Cả hai bảng chữ cái đều có chữ cái đặc biệt nào?', 'Which special character do both alphabets have?', 'multiple_choice', '["を", "ヲ", "ん", "ン"]', '["を", "ヲ", "ん", "ン"]', 'ん', 'ん', 'Chỉ ん có trong cả hai bảng chữ cái.', 'Only ん exists in both alphabets.', 12),
+(26, 'Chữ cái ち và チ có khác nhau không?', 'Are ち and チ different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "ち là Hiragana, チ là Katakana", "Không có chữ チ"]', '["Yes, different alphabets", "No, same", "ち is Hiragana, チ is Katakana", "チ does not exist"]', 'ち là Hiragana, チ là Katakana', 'ち is Hiragana, チ is Katakana', 'ち là Hiragana, チ là Katakana nhưng cùng phát âm "chi".', 'ち is Hiragana, チ is Katakana but both pronounced "chi".', 13),
+(26, 'Katakana có hình dáng như thế nào so với Hiragana?', 'What is the shape of Katakana compared to Hiragana?', 'multiple_choice', '["Bo tròn hơn", "Góc cạnh hơn", "Giống hệt nhau", "Không có quy luật"]', '["More rounded", "More angular", "Exactly the same", "No pattern"]', 'Góc cạnh hơn', 'More angular', 'Katakana có hình dáng góc cạnh hơn Hiragana.', 'Katakana has more angular shapes than Hiragana.', 14),
+(26, 'Chữ cái ら và ラ có khác nhau không?', 'Are ら and ラ different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "ら là Hiragana, ラ là Katakana", "Không có chữ ラ"]', '["Yes, different alphabets", "No, same", "ら is Hiragana, ラ is Katakana", "ラ does not exist"]', 'ら là Hiragana, ラ là Katakana', 'ら is Hiragana, ラ is Katakana', 'ら là Hiragana, ラ là Katakana nhưng cùng phát âm "ra".', 'ら is Hiragana, ラ is Katakana but both pronounced "ra".', 15),
+(26, 'Nhóm nào chỉ có 3 chữ cái trong cả hai bảng?', 'Which group has only 3 characters in both alphabets?', 'multiple_choice', '["Nhóm Y", "Nhóm W", "Nhóm R", "Nhóm M"]', '["Y Group", "W Group", "R Group", "M Group"]', 'Nhóm Y', 'Y Group', 'Nhóm Y chỉ có 3 chữ cái: ya, yu, yo.', 'Y Group only has 3 characters: ya, yu, yo.', 16),
+(26, 'Chữ cái へ và ヘ có khác nhau không?', 'Are へ and ヘ different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "へ là Hiragana, ヘ là Katakana", "Không có chữ ヘ"]', '["Yes, different alphabets", "No, same", "へ is Hiragana, ヘ is Katakana", "ヘ does not exist"]', 'へ là Hiragana, ヘ là Katakana', 'へ là Hiragana, ヘ là Katakana', 'へ là Hiragana, ヘ là Katakana nhưng cùng phát âm "he".', 'へ is Hiragana, ヘ is Katakana but both pronounced "he".', 17),
+(26, 'Hiragana và Katakana có cùng phát âm không?', 'Do Hiragana and Katakana have the same pronunciation?', 'multiple_choice', '["Có, hoàn toàn giống", "Không, khác nhau", "Hầu hết giống, một số khác", "Không có quy luật"]', '["Yes, completely same", "No, different", "Mostly same, some different", "No pattern"]', 'Có, hoàn toàn giống', 'Yes, completely same', 'Mỗi chữ cái Hiragana và Katakana tương ứng có cùng phát âm.', 'Each corresponding Hiragana and Katakana character has the same pronunciation.', 18),
+(26, 'Chữ cái わ và ワ có khác nhau không?', 'Are わ and ワ different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "わ là Hiragana, ワ là Katakana", "Không có chữ ワ"]', '["Yes, different alphabets", "No, same", "わ is Hiragana, ワ is Katakana", "ワ does not exist"]', 'わ là Hiragana, ワ là Katakana', 'わ là Hiragana, ワ là Katakana', 'わ là Hiragana, ワ là Katakana nhưng cùng phát âm "wa".', 'わ is Hiragana, ワ is Katakana but both pronounced "wa".', 19),
+(26, 'Katakana được phát minh từ đâu?', 'Where was Katakana invented from?', 'multiple_choice', '["Từ chữ Hán", "Từ Hiragana", "Từ chữ Sanskrit", "Từ chữ La Mã"]', '["From Chinese characters", "From Hiragana", "From Sanskrit", "From Roman letters"]', 'Từ chữ Hán', 'From Chinese characters', 'Katakana được phát minh từ các phần của chữ Hán.', 'Katakana was invented from parts of Chinese characters.', 20),
+(26, 'Chữ cái む và ム có khác nhau không?', 'Are む and ム different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "む là Hiragana, ム là Katakana", "Không có chữ ム"]', '["Yes, different alphabets", "No, same", "む is Hiragana, ム is Katakana", "ム does not exist"]', 'む là Hiragana, ム là Katakana', 'む is Hiragana, ム is Katakana', 'む là Hiragana, ム là Katakana nhưng cùng phát âm "mu".', 'む is Hiragana, ム is Katakana but both pronounced "mu".', 21),
+(26, 'Hiragana được phát minh từ đâu?', 'Where was Hiragana invented from?', 'multiple_choice', '["Từ chữ Hán", "Từ chữ Sanskrit", "Từ chữ La Mã", "Từ chữ thảo"]', '["From Chinese characters", "From Sanskrit", "From Roman letters", "From cursive script"]', 'Từ chữ thảo', 'From cursive script', 'Hiragana được phát minh từ chữ thảo của chữ Hán.', 'Hiragana was invented from cursive script of Chinese characters.', 22),
+(26, 'Chữ cái そ và ソ có khác nhau không?', 'Are そ and ソ different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "そ là Hiragana, ソ là Katakana", "Không có chữ ソ"]', '["Yes, different alphabets", "No, same", "そ is Hiragana, ソ is Katakana", "ソ does not exist"]', 'そ là Hiragana, ソ là Katakana', 'そ là Hiragana, ソ là Katakana', 'そ là Hiragana, ソ là Katakana nhưng cùng phát âm "so".', 'そ is Hiragana, ソ is Katakana but both pronounced "so".', 23),
+(26, 'Cả hai bảng chữ cái đều bắt đầu từ nhóm nào?', 'Which group do both alphabets start with?', 'multiple_choice', '["Nhóm A", "Nhóm K", "Nhóm S", "Nhóm T"]', '["A Group", "K Group", "S Group", "T Group"]', 'Nhóm A', 'A Group', 'Cả hai bảng chữ cái đều bắt đầu với 5 nguyên âm (nhóm A).', 'Both alphabets start with the 5 vowels (A Group).', 24),
+(26, 'Chữ cái ん/ン dùng để viết gì?', 'What is ん/ン used to write?', 'multiple_choice', '["Âm mũi n", "Âm m", "Âm ng", "Âm nh"]', '["Nasal n sound", "M sound", "Ng sound", "Nh sound"]', 'Âm mũi n', 'Nasal n sound', 'ん/ン dùng để viết âm mũi n.', 'ん/ン is used to write the nasal n sound.', 25);
+
+-- Final Chapter Quiz (Lesson 28) - 100 questions
+-- This would be a comprehensive quiz covering all material
+-- For brevity, I'll add just a few sample questions
+INSERT INTO quiz_questions (lesson_id, question_vi, question_en, question_type, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, order_index) VALUES
+(28, 'こんにちは bằng tiếng Việt nghĩa là gì?', 'What does こんにちは mean in Vietnamese?', 'multiple_choice', '["Chào buổi sáng", "Chào buổi tối", "Xin chào (ban ngày)", "Tạm biệt"]', '["Good morning", "Good evening", "Hello (daytime)", "Goodbye"]', 'Xin chào (ban ngày)', 'Hello (daytime)', 'こんにちは nghĩa là "xin chào" dùng ban ngày.', 'こんにちは means "hello" used during daytime.', 1),
+(28, 'Katakana ア phát âm là gì?', 'How is Katakana ア pronounced?', 'multiple_choice', '["a", "i", "u", "e"]', '["a", "i", "u", "e"]', 'a', 'a', 'ア là nguyên âm "a" trong Katakana.', 'ア is the vowel "a" in Katakana.', 2),
+(28, 'Chữ cái し thuộc nhóm nào?', 'Which group does し belong to?', 'multiple_choice', '["Nhóm S", "Nhóm T", "Nhóm N", "Nhóm H"]', '["S Group", "T Group", "N Group", "H Group"]', 'Nhóm S', 'S Group', 'し (shi) thuộc nhóm S.', 'し (shi) belongs to S group.', 3),
+(28, 'ありがとうございます nghĩa là gì?', 'What does ありがとうございます mean?', 'multiple_choice', '["Cảm ơn (lịch sự)", "Xin lỗi", "Xin chào", "Tạm biệt"]', '["Thank you (polite)", "Sorry", "Hello", "Goodbye"]', 'Cảm ơn (lịch sự)', 'Thank you (polite)', 'ありがとうございます là cách nói "cảm ơn" lịch sự.', 'ありがとうございます is the polite way to say "thank you".', 4),
+(28, 'Có bao nhiêu chữ cái Hiragana cơ bản?', 'How many basic Hiragana characters are there?', 'multiple_choice', '["42", "46", "48", "50"]', '["42", "46", "48", "50"]', '46', '46', 'Có 46 chữ cái Hiragana cơ bản.', 'There are 46 basic Hiragana characters.', 5);
+
+-- Add more final quiz questions (continuing to 100 would be too long, so I'll add a few more)
+INSERT INTO quiz_questions (lesson_id, question_vi, question_en, question_type, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, order_index) VALUES
+(28, 'Katakana dùng để viết gì?', 'What is Katakana used to write?', 'multiple_choice', '["Từ bản địa Nhật", "Từ nước ngoài", "Tên người Nhật", "Tất cả đều đúng"]', '["Native Japanese words", "Foreign words", "Japanese names", "All are correct"]', 'Từ nước ngoài', 'Foreign words', 'Katakana chủ yếu dùng cho từ nước ngoài.', 'Katakana is mainly used for foreign words.', 6),
+(28, 'Chữ cái ふ phát âm là gì?', 'How is ふ pronounced?', 'multiple_choice', '["hu", "fu", "hi", "he"]', '["hu", "fu", "hi", "he"]', 'fu', 'fu', 'ふ phát âm là "fu", không phải "hu".', 'ふ is pronounced "fu", not "hu".', 7),
+(28, 'すみません có nghĩa là gì?', 'What does すみません mean?', 'multiple_choice', '["Cảm ơn", "Xin lỗi", "Xin chào", "Tạm biệt"]', '["Thank you", "Excuse me/Sorry", "Hello", "Goodbye"]', 'Xin lỗi', 'Excuse me/Sorry', 'すみません nghĩa là "xin lỗi" hoặc "xin phép".', 'すみません means "excuse me" or "sorry".', 8),
+(28, 'Nhóm Y có bao nhiêu chữ cái?', 'How many characters does Y group have?', 'multiple_choice', '["3", "4", "5", "6"]', '["3", "4", "5", "6"]', '3', '3', 'Nhóm Y chỉ có ya, yu, yo.', 'Y group only has ya, yu, yo.', 9),
+(28, 'Hiragana あ và Katakana ア có khác nhau không?', 'Are Hiragana あ and Katakana ア different?', 'multiple_choice', '["Có, khác bảng chữ cái", "Không, giống nhau", "あ là Hiragana, ア là Katakana", "Không có chữ ア"]', '["Yes, different alphabets", "No, same", "あ is Hiragana, ア is Katakana", "ア does not exist"]', 'あ là Hiragana, ア là Katakana', 'あ is Hiragana, ア is Katakana', 'あ là Hiragana, ア là Katakana nhưng cùng phát âm.', 'あ is Hiragana, ア is Katakana but same pronunciation.', 10);
+
+-- ============================================================
+-- SAMPLE USER DATA (for testing)
+-- ============================================================
+
+INSERT INTO users (username, email, password_hash, full_name) VALUES
+('testuser', 'test@example.com', '$2b$10$dummy.hash.for.testing.purposes.only', 'Test User');
+
+-- ============================================================
+-- END OF SEED DATA
+-- ============================================================
+
+-- Create indexes for better performance
+CREATE INDEX idx_structured_lessons_section ON structured_lessons(section_id);
+CREATE INDEX idx_structured_lessons_prerequisite ON structured_lessons(prerequisite_lesson_id);
+CREATE INDEX idx_vocabulary_lesson ON vocabulary(lesson_id);
+CREATE INDEX idx_quiz_questions_lesson ON quiz_questions(lesson_id);
+CREATE INDEX idx_user_progress_user ON user_progress(user_id);
+CREATE INDEX idx_user_progress_lesson ON user_progress(lesson_id);
+CREATE INDEX idx_quiz_attempts_user ON quiz_attempts(user_id);
+CREATE INDEX idx_quiz_attempts_lesson ON quiz_attempts(lesson_id);

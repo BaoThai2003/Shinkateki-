@@ -6,8 +6,15 @@ const { query, withTransaction } = require("../config/db");
 // Get all chapters with sections and lessons
 async function getChapters(req, res) {
   try {
-    const userId = req.user.id;
-    const userLanguage = req.user.language || "en";
+    const userId = req.user ? req.user.id : 1; // Use test user ID if no auth
+    const userLanguage = req.user ? req.user.language || "en" : "vi";
+
+    console.log(
+      "Getting chapters for userId:",
+      userId,
+      "language:",
+      userLanguage
+    );
 
     // Get chapters with sections and lessons
     const chapters = await query(
@@ -18,12 +25,12 @@ async function getChapters(req, res) {
         s.description_en as section_description_en, s.description_vi as section_description_vi,
         s.order_index as section_order,
         sl.id as lesson_id, sl.lesson_number, sl.title_en as lesson_title_en, sl.title_vi as lesson_title_vi,
-        sl.content_en, sl.content_vi, sl.type, sl.script_type, sl.prerequisites, sl.unlocks,
-        ulp.is_completed, ulp.is_unlocked
+        sl.content_en, sl.content_vi, sl.lesson_type as type, sl.prerequisite_lesson_id,
+        up.completed as is_completed
       FROM chapters c
       LEFT JOIN sections s ON s.chapter_id = c.id
       LEFT JOIN structured_lessons sl ON sl.section_id = s.id
-      LEFT JOIN user_lesson_progress ulp ON ulp.lesson_id = sl.id AND ulp.user_id = ?
+      LEFT JOIN user_progress up ON up.lesson_id = sl.id AND up.user_id = ?
       ORDER BY c.order_index, s.order_index, sl.lesson_number
     `,
       [userId]
@@ -58,12 +65,12 @@ async function getChapters(req, res) {
       }
 
       if (row.lesson_id) {
-        const prerequisites = JSON.parse(row.prerequisites || "[]");
+        const prerequisites = row.prerequisite_lesson_id
+          ? [row.prerequisite_lesson_id]
+          : [];
         const isFirstLesson = Number(row.lesson_number) === 1;
         const isUnlocked =
-          !!row.is_unlocked ||
-          (isFirstLesson && prerequisites.length === 0) ||
-          row.is_completed === 1; // completed implies unlocked
+          isFirstLesson || prerequisites.length === 0 || row.is_completed === 1; // completed implies unlocked
 
         result[row.id].sections[row.section_id].lessons.push({
           id: row.lesson_id,
@@ -74,9 +81,8 @@ async function getChapters(req, res) {
           content_vi: row.content_vi,
           content: userLanguage === "vi" ? row.content_vi : row.content_en,
           type: row.type,
-          script_type: row.script_type,
           prerequisites,
-          unlocks: JSON.parse(row.unlocks || "[]"),
+          unlocks: [], // No unlocks column, so empty array
           is_completed: !!row.is_completed,
           is_unlocked: !!isUnlocked,
         });

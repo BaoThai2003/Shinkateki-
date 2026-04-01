@@ -94,6 +94,7 @@ window.showDictionaryView = function () {
 async function loadChapters() {
   try {
     const chapters = await api.request("GET", "/structured-lessons/chapters");
+    console.log("LESSON DATA:", chapters);
 
     const container = document.getElementById("learning-content");
     container.innerHTML = "";

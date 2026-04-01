@@ -1400,6 +1400,280 @@ body {
   }
 }
 
+/* ── Learning Japanese View ─────────────────────────────────── */
+
+#view-learning {
+  background: linear-gradient(
+    135deg,
+    rgba(25, 28, 48, 0.9),
+    rgba(13, 15, 20, 0.95)
+  );
+}
+
+.learning-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.chapter {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  animation: fadeIn 0.4s ease both;
+}
+
+.chapter-header {
+  margin-bottom: 1.5rem;
+}
+
+.chapter-title {
+  color: var(--rice);
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.chapter-description {
+  color: var(--fog);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.sections-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.section {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 1.5rem;
+}
+
+.section-header {
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  color: var(--paper);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.section-description {
+  color: var(--fog);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.lessons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.lesson-card {
+  background: var(--ink-4);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: center;
+}
+
+.lesson-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--vermillion);
+  box-shadow: 0 4px 16px rgba(201, 64, 64, 0.2);
+}
+
+.lesson-card.unlocked {
+  border-left: 4px solid var(--sage);
+}
+
+.lesson-card.locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lesson-card.completed {
+  border-left: 4px solid var(--gold);
+}
+
+.lesson-number {
+  color: var(--fog);
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  margin-bottom: 0.5rem;
+}
+
+.lesson-title {
+  color: var(--rice);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.lesson-status {
+  color: var(--fog);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Lesson view */
+#view-lesson {
+  background: linear-gradient(
+    135deg,
+    rgba(25, 28, 48, 0.9),
+    rgba(13, 15, 20, 0.95)
+  );
+}
+
+.lesson-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.btn-back {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  color: var(--paper);
+  padding: 0.75rem 1rem;
+  border-radius: var(--r);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all var(--transition);
+}
+
+.btn-back:hover {
+  background: var(--ink-4);
+  border-color: var(--mist);
+}
+
+.lesson-title {
+  color: var(--rice);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+#lesson-content {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+
+#lesson-content h2 {
+  color: var(--rice);
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  margin-top: 1.5rem;
+}
+
+#lesson-content h3 {
+  color: var(--paper);
+  font-size: 1.1rem;
+  margin-bottom: 0.8rem;
+  margin-top: 1.2rem;
+}
+
+#lesson-content p {
+  color: var(--fog);
+  margin-bottom: 1rem;
+}
+
+#lesson-content ul {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+#lesson-content li {
+  color: var(--fog);
+  margin-bottom: 0.5rem;
+}
+
+.lesson-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* Lesson quiz view */
+#view-lesson-quiz {
+  background: linear-gradient(
+    135deg,
+    rgba(25, 28, 48, 0.9),
+    rgba(13, 15, 20, 0.95)
+  );
+}
+
+.lesson-quiz-content {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.quiz-question {
+  margin-bottom: 2rem;
+}
+
+.question-text {
+  color: var(--rice);
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.question-romaji {
+  color: var(--fog);
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
+.question-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.question-options label {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 1rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.question-options label:hover {
+  border-color: var(--vermillion);
+  background: rgba(201, 64, 64, 0.05);
+}
+
+.question-options input[type="radio"] {
+  margin-right: 0.75rem;
+  accent-color: var(--vermillion);
+}
+
+.lesson-quiz-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
 /* ═══════════════════════════════════════════════════════════════
   PROFILE STYLES
    ════════════════════════════════════════════════════════════════ */

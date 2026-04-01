@@ -16,7 +16,7 @@ const {
 } = require("../controllers/structuredLessonsController");
 
 // All routes require authentication
-router.use(auth.authenticate);
+// router.use(auth.authenticate);
 
 // Get all chapters with sections and lessons
 router.get("/chapters", getChapters);

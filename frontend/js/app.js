@@ -2,7 +2,7 @@
 "use strict";
 
 // ── Configuration ────────────────────────────────────────────────
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = "http://localhost:8008/api";
 
 // ── Shared Application State ─────────────────────────────────────
 window.App = {
@@ -603,6 +603,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const type =
       document.querySelector('input[name="quiz-type"]:checked')?.value || "";
     window.startQuiz?.(type);
+  });
+
+  // Learning Japanese button (home page)
+  document
+    .getElementById("btn-learning-japanese")
+    ?.addEventListener("click", () => {
+      showLearningView();
+    });
+
+  // Dictionary button (home page)
+  document.getElementById("btn-dictionary")?.addEventListener("click", () => {
+    showDictionaryView();
   });
 
   // Initialize lesson form
