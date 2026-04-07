@@ -6,14 +6,14 @@
 -- Curriculum: Chapter 1 (Alphabet) - Lessons 1-5 (seed mẫu)
 -- Database: MySQL 8.0+
 -- ============================================================
-
+ 
 CREATE DATABASE IF NOT EXISTS shinkateki CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE shinkateki;
-
+ 
 -- ============================================================
 -- TABLE DEFINITIONS
 -- ============================================================
-
+ 
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE users (
     last_login TIMESTAMP NULL,
     is_active BOOLEAN DEFAULT TRUE
 );
-
+ 
 CREATE TABLE modules (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name_vi VARCHAR(255) NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE modules (
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+ 
 CREATE TABLE chapters (
     id INT AUTO_INCREMENT PRIMARY KEY,
     module_id INT NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE chapters (
     FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
     UNIQUE KEY unique_module_chapter (module_id, chapter_number)
 );
-
+ 
 CREATE TABLE sections (
     id INT AUTO_INCREMENT PRIMARY KEY,
     chapter_id INT NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE sections (
     FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE,
     UNIQUE KEY unique_chapter_section (chapter_id, section_number)
 );
-
+ 
 CREATE TABLE structured_lessons (
     id INT AUTO_INCREMENT PRIMARY KEY,
     section_id INT NOT NULL,
@@ -92,7 +92,7 @@ CREATE TABLE structured_lessons (
     FOREIGN KEY (prerequisite_lesson_id) REFERENCES structured_lessons(id) ON DELETE SET NULL,
     UNIQUE KEY unique_section_lesson (section_id, lesson_number)
 );
-
+ 
 CREATE TABLE characters (
     id INT AUTO_INCREMENT PRIMARY KEY,
     lesson_id INT NOT NULL,
@@ -113,7 +113,7 @@ CREATE TABLE characters (
     INDEX idx_katakana (katakana),
     INDEX idx_kanji (kanji)
 );
-
+ 
 CREATE TABLE performance_stats (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -135,7 +135,7 @@ CREATE TABLE performance_stats (
     INDEX idx_user_weakness (user_id, weakness_score),
     INDEX idx_next_review (next_review)
 );
-
+ 
 CREATE TABLE vocabulary (
     id INT AUTO_INCREMENT PRIMARY KEY,
     lesson_id INT NULL,
@@ -162,7 +162,7 @@ CREATE TABLE vocabulary (
     INDEX idx_katakana_vocab (word_katakana),
     INDEX idx_kanji_vocab (word_kanji)
 );
-
+ 
 CREATE TABLE examples (
     id INT AUTO_INCREMENT PRIMARY KEY,
     vocabulary_id INT NOT NULL,
@@ -178,7 +178,7 @@ CREATE TABLE examples (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (vocabulary_id) REFERENCES vocabulary(id) ON DELETE CASCADE
 );
-
+ 
 CREATE TABLE quiz_questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     lesson_id INT NOT NULL,
@@ -198,7 +198,7 @@ CREATE TABLE quiz_questions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE CASCADE
 );
-
+ 
 CREATE TABLE user_progress (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -214,7 +214,7 @@ CREATE TABLE user_progress (
     -- FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
     UNIQUE KEY unique_user_lesson (user_id, lesson_id)
 );
-
+ 
 CREATE TABLE search_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NULL,
@@ -227,24 +227,28 @@ CREATE TABLE search_history (
     INDEX idx_user_search (user_id, searched_at)
 );
 
+-- ============================================================
+-- SEED DATA
+-- ============================================================
+ 
 -- Seed data for modules
 INSERT INTO modules (name_vi, name_en, description_vi, description_en, order_index) VALUES
 ('Bảng Chữ Cái', 'Alphabet', 'Học bảng chữ cái Hiragana và Katakana', 'Learn Hiragana and Katakana alphabets', 1);
-
+ 
 -- Seed data for chapters
 INSERT INTO chapters (module_id, chapter_number, title_vi, title_en, description_vi, description_en, order_index) VALUES
 (1, 1, 'Chương 1: Nguyên Âm Cơ Bản', 'Chapter 1: Basic Vowels', 'Học 5 nguyên âm cơ bản: a, i, u, e, o', 'Learn the 5 basic vowels: a, i, u, e, o', 1),
 (1, 2, 'Chương 2: K Góc', 'Chapter 2: K Row', 'Học hàng K: ka, ki, ku, ke, ko', 'Learn the K row: ka, ki, ku, ke, ko', 2),
 (1, 3, 'Chương 3: S Góc', 'Chapter 3: S Row', 'Học hàng S: sa, shi, su, se, so', 'Learn the S row: sa, shi, su, se, so', 3),
 (1, 4, 'Chương 4: T Góc', 'Chapter 4: T Row', 'Học hàng T: ta, chi, tsu, te, to', 'Learn the T row: ta, chi, tsu, te, to', 4);
-
+ 
 -- Seed data for sections
 INSERT INTO sections (chapter_id, section_number, title_vi, title_en, description_vi, description_en, order_index) VALUES
 (1, 1, 'Nguyên Âm Cơ Bản', 'Basic Vowels', 'Giới thiệu 5 nguyên âm', 'Introduction to 5 vowels', 1),
 (2, 1, 'Hàng K', 'K Row', 'Các chữ cái bắt đầu bằng K', 'Characters starting with K', 1),
 (3, 1, 'Hàng S', 'S Row', 'Các chữ cái bắt đầu bằng S', 'Characters starting with S', 1),
 (4, 1, 'Hàng T', 'T Row', 'Các chữ cái bắt đầu bằng T', 'Characters starting with T', 1);
-
+ 
 -- Seed data for structured_lessons
 INSERT INTO structured_lessons (section_id, lesson_number, title_vi, title_en, content_vi, content_en, lesson_type, order_index) VALUES
 (1, 1, 'Nguyên Âm A I U E O', 'Vowels A I U E O', 'Học cách phát âm 5 nguyên âm cơ bản trong tiếng Nhật', 'Learn how to pronounce the 5 basic vowels in Japanese', 'character_learning', 1),
@@ -252,7 +256,7 @@ INSERT INTO structured_lessons (section_id, lesson_number, title_vi, title_en, c
 (3, 3, 'Hàng SA SHI SU SE SO', 'SA SHI SU SE SO Row', 'Học cách phát âm các chữ cái hàng S', 'Learn how to pronounce S-row characters', 'character_learning', 1),
 (4, 4, 'Hàng TA CHI TSU TE TO', 'TA CHI TSU TE TO Row', 'Học cách phát âm các chữ cái hàng T', 'Learn how to pronounce T-row characters', 'character_learning', 1),
 (1, 5, 'Ôn Tập Nguyên Âm', 'Vowel Review Quiz', 'Kiểm tra kiến thức về nguyên âm', 'Test your knowledge of vowels', 'review', 2);
-
+ 
 -- Seed data for characters
 INSERT INTO characters (lesson_id, romaji, hiragana, katakana, kanji, group_name, position_in_group, mnemonic_vi, mnemonic_en) VALUES
 (1, 'a', 'あ', 'ア', NULL, 'a', 1, 'A cơ bản', 'Basic A'),
@@ -275,8 +279,8 @@ INSERT INTO characters (lesson_id, romaji, hiragana, katakana, kanji, group_name
 (4, 'tsu', 'つ', 'ツ', NULL, 't', 3, 'T kết hợp với U (phát âm tsu)', 'T combined with U (pronounced tsu)'),
 (4, 'te', 'て', 'テ', NULL, 't', 4, 'T kết hợp với E', 'T combined with E'),
 (4, 'to', 'と', 'ト', NULL, 't', 5, 'T kết hợp với O', 'T combined with O');
-
--- Vocabulary (đã sửa đúng thứ tự cột)
+ 
+-- Vocabulary
 INSERT INTO vocabulary (lesson_id, character_id, word_kanji, word_hiragana, word_katakana, romaji, meaning_vi, meaning_en, detailed_explanation_vi, detailed_explanation_en, part_of_speech, jlpt_level, difficulty_level, order_index) VALUES
 (2, 1, NULL, 'あかい', NULL, 'akai', 'đỏ', 'red', 'Màu đỏ tươi, có thể dùng để miêu tả màu sắc của vật hoặc cảm xúc mạnh mẽ. Trong tiếng Nhật, từ này thường được dùng trong các cụm từ như "akai bara" (hoa hồng đỏ) hoặc "akai kao" (mặt đỏ vì xấu hổ).', 'Bright red color, can be used to describe object colors or strong emotions. In Japanese, this word is commonly used in phrases like "akai bara" (red rose) or "akai kao" (red face from embarrassment).', 'adjective', 'N5', 'beginner', 1),
 (2, 1, NULL, 'あさ', NULL, 'asa', 'buổi sáng', 'morning', 'Thời điểm từ khi mặt trời mọc đến trưa. Trong văn hóa Nhật, "asa" thường đi kèm với các hoạt động hàng ngày như ăn sáng, đi làm.', 'Time from sunrise to noon. In Japanese culture, "asa" is often associated with daily activities like breakfast, going to work.', 'noun', 'N5', 'beginner', 2),
@@ -300,8 +304,8 @@ INSERT INTO vocabulary (lesson_id, character_id, word_kanji, word_hiragana, word
 (5, 18, NULL, 'つき', NULL, 'tsuki', 'mặt trăng', 'moon', 'Vật thể thiên thể.', 'Celestial body.', 'noun', 'N5', 'beginner', 20),
 (5, 19, NULL, 'てがみ', NULL, 'tegami', 'lá thư', 'letter', 'Thư viết tay gửi qua bưu điện.', 'Handwritten letter sent by mail.', 'noun', 'N5', 'beginner', 21),
 (5, 20, NULL, 'とけい', NULL, 'tokei', 'đồng hồ', 'clock/watch', 'Dụng cụ đo thời gian.', 'Time measuring device.', 'noun', 'N5', 'beginner', 22);
-
--- Examples (đã thêm jp_sentence_katakana = NULL)
+ 
+-- Examples
 INSERT INTO examples (vocabulary_id, jp_sentence_hiragana, jp_sentence_kanji, jp_sentence_katakana, romaji_sentence, vi_meaning, en_meaning, grammar_note_vi, grammar_note_en, order_index) VALUES
 (1, 'あかいりんごがすきです', '赤いリンゴが好きです', NULL, 'Akai ringo ga suki desu', 'Tôi thích táo đỏ', 'I like red apples', 'Cấu trúc: Tính từ + Danh từ + が + 好きです', 'Structure: Adjective + Noun + が + 好きです', 1),
 (1, 'かおがあかくなりました', '顔が赤くなりました', NULL, 'Kao ga aka ni narimashita', 'Mặt tôi đỏ lên', 'My face turned red', 'Biểu thị sự thay đổi trạng thái', 'Indicates change of state', 2),
@@ -311,13 +315,17 @@ INSERT INTO examples (vocabulary_id, jp_sentence_hiragana, jp_sentence_kanji, jp
 (5, 'うみがきれいです', '海がきれいです', NULL, 'Umi ga kirei desu', 'Biển rất đẹp', 'The sea is beautiful', 'Miêu tả cảnh quan tự nhiên', 'Describes natural scenery', 6),
 (6, 'えきでまっています', '駅で待っています', NULL, 'Eki de matte imasu', 'Tôi đang đợi ở ga', 'I am waiting at the station', 'Nơi chốn + で + Động từ tiếp diễn', 'Place + で + Continuous verb', 7),
 (7, 'おおきいへやです', '大きい部屋です', NULL, 'Ookii heya desu', 'Đó là phòng lớn', 'That is a big room', 'Tính từ + Danh từ + です', 'Adjective + Noun + です', 8);
-
--- Quiz questions (đã bổ sung đầy đủ cột)
+ 
+-- Quiz questions
 INSERT INTO quiz_questions (lesson_id, question_type, question_vi, question_en, romaji, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, difficulty_level, points, order_index) VALUES
 (2, 'multiple_choice', 'あ phát âm là gì?', 'How is あ pronounced?', 'a', '["a", "i", "u", "e"]', '["a", "i", "u", "e"]', 'a', 'a', 'あ là nguyên âm a cơ bản', 'あ is the basic vowel a', 'easy', 1, 1),
 (3, 'romaji_to_kana', 'ka là hiragana nào?', 'What hiragana is ka?', 'ka', '["か", "き", "く", "け"]', '["か", "き", "く", "け"]', 'か', 'か', 'か là sự kết hợp của k và a', 'か is the combination of k and a', 'easy', 1, 2),
 (4, 'kana_to_meaning', 'し nghĩa là gì?', 'What does し mean?', 'shi', '["sa", "shi", "su", "se"]', '["sa", "shi", "su", "se"]', 'shi', 'shi', 'し phát âm là shi, không phải si', 'し is pronounced shi, not si', 'easy', 1, 3),
 (5, 'multiple_choice', 'つ phát âm là gì?', 'How is つ pronounced?', 'tsu', '["ta", "chi", "tsu", "te"]', '["ta", "chi", "tsu", "te"]', 'tsu', 'tsu', 'つ là âm tsu đặc trưng của tiếng Nhật', 'つ is the distinctive tsu sound in Japanese', 'easy', 1, 4);
+ 
+-- ============================================================
+-- FUNCTIONS & TRIGGERS
+-- ============================================================
 
 -- Fuzzy search function
 DELIMITER //
@@ -330,7 +338,7 @@ BEGIN
            OR search_term LIKE CONCAT('%', target_term, '%');
 END //
 DELIMITER ;
-
+ 
 -- Trigger cleanup search history
 DELIMITER //
 CREATE TRIGGER cleanup_search_history
