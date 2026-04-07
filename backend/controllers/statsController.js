@@ -22,7 +22,7 @@ async function dashboard(req, res) {
       weakest: [],
       weekly: [],
       timeOfDay: { best: "morning", worst: "evening" },
-      performance: []
+      performance: [],
     });
   }
 }

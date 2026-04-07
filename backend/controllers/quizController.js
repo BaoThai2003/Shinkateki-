@@ -27,9 +27,10 @@ async function getQuizQuestions(req, res) {
     const questions = await query(sql);
 
     // Parse JSON options if needed
-    const parsedQuestions = questions.map(q => ({
+    const parsedQuestions = questions.map((q) => ({
       ...q,
-      options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options
+      options:
+        typeof q.options === "string" ? JSON.parse(q.options) : q.options,
     }));
 
     console.log("✅ questions:", parsedQuestions.length);

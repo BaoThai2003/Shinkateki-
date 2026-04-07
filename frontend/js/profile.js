@@ -28,7 +28,7 @@ window.loadProfile = async function () {
       email: "guest@example.com",
       total_score: 0,
       level: 1,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     });
     renderQuizHistory([]);
     renderGradeBreakdown([]);

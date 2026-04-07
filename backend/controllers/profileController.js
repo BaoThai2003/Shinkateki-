@@ -38,7 +38,7 @@ async function getProfile(req, res) {
         streak_days: 0,
         days_studied: 0,
         total_attempts: 0,
-        overall_accuracy: 0
+        overall_accuracy: 0,
       });
     }
 
@@ -54,7 +54,7 @@ async function getProfile(req, res) {
       streak_days: 0,
       days_studied: 0,
       total_attempts: 0,
-      overall_accuracy: 0
+      overall_accuracy: 0,
     });
   }
 }
