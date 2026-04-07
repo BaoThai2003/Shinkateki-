@@ -98,7 +98,7 @@ async function getDictionary(req, res) {
       const allVocab = await query(
         `SELECT v.*, sl.lesson_number, sl.title_en, sl.title_vi
          FROM vocabulary v
-         JOIN structured_lessons sl ON sl.id = v.lesson_id
+         LEFT JOIN structured_lessons sl ON sl.id = v.lesson_id
          ORDER BY sl.lesson_number, v.id
          LIMIT 500`
       );
@@ -111,16 +111,12 @@ async function getDictionary(req, res) {
       lesson_number: word.lesson_number,
       lesson_title: userLanguage === "vi" ? word.title_vi : word.title_en,
       romaji: word.romaji,
-      hiragana: word.hiragana,
-      katakana: word.katakana,
-      kanji: word.kanji,
-      meaning:
-        userLanguage === "vi" ? word.vietnamese_meaning : word.english_meaning,
+      hiragana: word.word_hiragana,
+      katakana: word.word_katakana,
+      kanji: word.word_kanji,
+      meaning: userLanguage === "vi" ? word.meaning_vi : word.meaning_en,
       part_of_speech: word.part_of_speech,
-      example_sentence:
-        userLanguage === "vi"
-          ? word.example_sentence_vi
-          : word.example_sentence_en,
+      example_sentence: null,
     }));
 
     // Fallback for users with no completed lessons: show all vocabulary
@@ -129,29 +125,25 @@ async function getDictionary(req, res) {
         `
         SELECT v.*, sl.lesson_number, sl.title_en, sl.title_vi
         FROM vocabulary v
-        JOIN structured_lessons sl ON sl.id = v.lesson_id
-        ORDER BY sl.lesson_number, v.id
+        LEFT JOIN structured_lessons sl ON sl.id = v.lesson_id
+        ORDER BY v.id
         LIMIT 200
       `
       );
-      formattedVocabulary = allWords.map((word) => ({
-        id: word.id,
-        lesson_number: word.lesson_number,
-        lesson_title: userLanguage === "vi" ? word.title_vi : word.title_en,
-        romaji: word.romaji,
-        hiragana: word.hiragana,
-        katakana: word.katakana,
-        kanji: word.kanji,
-        meaning:
-          userLanguage === "vi"
-            ? word.vietnamese_meaning
-            : word.english_meaning,
-        part_of_speech: word.part_of_speech,
-        example_sentence:
-          userLanguage === "vi"
-            ? word.example_sentence_vi
-            : word.example_sentence_en,
-      }));
+      if (allWords) {
+        formattedVocabulary = allWords.map((word) => ({
+          id: word.id,
+          lesson_number: word.lesson_number,
+          lesson_title: userLanguage === "vi" ? word.title_vi : word.title_en,
+          romaji: word.romaji,
+          hiragana: word.word_hiragana,
+          katakana: word.word_katakana,
+          kanji: word.word_kanji,
+          meaning: userLanguage === "vi" ? word.meaning_vi : word.meaning_en,
+          part_of_speech: word.part_of_speech,
+          example_sentence: null,
+        }));
+      }
     }
 
     return res.json(formattedVocabulary);
@@ -193,16 +185,12 @@ async function getVocabularyByLesson(req, res) {
     const formattedVocabulary = vocabulary.map((word) => ({
       id: word.id,
       romaji: word.romaji,
-      hiragana: word.hiragana,
-      katakana: word.katakana,
-      kanji: word.kanji,
-      meaning:
-        userLanguage === "vi" ? word.vietnamese_meaning : word.english_meaning,
+      hiragana: word.word_hiragana,
+      katakana: word.word_katakana,
+      kanji: word.word_kanji,
+      meaning: userLanguage === "vi" ? word.meaning_vi : word.meaning_en,
       part_of_speech: word.part_of_speech,
-      example_sentence:
-        userLanguage === "vi"
-          ? word.example_sentence_vi
-          : word.example_sentence_en,
+      example_sentence: null,
     }));
 
     return res.json(formattedVocabulary);
@@ -229,8 +217,8 @@ async function searchVocabulary(req, res) {
       FROM vocabulary v
       JOIN structured_lessons sl ON sl.id = v.lesson_id
       JOIN user_lesson_progress ulp ON ulp.lesson_id = sl.id AND ulp.user_id = ? AND ulp.is_completed = 1
-      WHERE v.romaji LIKE ? OR v.hiragana LIKE ? OR v.katakana LIKE ? OR v.kanji LIKE ?
-         OR v.english_meaning LIKE ? OR v.vietnamese_meaning LIKE ?
+      WHERE v.romaji LIKE ? OR v.word_hiragana LIKE ? OR v.word_katakana LIKE ? OR v.word_kanji LIKE ?
+         OR v.meaning_en LIKE ? OR v.meaning_vi LIKE ?
       ORDER BY sl.lesson_number, v.id
       LIMIT 50
     `,
@@ -260,16 +248,12 @@ async function searchVocabulary(req, res) {
       id: word.id,
       lesson_number: word.lesson_number,
       romaji: word.romaji,
-      hiragana: word.hiragana,
-      katakana: word.katakana,
-      kanji: word.kanji,
-      meaning:
-        userLanguage === "vi" ? word.vietnamese_meaning : word.english_meaning,
+      hiragana: word.word_hiragana,
+      katakana: word.word_katakana,
+      kanji: word.word_kanji,
+      meaning: userLanguage === "vi" ? word.meaning_vi : word.meaning_en,
       part_of_speech: word.part_of_speech,
-      example_sentence:
-        userLanguage === "vi"
-          ? word.example_sentence_vi
-          : word.example_sentence_en,
+      example_sentence: null,
     }));
 
     return res.json(formattedVocabulary);
