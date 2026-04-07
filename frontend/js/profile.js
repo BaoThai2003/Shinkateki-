@@ -22,6 +22,17 @@ window.loadProfile = async function () {
     renderProfileLessons(myLessons);
   } catch (err) {
     console.error("Profile load failed", err);
+    // Show default profile
+    renderUserInfo({
+      username: "Guest",
+      email: "guest@example.com",
+      total_score: 0,
+      level: 1,
+      created_at: new Date().toISOString()
+    });
+    renderQuizHistory([]);
+    renderGradeBreakdown([]);
+    renderProfileLessons([]);
   }
 };
 

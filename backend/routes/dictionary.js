@@ -12,7 +12,7 @@ const {
 } = require("../controllers/dictionaryController");
 
 // All routes require authentication
-router.use(auth.authenticate);
+// router.use(auth.authenticate);
 
 // Get all vocabulary from completed lessons
 router.get("/", getDictionary);

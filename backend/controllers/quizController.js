@@ -5,6 +5,42 @@ const { v4: uuidv4 } = require("uuid");
 const { query } = require("../config/db");
 const adaptiveEngine = require("../services/adaptiveEngine");
 
+// GET /api/quiz - Return quiz questions from database
+async function getQuizQuestions(req, res) {
+  try {
+    console.log("🔥 getQuizQuestions HIT");
+
+    const sql = `
+      SELECT
+        id,
+        question_vi as question,
+        options_vi as options,
+        correct_answer_vi as correct_answer,
+        explanation_vi as explanation,
+        difficulty_level,
+        points
+      FROM quiz_questions
+      ORDER BY order_index
+      LIMIT 10
+    `;
+
+    const questions = await query(sql);
+
+    // Parse JSON options if needed
+    const parsedQuestions = questions.map(q => ({
+      ...q,
+      options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options
+    }));
+
+    console.log("✅ questions:", parsedQuestions.length);
+
+    return res.json(parsedQuestions);
+  } catch (err) {
+    console.error("💥 getQuizQuestions ERROR:", err);
+    return res.status(500).json({ error: "Failed to load quiz questions." });
+  }
+}
+
 // GET /api/quiz/generate?size=10&type=hiragana
 async function generateQuiz(req, res) {
   try {
@@ -30,7 +66,6 @@ async function generateQuiz(req, res) {
 }
 
 // POST /api/quiz/submit
-// Body: { sessionId, answers: [{ characterId, choiceRomaji, responseTimeMs }] }
 async function submitAnswers(req, res) {
   try {
     const userId = req.user.id;
@@ -42,21 +77,12 @@ async function submitAnswers(req, res) {
 
     // Fetch all characters once for lookup
     const charMap = {};
-    const charIds = [...new Set(answers.map((a) => a.characterId))];
-    const chars = await query(
-      `SELECT id, romaji FROM characters WHERE id IN (${charIds
-        .map(() => "?")
-        .join(",")})`,
-      charIds
-    );
-    chars.forEach((c) => {
-      charMap[c.id] = c;
-    });
+    const chars = await query("SELECT id, romaji FROM characters");
+    chars.forEach((c) => (charMap[c.id] = c));
 
-    // Process each answer
-    const results = [];
     let sessionScore = 0;
 
+    const results = [];
     for (const answer of answers) {
       const char = charMap[answer.characterId];
       if (!char) continue;
@@ -85,12 +111,6 @@ async function submitAnswers(req, res) {
       });
     }
 
-    // Award session score to user
-    await query(`UPDATE users SET total_score = total_score + ? WHERE id = ?`, [
-      sessionScore,
-      userId,
-    ]);
-
     const accuracy = Math.round(
       (results.filter((r) => r.isCorrect).length / results.length) * 100
     );
@@ -102,9 +122,13 @@ async function submitAnswers(req, res) {
   }
 }
 
+module.exports = {
+  getQuizQuestions,
+  generateQuiz,
+  submitAnswers,
+};
+
 // Points earned per correct answer based on difficulty class
 function _pointsFor(cls) {
   return { weak: 30, medium: 20, strong: 10 }[cls] ?? 10;
 }
-
-module.exports = { generateQuiz, submitAnswers };

@@ -3,7 +3,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   // ===== CONFIG =====
-  const API_BASE = "http://localhost:8008/api";
+  const API_BASE = "http://localhost:8000/api";
 
   // ===== SIMPLE API HELPER =====
   const api = {

@@ -1,6 +1,7 @@
 // populate_db.js - Populate database with essential data
 const mysql = require("mysql2/promise");
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "backend", ".env") });
 
 async function populateDatabase() {
   let connection;

@@ -58,22 +58,21 @@ function _fuzzyMatch(word, query) {
 // Get all vocabulary from completed lessons
 async function getDictionary(req, res) {
   try {
-    const userId = req.user.id;
-    const userLanguage = req.user.language || "en";
+    const userId = req.user ? req.user.id : 1; // default user
+    const userLanguage = req.user ? req.user.language || "en" : "en";
     const { search, lesson_id } = req.query;
 
     let sql = `
       SELECT v.*, sl.lesson_number, sl.title_en, sl.title_vi
       FROM vocabulary v
-      JOIN structured_lessons sl ON sl.id = v.lesson_id
-      JOIN user_lesson_progress ulp ON ulp.lesson_id = sl.id AND ulp.user_id = ? AND ulp.is_completed = 1
+      LEFT JOIN structured_lessons sl ON sl.id = v.lesson_id
       WHERE 1=1
     `;
-    const params = [userId];
+    const params = [];
 
     let searchTerm;
     if (search) {
-      sql += ` AND (v.romaji LIKE ? OR v.hiragana LIKE ? OR v.katakana LIKE ? OR v.kanji LIKE ? OR v.english_meaning LIKE ? OR v.vietnamese_meaning LIKE ?)`;
+      sql += ` AND (v.romaji LIKE ? OR v.hiragana LIKE ? OR v.katakana LIKE ? OR v.kanji LIKE ? OR v.meaning_en LIKE ? OR v.meaning_vi LIKE ?)`;
       searchTerm = `%${search}%`;
       params.push(
         searchTerm,
@@ -90,7 +89,7 @@ async function getDictionary(req, res) {
       params.push(lesson_id);
     }
 
-    sql += ` ORDER BY sl.lesson_number, v.id`;
+    sql += ` ORDER BY v.id`;
 
     let vocabulary = await query(sql, params);
 

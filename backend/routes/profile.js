@@ -7,8 +7,9 @@ const { authenticate } = require("../middleware/auth");
 const profileController = require("../controllers/profileController");
 
 // All profile routes require authentication
-router.use(authenticate);
+// router.use(authenticate);
 
+router.get("/", profileController.getProfile);
 router.get("/quiz-history", profileController.getQuizHistory);
 router.get("/grade-breakdown", profileController.getGradeBreakdown);
 

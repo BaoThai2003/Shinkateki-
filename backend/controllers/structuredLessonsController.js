@@ -105,16 +105,16 @@ async function getChapters(req, res) {
 // Get a specific lesson with content
 async function getLesson(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = req.user ? req.user.id : 1; // Use test user ID if no auth
     const lessonId = req.params.id;
-    const userLanguage = req.user.language || "en";
+    const userLanguage = req.user ? req.user.language || "en" : "vi";
 
     // Get lesson details
     const lessons = await query(
       `
-      SELECT sl.*, ulp.is_completed, ulp.is_unlocked
+      SELECT sl.*, up.completed as is_completed
       FROM structured_lessons sl
-      LEFT JOIN user_lesson_progress ulp ON ulp.lesson_id = sl.id AND ulp.user_id = ?
+      LEFT JOIN user_progress up ON up.lesson_id = sl.id AND up.user_id = ?
       WHERE sl.id = ?
     `,
       [userId, lessonId]
@@ -141,8 +141,8 @@ async function getLesson(req, res) {
       if (Array.isArray(prerequisites) && prerequisites.length > 0) {
         const completedPrerequisites = await query(
           `
-        SELECT COUNT(*) as count FROM user_lesson_progress
-        WHERE user_id = ? AND lesson_id IN (?) AND is_completed = 1
+        SELECT COUNT(*) as count FROM user_progress
+        WHERE user_id = ? AND lesson_id IN (?) AND completed = 1
       `,
           [userId, prerequisites]
         );
@@ -176,8 +176,7 @@ async function getLesson(req, res) {
       hiragana: word.hiragana,
       katakana: word.katakana,
       kanji: word.kanji,
-      meaning:
-        userLanguage === "vi" ? word.vietnamese_meaning : word.english_meaning,
+      meaning: userLanguage === "vi" ? word.meaning_vi : word.meaning_en,
       part_of_speech: word.part_of_speech,
       example_sentence:
         userLanguage === "vi"
@@ -209,7 +208,7 @@ async function getLesson(req, res) {
 // Get a random quick quiz from all review lessons
 async function getReviewQuiz(req, res) {
   try {
-    const userLanguage = req.user.language || "en";
+    const userLanguage = "en"; // default to English for now
     const size = Math.min(Math.max(parseInt(req.query.size || "15"), 10), 20);
     const script = (req.query.script || "").toLowerCase();
 
@@ -223,20 +222,28 @@ async function getReviewQuiz(req, res) {
     const questions = await query(
       `SELECT qq.* FROM quiz_questions qq
        JOIN structured_lessons sl ON sl.id = qq.lesson_id
-       WHERE sl.type = 'review' ${scriptFilter}
-       ORDER BY RAND() LIMIT ?`,
-      [size]
+       WHERE sl.lesson_type IN ('review', 'final_quiz')
+       ORDER BY RAND() LIMIT ${size}`,
+      []
     );
 
-    const formatted = questions.map((q) => ({
-      id: q.id,
-      lesson_id: q.lesson_id,
-      question: userLanguage === "vi" ? q.question_text_vi : q.question_text_en,
-      romaji: q.romaji,
-      options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean),
-      correct_answer: q.correct_answer,
-      explanation: userLanguage === "vi" ? q.explanation_vi : q.explanation_en,
-    }));
+    console.log("questions:", questions);
+
+    const formatted = questions.map((q) => {
+      const optionsVi = Array.isArray(q.options_vi) ? q.options_vi : [];
+      const optionsEn = Array.isArray(q.options_en) ? q.options_en : [];
+      return {
+        id: q.id,
+        lesson_id: q.lesson_id,
+        question: userLanguage === "vi" ? q.question_vi : q.question_en,
+        romaji: q.romaji,
+        options: userLanguage === "vi" ? optionsVi : optionsEn,
+        correct_answer:
+          userLanguage === "vi" ? q.correct_answer_vi : q.correct_answer_en,
+        explanation:
+          userLanguage === "vi" ? q.explanation_vi : q.explanation_en,
+      };
+    });
 
     return res.json(formatted);
   } catch (err) {

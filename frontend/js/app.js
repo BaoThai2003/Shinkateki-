@@ -2,7 +2,7 @@
 "use strict";
 
 // ── Configuration ────────────────────────────────────────────────
-const API_BASE = "http://localhost:8008/api";
+const API_BASE = "http://localhost:8004/api";
 
 // ── Shared Application State ─────────────────────────────────────
 window.App = {
