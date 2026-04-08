@@ -48,13 +48,12 @@ function _timeLabel(hour) {
 
 /**
  * Return the single best time-of-day slot with enough data.
- * Used for the "Optimal study time" recommendation.
+ * DEPRECATED - Optimal study time feature removed
+ * Kept for backward compatibility but returns null
  */
 async function getOptimalStudyTime(userId) {
-  const insights = await getTimeOfDayInsights(userId);
-  if (!insights.length) return null;
-  const best = insights[0]; // already sorted by accuracy
-  return { hour: best.hour, label: best.label, accuracy: best.accuracy };
+  // Optimal study time feature has been removed
+  return null;
 }
 
 // ── Weekly Accuracy Trend ────────────────────────────────────────
@@ -409,14 +408,6 @@ function _buildRecommendations({ overall, velocity, optimal, weakest }) {
     recs.push({
       type: "warning",
       text: "Your recent accuracy is dropping. Try shorter, more focused sessions.",
-    });
-  }
-
-  // Time-of-day advice
-  if (optimal) {
-    recs.push({
-      type: "info",
-      text: `You perform best during the ${optimal.label} (${optimal.accuracy}% accuracy). Try to study then.`,
     });
   }
 

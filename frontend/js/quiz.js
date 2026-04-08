@@ -361,7 +361,14 @@ async function finishQuiz() {
 function renderResults({ results, accuracy, sessionScore }) {
   // Score header
   setText("results-accuracy", `${accuracy}%`);
-  setText("results-points", `+${sessionScore} pts`);
+  setText("results-points", `+${sessionScore || 0} pts`);
+
+  // Calculate counts
+  const correctCount = results ? results.filter((r) => r.isCorrect).length : 0;
+  const incorrectCount = results
+    ? results.filter((r) => !r.isCorrect).length
+    : 0;
+  const totalCount = results ? results.length : 0;
 
   const emojiEl = document.getElementById("results-emoji");
   if (emojiEl) {
@@ -375,13 +382,35 @@ function renderResults({ results, accuracy, sessionScore }) {
         : "🌱";
   }
 
+  // Summary stats
+  const summaryEl = document.getElementById("results-summary");
+  if (summaryEl) {
+    summaryEl.innerHTML = `
+      <div class="stats-summary">
+        <div class="stat-item correct">
+          <div class="stat-number">${correctCount}</div>
+          <div class="stat-label">Correct</div>
+        </div>
+        <div class="stat-item incorrect">
+          <div class="stat-number">${incorrectCount}</div>
+          <div class="stat-label">Incorrect</div>
+        </div>
+        <div class="stat-item total">
+          <div class="stat-number">${accuracy}%</div>
+          <div class="stat-label">Accuracy</div>
+        </div>
+      </div>
+    `;
+  }
+
   // Per-question breakdown
   const breakdown = document.getElementById("results-breakdown");
   if (breakdown && results) {
     breakdown.innerHTML = results
       .map(
-        (r) => `
-      <div class="result-row">
+        (r, idx) => `
+      <div class="result-row ${r.isCorrect ? "correct" : "incorrect"}">
+        <span class="result-number">${idx + 1}.</span>
         <span class="result-char">${_charFromId(r.characterId) || "?"}</span>
         <span class="result-romaji">${r.correctRomaji}</span>
         <span class="result-icon">${r.isCorrect ? "✓" : "✗"}</span>

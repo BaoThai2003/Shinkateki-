@@ -26,7 +26,8 @@ async function getQuizQuestions(req, res) {
 
     const questions = await query(sql);
 
-    if (!questions) {
+    // Always return an array, never null
+    if (!questions || !Array.isArray(questions)) {
       return res.json([]);
     }
 
@@ -34,7 +35,7 @@ async function getQuizQuestions(req, res) {
     const parsedQuestions = questions.map((q) => ({
       ...q,
       options:
-        typeof q.options === "string" ? JSON.parse(q.options) : q.options,
+        typeof q.options === "string" ? JSON.parse(q.options) : q.options || [],
     }));
 
     console.log("✅ questions:", parsedQuestions.length);
@@ -42,31 +43,64 @@ async function getQuizQuestions(req, res) {
     return res.json(parsedQuestions);
   } catch (err) {
     console.error("💥 getQuizQuestions ERROR:", err);
-    return res.status(500).json({ error: "Failed to load quiz questions." });
+    return res.json([]); // Return empty array on error
   }
 }
 
-// GET /api/quiz/generate?size=10&type=hiragana
+// GET /api/quiz/generate?size=10&type=hiragana|katakana|kanji|all
 async function generateQuiz(req, res) {
   try {
     console.log("🔥 generateQuiz HIT");
 
     const userId = req.user.id;
     const size = Math.min(parseInt(req.query.size || "10"), 100);
-    const type = req.query.type || null;
+    const type = req.query.type || "all"; // default to "all" which includes Hiragana, Katakana, Kanji
 
     console.log({ userId, size, type });
 
     const questions = await adaptiveEngine.generateQuiz(userId, { size, type });
 
-    console.log("✅ questions:", questions);
+    console.log("✅ questions:", questions.length);
 
     const sessionId = uuidv4();
 
-    return res.json({ sessionId, questions, total: questions.length });
+    return res.json({
+      sessionId,
+      questions: questions || [],
+      total: (questions || []).length,
+    });
   } catch (err) {
     console.error("💥 generateQuiz ERROR:", err);
     return res.status(500).json({ error: "Failed to generate quiz." });
+  }
+}
+
+// GET /api/quiz/vocabulary?size=10&level=N5
+async function generateVocabularyQuiz(req, res) {
+  try {
+    console.log("🔥 generateVocabularyQuiz HIT");
+
+    const userId = req.user.id;
+    const size = Math.min(parseInt(req.query.size || "10"), 100);
+    const level = req.query.level || "N5";
+
+    const questions = await adaptiveEngine.generateVocabularyQuiz(userId, {
+      size,
+      jlptLevel: level,
+    });
+
+    console.log("✅ vocabulary questions:", questions.length);
+
+    const sessionId = uuidv4();
+
+    return res.json({
+      sessionId,
+      questions: questions || [],
+      total: (questions || []).length,
+    });
+  } catch (err) {
+    console.error("💥 generateVocabularyQuiz ERROR:", err);
+    return res.json({ sessionId: uuidv4(), questions: [], total: 0 }); // Fallback
   }
 }
 
@@ -130,6 +164,7 @@ async function submitAnswers(req, res) {
 module.exports = {
   getQuizQuestions,
   generateQuiz,
+  generateVocabularyQuiz,
   submitAnswers,
 };
 

@@ -17,10 +17,9 @@ async function myLessons(req, res) {
       [userId]
     );
 
-    return res.json(rows);
+    return res.json(rows || []);
   } catch (err) {
     console.error("[myLessons]", err);
-    // Return default lessons
     return res.json([]);
   }
 }

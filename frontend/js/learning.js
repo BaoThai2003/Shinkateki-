@@ -82,12 +82,71 @@ function _renderRecentlyViewed(items) {
 window.showLearningView = function () {
   showView("learning");
   loadChapters();
+  loadProgress();
 };
 
 window.showDictionaryView = function () {
   showView("dictionary");
   loadDictionary();
 };
+
+// ── Progress Tracking ────────────────────────────────────────────
+
+async function loadProgress() {
+  try {
+    const progressEl = document.getElementById("learning-progress");
+    if (!progressEl) return;
+
+    const chapters = await api.request("GET", "/structured-lessons/chapters");
+
+    if (!Array.isArray(chapters) || chapters.length === 0) {
+      progressEl.innerHTML = "";
+      return;
+    }
+
+    // Calculate progress across all lessons
+    let totalLessons = 0;
+    let completedLessons = 0;
+
+    chapters.forEach((chapter) => {
+      if (chapter.sections) {
+        chapter.sections.forEach((section) => {
+          if (section.lessons) {
+            section.lessons.forEach((lesson) => {
+              totalLessons++;
+              if (lesson.is_completed) {
+                completedLessons++;
+              }
+            });
+          }
+        });
+      }
+    });
+
+    const percentage =
+      totalLessons > 0
+        ? Math.round((completedLessons / totalLessons) * 100)
+        : 0;
+
+    progressEl.innerHTML = `
+      <div class="progress-section">
+        <div class="progress-header">
+          <h3>Your Progress</h3>
+          <span class="progress-percent">${percentage}%</span>
+        </div>
+        <div class="progress-label">
+          <span>${completedLessons} completed</span>
+          <span>${totalLessons} total</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${percentage}%"></div>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    console.error("Failed to load progress:", err);
+  }
+}
 
 // ── Chapters and Lessons ─────────────────────────────────────────
 
@@ -100,8 +159,15 @@ async function loadChapters() {
     container.innerHTML = "";
 
     if (!Array.isArray(chapters) || chapters.length === 0) {
-      container.innerHTML =
-        "<p>No structured lessons available at the moment.</p>";
+      // FALLBACK: Show loading message with better UX
+      container.innerHTML = `
+        <div class="fallback-message">
+          <p>📚 No structured lessons available at the moment. Please check back soon!</p>
+          <p style="font-size: 0.9rem; color: var(--fog); margin-top: 1rem;">
+            In the meantime, you can explore the dictionary or review previous lessons.
+          </p>
+        </div>
+      `;
       return;
     }
 
@@ -111,8 +177,15 @@ async function loadChapters() {
     });
   } catch (err) {
     console.error("Failed to load chapters:", err);
-    document.getElementById("learning-content").innerHTML =
-      "<p>Error loading lessons. Please try again.</p>";
+    const container = document.getElementById("learning-content");
+    container.innerHTML = `
+      <div class="fallback-message">
+        <p>📚 Unable to load lessons. The server might be temporarily unavailable.</p>
+        <p style="font-size: 0.9rem; color: var(--fog); margin-top: 1rem;">
+          Please refresh the page or try again later.
+        </p>
+      </div>
+    `;
   }
 }
 
@@ -200,7 +273,34 @@ function renderLesson() {
   ).textContent = `Lesson ${currentLesson.lesson_number}: ${currentLesson.title}`;
 
   const contentEl = document.getElementById("lesson-content");
-  contentEl.innerHTML = currentLesson.content;
+
+  // Display lesson content with fallback
+  if (currentLesson.content && currentLesson.content.trim()) {
+    contentEl.innerHTML = currentLesson.content;
+  } else {
+    // FALLBACK: Display vocabulary list if no content
+    if (
+      Array.isArray(currentLesson.vocabulary) &&
+      currentLesson.vocabulary.length > 0
+    ) {
+      const vocabHTML = currentLesson.vocabulary
+        .map(
+          (word) => `
+          <div class="vocab-item">
+            <strong>${
+              word.kanji || word.hiragana || word.katakana || "?"
+            }</strong>
+            <span class="romaji">${word.romaji}</span>
+            <span class="meaning">${word.meaning}</span>
+          </div>
+        `
+        )
+        .join("");
+      contentEl.innerHTML = `<div class="vocabulary-section">${vocabHTML}</div>`;
+    } else {
+      contentEl.innerHTML = `<p style="color: var(--fog); font-style: italic;">No content available for this lesson yet.</p>`;
+    }
+  }
 
   const actionsEl = document.getElementById("lesson-actions");
   actionsEl.innerHTML = "";
@@ -212,7 +312,7 @@ function renderLesson() {
       `;
     } else {
       actionsEl.innerHTML = `
-        <p class="lesson-status">This reading lesson is completed.</p>
+        <p class="lesson-status">✓ This reading lesson is completed.</p>
       `;
     }
   } else if (currentLesson.type === "interactive") {

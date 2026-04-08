@@ -301,26 +301,11 @@ async function completeLesson(req, res) {
 // Get quiz questions for a lesson
 async function getLessonQuiz(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = req.user ? req.user.id : 1;
     const lessonId = req.params.id;
-    const userLanguage = req.user.language || "en";
+    const userLanguage = req.user ? req.user.language || "en" : "en";
 
-    // Check if lesson is completed (required for quiz)
-    const progress = await query(
-      `
-      SELECT is_completed FROM user_lesson_progress
-      WHERE user_id = ? AND lesson_id = ?
-    `,
-      [userId, lessonId]
-    );
-
-    if (!progress.length || !progress[0].is_completed) {
-      return res
-        .status(403)
-        .json({ error: "Lesson must be completed before taking quiz." });
-    }
-
-    // Get quiz questions
+    // Get quiz questions (don't require completion for quiz access)
     const questions = await query(
       `
       SELECT * FROM quiz_questions WHERE lesson_id = ? ORDER BY id
@@ -328,20 +313,30 @@ async function getLessonQuiz(req, res) {
       [lessonId]
     );
 
+    // Return empty array if no questions
+    if (!questions || !Array.isArray(questions)) {
+      return res.json([]);
+    }
+
     const formattedQuestions = questions.map((q) => ({
       id: q.id,
       type: q.question_type,
-      question: userLanguage === "vi" ? q.question_text_vi : q.question_text_en,
+      question: userLanguage === "vi" ? q.question_vi : q.question_en,
       romaji: q.romaji,
-      options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(Boolean),
-      correct_answer: q.correct_answer,
+      options: Array.isArray(q.options_en)
+        ? q.options_en
+        : q.options_en
+        ? JSON.parse(q.options_en)
+        : [],
+      correct_answer:
+        userLanguage === "vi" ? q.correct_answer_vi : q.correct_answer_en,
       explanation: userLanguage === "vi" ? q.explanation_vi : q.explanation_en,
     }));
 
     return res.json(formattedQuestions);
   } catch (err) {
     console.error("[getLessonQuiz]", err);
-    return res.status(500).json({ error: "Failed to load quiz questions." });
+    return res.json([]); // Return empty array on error
   }
 }
 

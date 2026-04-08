@@ -248,11 +248,13 @@ CREATE TABLE user_progress (
     score        DECIMAL(5,2) NULL,
     time_spent   INT          DEFAULT 0,
     attempts     INT          DEFAULT 0,
-    last_attempt TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    last_attempt TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     is_unlocked  BOOLEAN      DEFAULT FALSE,
     created_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_user_lesson (user_id, lesson_id)
+    FOREIGN KEY (lesson_id) REFERENCES structured_lessons(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_lesson (user_id, lesson_id),
+    INDEX idx_user_completed (user_id, completed)
 );
 
 -- A lightweight completion record for user-created lessons,
@@ -317,6 +319,41 @@ CREATE TABLE search_history (
     INDEX idx_user_search  (user_id, searched_at)
 );
 
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- CHAPTERS & SECTIONS — Organizational layers grouping structured lessons
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CREATE TABLE chapters (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    title_en       VARCHAR(255) NOT NULL,
+    title_vi       VARCHAR(255) NOT NULL,
+    description_en TEXT,
+    description_vi TEXT,
+    order_index    INT NOT NULL,
+    is_active      BOOLEAN DEFAULT TRUE,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_order (order_index)
+);
+
+CREATE TABLE sections (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    chapter_id     INT NOT NULL,
+    title_en       VARCHAR(255) NOT NULL,
+    title_vi       VARCHAR(255) NOT NULL,
+    description_en TEXT,
+    description_vi TEXT,
+    order_index    INT NOT NULL,
+    is_active      BOOLEAN DEFAULT TRUE,
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE,
+    INDEX idx_chapter (chapter_id),
+    INDEX idx_order (order_index)
+);
+
+-- Add section_id to structured_lessons
+ALTER TABLE structured_lessons ADD COLUMN section_id INT NULL;
+ALTER TABLE structured_lessons ADD FOREIGN KEY (section_id) REFERENCES sections(id) ON DELETE SET NULL;
+
 -- ===========================================================================
 -- SEED DATA
 -- ===========================================================================
@@ -325,15 +362,49 @@ CREATE TABLE search_history (
 INSERT INTO users (username, email, password_hash, full_name, language) VALUES
 ('testuser', 'test@example.com', '$2b$10$dummy.hash.for.test.user', 'Test User', 'en');
 
+-- INSERT CHAPTERS
+INSERT INTO chapters (title_en, title_vi, description_en, description_vi, order_index) VALUES
+('Chapter 1: Alphabet Basics', 'Chapter 1: Cơ Bản Bảng Chữ Cái', 'Master the fundamental hiragana and katakana', 'Làm chủ bảng chữ cái cơ bản', 1),
+('Chapter 2: Kanji Fundamentals', 'Chapter 2: Kanji Cơ Bản', 'Introduction to basic kanji characters', 'Giới thiệu về các ký tự kanji cơ bản', 2);
+
+-- INSERT SECTIONS FOR CHAPTER 1
+INSERT INTO sections (chapter_id, title_en, title_vi, description_en, description_vi, order_index) VALUES
+(1, 'Section 1.1: Vowels', 'Section 1.1: Nguyên Âm', 'Learn hiragana and katakana vowels', 'Học nguyên âm hiragana và katakana', 1),
+(1, 'Section 1.2: Consonants', 'Section 1.2: Phụ Âm', 'K, S, T rows and consonant combinations', 'Hàng K, S, T và các kết hợp phụ âm', 2);
+
+-- INSERT KANJI CHARACTERS
+INSERT INTO characters (kana, romaji, hiragana, katakana, kanji, type, group_name, difficulty, mnemonic_vi, mnemonic_en) VALUES
+('赤', 'aka', NULL, NULL, '赤', 'kanji', 'colors', 'beginner', 'Chữ cộng chữ với - là cái túi, màu đỏ', 'Radical + fire stroke = red'),
+('青', 'ao', NULL, NULL, '青', 'kanji', 'colors', 'beginner', 'Giống hình khu vườn, xanh lá', 'Looks like growing plant = blue/green'),
+('木', 'ki', NULL, NULL, '木', 'kanji', 'nature', 'beginner', '3 gốc cây = rừng', 'Single tree character'),
+('火', 'hi', NULL, NULL, '火', 'kanji', 'nature', 'beginner', 'Hình lửa với đầu lửa', 'Looks like flames, fire'),
+('水', 'mizu', NULL, NULL, '水', 'kanji', 'nature', 'beginner', 'Ba nháy = nước chảy', 'Three lines = flowing water'),
+('日', 'hi', NULL, NULL, '日', 'kanji', 'time', 'beginner', 'Hộp vuông = mặt trời', 'Square = sun'),
+('月', 'tsuki', NULL, NULL, '月', 'kanji', 'time', 'beginner', 'Cửa sổ = mặt trăng', 'Window = moon'),
+('人', 'hito', NULL, NULL, '人', 'kanji', 'people', 'beginner', 'Hình người đứng = con người', 'Looks like standing person'),
+('子', 'ko', NULL, NULL, '子', 'kanji', 'people', 'beginner', 'Hình trẻ em ngồi = con', 'Child sitting = child'),
+('女', 'onna', NULL, NULL, '女', 'kanji', 'people', 'beginner', 'Kneeling person = phụ nữ', 'Kneeling person = woman'),
+('男', 'otoko', NULL, NULL, '男', 'kanji', 'people', 'beginner', 'Đồng ruộng + người = nam giới', 'Field + person = man'),
+('大', 'dai', NULL, NULL, '大', 'kanji', 'size', 'beginner', 'Người với tay ngang = to', 'Person with arms spread = big'),
+('小', 'shou', NULL, NULL, '小', 'kanji', 'size', 'beginner', 'Người nhỏ với 3 vạch = bé', 'Small person with 3 lines = small'),
+('金', 'kin', NULL, NULL, '金', 'kanji', 'materials', 'beginner', 'Khoáng sản = vàng/tiền', 'Mineral deposits = gold/money'),
+('食', 'taberu', NULL, NULL, '食', 'kanji', 'action', 'beginner', 'Tay che mặt ăn = ăn', 'Hand covering mouth = eat');
+
+-- UPDATE structured_lessons with section_id 
+UPDATE structured_lessons SET section_id = 1, content_vi = 'Học cách phát âm 5 nguyên âm cơ bản: あ い う え お. Đây là nền tảng cho tất cả các âm tiếng Nhật.', content_en = 'Learn to pronounce the 5 basic vowels: あ い う え お. This is the foundation for all Japanese sounds.' WHERE lesson_number = 1;
+UPDATE structured_lessons SET section_id = 1, content_vi = 'Học cách phát âm các nguyên âm katakana: ア イ ウ エ オ. Katakana được sử dụng cho từ vựng ngoại lai.', content_en = 'Learn the katakana vowels: ア イ ウ エ オ. Katakana is used for foreign loanwords.' WHERE lesson_number = 2 AND lesson_type = 'character_learning';
+UPDATE structured_lessons SET section_id = 2 WHERE lesson_type IN ('character_learning', 'practice') AND lesson_number IN (2, 3, 4) AND lesson_type != 'character_learning' OR lesson_number > 5;
+
 -- Hiragana and katakana characters grouped by consonant row.
 -- Each row also carries its katakana equivalent in the same record.
-INSERT INTO characters (kana, romaji, hiragana, katakana, type, group_name, difficulty, mnemonic_vi, mnemonic_en) VALUES
+-- Also includes Kanji for advanced learners.
+INSERT INTO characters (kana, romaji, hiragana, katakana, kanji, type, group_name, difficulty, mnemonic_vi, mnemonic_en) VALUES
 -- Hiragana vowels
-('あ', 'a',   'あ', 'ア', 'hiragana', 'a', 'beginner', 'Nguyên âm cơ bản A', 'The basic vowel A'),
-('い', 'i',   'い', 'イ', 'hiragana', 'i', 'beginner', 'Hai nét song song như chữ I', 'Two parallel strokes like the letter I'),
-('う', 'u',   'う', 'ウ', 'hiragana', 'u', 'beginner', 'Tròn như miệng khi nói U', 'Round like your mouth when saying U'),
-('え', 'e',   'え', 'エ', 'hiragana', 'e', 'beginner', 'Nguyên âm E với dấu chéo', 'Vowel E with a crossing stroke'),
-('お', 'o',   'お', 'オ', 'hiragana', 'o', 'beginner', 'Tròn như chữ O', 'Round like the letter O'),
+('あ', 'a',   'あ', 'ア', NULL, 'hiragana', 'a', 'beginner', 'Nguyên âm cơ bản A', 'The basic vowel A'),
+('い', 'i',   'い', 'イ', NULL, 'hiragana', 'i', 'beginner', 'Hai nét song song như chữ I', 'Two parallel strokes like the letter I'),
+('う', 'u',   'う', 'ウ', NULL, 'hiragana', 'u', 'beginner', 'Tròn như miệng khi nói U', 'Round like your mouth when saying U'),
+('え', 'e',   'え', 'エ', NULL, 'hiragana', 'e', 'beginner', 'Nguyên âm E với dấu chéo', 'Vowel E with a crossing stroke'),
+('お', 'o',   'お', 'オ', NULL, 'hiragana', 'o', 'beginner', 'Tròn như chữ O', 'Round like the letter O'),
 -- Hiragana K row
 ('か', 'ka',  'か', 'カ', 'hiragana', 'k', 'beginner', 'K kết hợp với A', 'K combined with A'),
 ('き', 'ki',  'き', 'キ', 'hiragana', 'k', 'beginner', 'K kết hợp với I', 'K combined with I'),

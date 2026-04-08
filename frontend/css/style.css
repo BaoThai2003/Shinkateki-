@@ -699,6 +699,34 @@ body {
   color: var(--fog);
   white-space: nowrap;
 }
+
+/* ── General Progress Bars ──────────────────────────────────────── */
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--ink-4);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--sage));
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fog);
+  margin-bottom: 0.5rem;
+}
+}
 .quiz-streak {
   font-family: var(--font-mono);
   font-size: 0.8rem;
@@ -855,35 +883,130 @@ body {
   gap: 0.5rem;
   margin-bottom: 2.5rem;
 }
+
+.stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+}
+
+.stat-item {
+  text-align: center;
+  padding: 1rem;
+  border-radius: var(--r);
+  background: var(--ink-3);
+  border: 2px solid var(--ink-4);
+}
+
+.stat-item.correct {
+  border-color: var(--sage);
+  background: rgba(74, 140, 106, 0.1);
+}
+
+.stat-item.incorrect {
+  border-color: var(--vermillion);
+  background: rgba(201, 64, 64, 0.1);
+}
+
+.stat-item.total {
+  border-color: var(--gold);
+  background: rgba(200, 145, 58, 0.1);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--rice);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.stat-item.correct .stat-number {
+  color: var(--sage);
+}
+
+.stat-item.incorrect .stat-number {
+  color: var(--vermillion);
+}
+
+.stat-item.total .stat-number {
+  color: var(--gold);
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--fog);
+  text-transform: uppercase;
+}
+
 .result-row {
   display: flex;
   align-items: center;
   gap: 1rem;
   background: var(--ink-2);
-  border: 1px solid var(--ink-4);
+  border: 2px solid var(--ink-4);
   border-radius: var(--r);
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
+  transition: border-color var(--transition), background var(--transition);
 }
+
+.result-row.correct {
+  border-color: var(--sage);
+  background: rgba(74, 140, 106, 0.08);
+}
+
+.result-row.incorrect {
+  border-color: var(--vermillion);
+  background: rgba(201, 64, 64, 0.08);
+}
+
+.result-number {
+  color: var(--fog);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  min-width: 28px;
+}
+
 .result-char {
   font-family: var(--font-zen);
   font-size: 1.6rem;
   color: var(--rice);
   width: 2.5rem;
 }
+
 .result-romaji {
   font-family: var(--font-mono);
-  color: var(--fog);
+  color: var(--paper);
   flex: 1;
 }
+
 .result-icon {
   font-size: 1.1rem;
+  font-weight: bold;
 }
+
+.result-row.correct .result-icon {
+  color: var(--sage);
+}
+
+.result-row.incorrect .result-icon {
+  color: var(--vermillion);
+}
+
 .result-time {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--mist);
+  color: var(--fog);
 }
+
 .result-cls {
   font-family: var(--font-mono);
   font-size: 0.7rem;
@@ -891,14 +1014,17 @@ body {
   padding: 0.15rem 0.5rem;
   border-radius: 4px;
 }
+
 .result-cls.weak {
   background: rgba(201, 64, 64, 0.15);
   color: #e88;
 }
+
 .result-cls.medium {
   background: rgba(74, 95, 158, 0.2);
   color: #9ab0e0;
 }
+
 .result-cls.strong {
   background: rgba(200, 145, 58, 0.15);
   color: #e6c07b;
@@ -1858,6 +1984,52 @@ body {
   LEARNING JAPANESE
    ════════════════════════════════════════════════════════════════ */
 
+.progress-section {
+  background: linear-gradient(135deg, var(--ink-3) 0%, var(--ink-2) 100%);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 2rem;
+  margin-bottom: 2.5rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.progress-header h3 {
+  font-family: var(--font-zen);
+  font-size: 1.3rem;
+  color: var(--rice);
+  margin: 0;
+}
+
+.progress-percent {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.fallback-message {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--paper);
+  font-size: 1.1rem;
+}
+
+.fallback-message p {
+  margin: 0.5rem 0;
+}
+
 .learning-header {
   text-align: center;
   margin-bottom: 2rem;
@@ -2124,23 +2296,103 @@ body {
 }
 
 .dictionary-search {
-  max-width: 400px;
-  margin: 0 auto 2rem auto;
+  max-width: 600px;
+  margin: 0 auto 3rem auto;
 }
 
 .dictionary-search input {
   width: 100%;
   background: var(--ink-2);
-  border: 1px solid var(--ink-4);
-  border-radius: var(--r);
-  padding: 0.75rem 1rem;
+  border: 2px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 1rem 1.5rem;
   color: var(--paper);
   font-size: 1rem;
+  font-family: var(--font-body);
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
 .dictionary-search input:focus {
   outline: none;
-  border-color: var(--mist);
+  border-color: var(--vermillion);
+  box-shadow: 0 0 0 3px rgba(201, 64, 64, 0.15);
+}
+
+.dictionary-search input::placeholder {
+  color: var(--mist);
+}
+
+/* ── Recently Viewed ────────────────────────────────────────── */
+
+#dictionary-recently-viewed,
+#dictionary-recent {
+  background: var(--ink-2);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r-lg);
+  padding: 1.5rem;
+  margin-bottom: 3rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#dictionary-recently-viewed h4 {
+  color: var(--rice);
+  margin-bottom: 1rem;
+  font-family: var(--font-zen);
+}
+
+.dictionary-history-item {
+  display: inline-block;
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 0.6rem 1rem;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--paper);
+  text-decoration: none;
+  transition: all var(--transition);
+  font-size: 0.9rem;
+}
+
+.dictionary-history-item:hover {
+  background: var(--ink-4);
+  border-color: var(--vermillion);
+  color: var(--rice);
+  transform: translateY(-1px);
+}
+
+.recent-words {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  list-style: none;
+}
+
+.recent-words li {
+  background: var(--ink-3);
+  border: 1px solid var(--ink-4);
+  border-radius: var(--r);
+  padding: 1rem;
+  min-width: 180px;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+
+.recent-words li:hover {
+  border-color: var(--vermillion);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+.recent-words small {
+  display: block;
+  color: var(--fog);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
 }
 
 .dictionary-add {
@@ -2174,56 +2426,80 @@ body {
   font-family: var(--font-body);
 }
 
+/* ── Dictionary Content (Jisho-style layout) ────────────────── */
+
 #dictionary-content {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
 .vocabulary-entry {
   background: var(--ink-2);
   border: 1px solid var(--ink-4);
   border-radius: var(--r-lg);
-  padding: 1.5rem;
+  padding: 2rem;
   transition: all var(--transition);
+  border-left: 4px solid var(--ink-4);
 }
 
 .vocabulary-entry:hover {
-  border-color: var(--mist);
-  transform: translateY(-2px);
+  border-color: var(--vermillion);
+  border-left-color: var(--vermillion);
+  transform: translateX(4px);
+  box-shadow: var(--shadow-card);
 }
 
 .vocab-header {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--ink-4);
+  padding-bottom: 1rem;
 }
 
 .vocab-japanese {
   font-family: var(--font-jp), var(--font-zen), sans-serif;
-  font-size: 1.5rem;
+  font-size: 2rem;
   color: var(--rice);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1;
 }
 
 .vocab-romaji {
   font-family: var(--font-mono);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--fog);
+  letter-spacing: 0.05em;
 }
 
 .vocab-meaning {
   color: var(--paper);
   font-weight: 500;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 1.05rem;
 }
 
 .vocab-pos {
+  display: inline-block;
+  background: var(--ink-3);
   color: var(--indigo);
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--r);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-right: 0.5rem;
 }
 
 .vocab-example {
+  background: var(--ink-3);
+  border-left: 3px solid var(--indigo);
   color: var(--fog);
   font-style: italic;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--r);
+  margin-top: 1rem;
 }

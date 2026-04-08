@@ -293,9 +293,10 @@ async function _updateTimeOfDayStat(
  * - If user has a long mistake_streak (≥ COMPASSION_THRESHOLD),
  *   temporarily inject easy characters to rebuild confidence
  * - New characters (no stat row) are treated as medium
+ * - For "all" or null type: includes Hiragana, Katakana, AND Kanji
  *
  * @param {number} userId
- * @param {object} opts  { size, type }  type = 'hiragana'|'katakana'|null
+ * @param {object} opts  { size, type }  type = 'hiragana'|'katakana'|'kanji'|null
  * @returns {Array}  Array of character objects with distractors
  */
 async function generateQuiz(
@@ -305,20 +306,27 @@ async function generateQuiz(
   // 1. Check for compassion mode
   const compassionMode = await _isCompassionMode(userId);
 
-  // 2. Fetch all characters the user has stats for, split by class
+  // 2. Build type filter — if type is null/all, include all three; otherwise filter by type
+  let typeFilter = "";
+  let typeParams = [];
+  if (type && type !== "all") {
+    typeFilter = "AND c.type = ?";
+    typeParams = [type];
+  }
+
+  // 3. Fetch all characters the user has stats for, split by class
   const statsRows = await query(
     `SELECT ps.character_id, ps.weakness_score, ps.difficulty_class,
           ps.mistake_streak, ps.next_review,
           c.kana, c.romaji, c.type, c.group_name, c.difficulty
    FROM performance_stats ps
    JOIN characters c ON c.id = ps.character_id
-   WHERE ps.user_id = ?
-     ${type ? "AND c.type = ?" : ""}
+   WHERE ps.user_id = ? ${typeFilter}
    ORDER BY ps.weakness_score DESC`,
-    type ? [userId, type] : [userId]
+    [userId, ...typeParams]
   );
 
-  // 3. Fetch characters the user has NEVER seen (no stat row)
+  // 4. Fetch characters the user has NEVER seen (no stat row)
   const seenIds = statsRows.map((r) => r.character_id);
   const unseenRows = await query(
     `SELECT id AS character_id, 0 AS weakness_score,
@@ -326,13 +334,13 @@ async function generateQuiz(
           NULL AS next_review,
           kana, romaji, type, group_name, difficulty
    FROM characters
-   ${type ? "WHERE type = ?" : ""}
+   ${typeFilter ? "WHERE " + typeFilter.replace("AND", "") : ""}
    ORDER BY difficulty ASC
-   LIMIT 20`,
-    type ? [type] : []
+   LIMIT 50`,
+    typeParams
   );
 
-  // 4. Bucket characters
+  // 5. Bucket characters
   const buckets = {
     weak: statsRows.filter((r) => r.difficulty_class === "weak"),
     medium: [
@@ -367,7 +375,7 @@ async function generateQuiz(
     ];
   }
 
-  // 5. Fill to `size` if pools were too small
+  // 6. Fill to `size` if pools were too small
   if (selected.length < size) {
     const allRemaining = [
       ...buckets.weak,
@@ -378,15 +386,15 @@ async function generateQuiz(
     selected.push(..._sample(allRemaining, size - selected.length));
   }
 
-  // Shuffle the final list
+  // Shuffle the final list for true randomness
   selected = _shuffle(selected).slice(0, size);
 
-  // 6. Attach multiple-choice distractors to each question
+  // 7. Attach multiple-choice distractors to each question
   const allChars = await query(
     `SELECT id, kana, romaji, type FROM characters ${
-      type ? "WHERE type = ?" : ""
+      typeFilter ? "WHERE " + typeFilter.replace("AND", "") : ""
     }`,
-    type ? [type] : []
+    typeParams
   );
 
   return selected.map((item) => ({
@@ -403,6 +411,7 @@ async function generateQuiz(
 
 /**
  * Build an array of N multiple-choice options including the correct answer.
+ * ENSURES: No duplicate romaji answers, must be 100% different
  */
 function _buildChoices(targetChar, allChars, count) {
   const correct = {
@@ -411,15 +420,33 @@ function _buildChoices(targetChar, allChars, count) {
     correct: true,
   };
 
-  const pool = allChars
-    .filter((c) => c.id !== targetChar.character_id)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, count - 1)
-    .map((c) => ({
-      id: c.id,
-      romaji: c.romaji,
-      correct: false,
-    }));
+  // Filter out the correct answer and get candidates with UNIQUE romaji
+  const usedRomaji = new Set([targetChar.romaji]);
+  const pool = [];
+
+  // Shuffle allChars first, then take unique romaji only
+  const shuffled = _shuffle(
+    allChars.filter((c) => c.id !== targetChar.character_id)
+  );
+
+  for (const char of shuffled) {
+    if (pool.length >= count - 1) break;
+    if (!usedRomaji.has(char.romaji)) {
+      pool.push({
+        id: char.id,
+        romaji: char.romaji,
+        correct: false,
+      });
+      usedRomaji.add(char.romaji);
+    }
+  }
+
+  // If we don't have enough unique options, log a warning but continue
+  if (pool.length < count - 1) {
+    console.warn(
+      `Warning: Only ${pool.length} unique distractors found for ${targetChar.romaji}`
+    );
+  }
 
   return _shuffle([correct, ...pool]);
 }
@@ -441,8 +468,15 @@ function _sampleDue(pool, n) {
 function _sample(arr, n) {
   return arr.slice(0, Math.min(n, arr.length));
 }
+
 function _shuffle(arr) {
-  return arr.sort(() => Math.random() - 0.5);
+  // True randomness using Fisher-Yates shuffle
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 /**
@@ -463,9 +497,82 @@ async function _isCompassionMode(userId) {
 module.exports = {
   recordAttempt,
   generateQuiz,
+  generateVocabularyQuiz,
   computeWeaknessScore,
   classify,
   DIFFICULTY,
   THRESHOLD,
   COMPASSION_THRESHOLD,
 };
+
+/**
+ * Generate vocabulary questions from the vocabulary table
+ * @param {number} userId
+ * @param {object} opts { size, jlptLevel }
+ * @returns {Array} Array of vocabulary question objects
+ */
+async function generateVocabularyQuiz(
+  userId,
+  { size = 10, jlptLevel = "N5" } = {}
+) {
+  const questionsCount = Math.min(size, 20);
+
+  // Get vocabulary words to quiz on
+  const vocabQuestions = await query(
+    `SELECT id, word_kanji, word_hiragana, word_katakana, romaji, meaning_en, meaning_vi, part_of_speech
+     FROM vocabulary
+     WHERE jlpt_level = ?
+     ORDER BY RAND()
+     LIMIT ?`,
+    [jlptLevel, questionsCount]
+  );
+
+  if (!vocabQuestions || vocabQuestions.length === 0) {
+    return [];
+  }
+
+  // Get all vocabulary for distractors
+  const allVocab = await query(
+    `SELECT romaji FROM vocabulary WHERE jlpt_level = ? LIMIT 100`,
+    [jlptLevel]
+  );
+
+  return vocabQuestions.map((word) => {
+    // Display form (kanji if available, else hiragana, else katakana)
+    const displayForm =
+      word.word_kanji || word.word_hiragana || word.word_katakana || "?";
+
+    // Create unique romaji options including the correct answer
+    const usedRomaji = new Set([word.romaji]);
+    const options = [word.romaji];
+
+    for (const vocab of _shuffle(allVocab)) {
+      if (options.length >= 4) break;
+      if (!usedRomaji.has(vocab.romaji)) {
+        options.push(vocab.romaji);
+        usedRomaji.add(vocab.romaji);
+      }
+    }
+
+    // Ensure we have 4 options
+    while (options.length < 4) {
+      const fallback = `option${options.length + 1}`;
+      options.push(fallback);
+    }
+
+    return {
+      id: word.id,
+      type: "vocabulary",
+      question: displayForm,
+      questionText: `What is the romaji for "${displayForm}"?`,
+      romaji: word.romaji,
+      meaning: word.meaning_en,
+      meaningVi: word.meaning_vi,
+      correctAnswer: word.romaji,
+      choices: _shuffle(options).map((opt) => ({
+        romaji: opt,
+        correct: opt === word.romaji,
+      })),
+    };
+  });
+}
