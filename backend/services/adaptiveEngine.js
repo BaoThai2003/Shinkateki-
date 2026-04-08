@@ -307,83 +307,132 @@ async function generateQuiz(
   const compassionMode = await _isCompassionMode(userId);
 
   // 2. Build type filter — if type is null/all, include all three; otherwise filter by type
-  let typeFilter = "";
+  let typeFilterJoined = "";
+  let typeFilterSimple = "";
   let typeParams = [];
   if (type && type !== "all") {
-    typeFilter = "AND c.type = ?";
+    typeFilterJoined = "AND c.type = ?";
+    typeFilterSimple = "WHERE type = ?";
     typeParams = [type];
   }
 
-  // 3. Fetch all characters the user has stats for, split by class
-  const statsRows = await query(
-    `SELECT ps.character_id, ps.weakness_score, ps.difficulty_class,
-          ps.mistake_streak, ps.next_review,
-          c.kana, c.romaji, c.type, c.group_name, c.difficulty
-   FROM performance_stats ps
-   JOIN characters c ON c.id = ps.character_id
-   WHERE ps.user_id = ? ${typeFilter}
-   ORDER BY ps.weakness_score DESC`,
-    [userId, ...typeParams]
-  );
+  // 3. Handle different quiz modes
+  let selected = [];
 
-  // 4. Fetch characters the user has NEVER seen (no stat row)
-  const seenIds = statsRows.map((r) => r.character_id);
-  const unseenRows = await query(
-    `SELECT id AS character_id, 0 AS weakness_score,
-          'medium' AS difficulty_class, 0 AS mistake_streak,
-          NULL AS next_review,
-          kana, romaji, type, group_name, difficulty
-   FROM characters
-   ${typeFilter ? "WHERE " + typeFilter.replace("AND", "") : ""}
-   ORDER BY difficulty ASC
-   LIMIT 50`,
-    typeParams
-  );
-
-  // 5. Bucket characters
-  const buckets = {
-    weak: statsRows.filter((r) => r.difficulty_class === "weak"),
-    medium: [
-      ...statsRows.filter((r) => r.difficulty_class === "medium"),
-      ...unseenRows,
-    ],
-    strong: statsRows.filter((r) => r.difficulty_class === "strong"),
-  };
-
-  let selected;
-
-  if (compassionMode) {
-    // In compassion mode: 80% strong/medium (easiest first) + 20% weak
-    const easyPool = [...buckets.strong, ...buckets.medium].sort(
-      (a, b) => a.weakness_score - b.weakness_score
+  if (type === "all") {
+    // For "all" mode: ≥30% hiragana, ≥30% katakana, ≥30% kanji
+    const hiraganaChars = await query(
+      `SELECT id AS character_id, kana, romaji, 'hiragana' AS type, group_name, difficulty FROM characters WHERE type = 'hiragana' ORDER BY RAND() LIMIT ${Math.ceil(
+        size * 0.35
+      )}`
     );
-    selected = [
-      ..._sampleDue(easyPool, Math.ceil(size * 0.8)),
-      ..._sampleDue(buckets.weak, Math.ceil(size * 0.2)),
-    ];
+    const katakanaChars = await query(
+      `SELECT id AS character_id, kana, romaji, 'katakana' AS type, group_name, difficulty FROM characters WHERE type = 'katakana' ORDER BY RAND() LIMIT ${Math.ceil(
+        size * 0.35
+      )}`
+    );
+    const kanjiChars = await query(
+      `SELECT id AS character_id, kana, romaji, 'kanji' AS type, group_name, difficulty FROM characters WHERE type = 'kanji' ORDER BY RAND() LIMIT ${Math.ceil(
+        size * 0.35
+      )}`
+    );
+    selected = [...hiraganaChars, ...katakanaChars, ...kanjiChars];
+    // Fill remaining with random from any type
+    if (selected.length < size) {
+      const remaining = await query(
+        `SELECT id AS character_id, kana, romaji, type, group_name, difficulty FROM characters ORDER BY RAND() LIMIT ${
+          size - selected.length
+        }`
+      );
+      selected.push(...remaining);
+    }
+    selected = selected.slice(0, size);
+  } else if (type === "hiragana" || type === "katakana" || type === "kanji") {
+    // Specific type mode
+    selected = await query(
+      `SELECT id AS character_id, kana, romaji, type, group_name, difficulty FROM characters WHERE type = ? ORDER BY RAND() LIMIT ?`,
+      [type, size]
+    );
   } else {
-    selected = [
-      ..._sampleDue(buckets.weak, Math.round(size * QUIZ_DISTRIBUTION.weak)),
-      ..._sampleDue(
-        buckets.medium,
-        Math.round(size * QUIZ_DISTRIBUTION.medium)
-      ),
-      ..._sampleDue(
-        buckets.strong,
-        Math.round(size * QUIZ_DISTRIBUTION.strong)
-      ),
-    ];
+    // Default adaptive mode (original logic)
+    // 3. Fetch all characters the user has stats for, split by class
+    const statsRows = await query(
+      `SELECT ps.character_id, ps.weakness_score, ps.difficulty_class,
+            ps.mistake_streak, ps.next_review,
+            c.kana, c.romaji, c.type, c.group_name, c.difficulty
+     FROM performance_stats ps
+     JOIN characters c ON c.id = ps.character_id
+     WHERE ps.user_id = ? ${typeFilterJoined}
+     ORDER BY ps.weakness_score DESC`,
+      [userId, ...typeParams]
+    );
+
+    // 4. Fetch characters the user has NEVER seen (no stat row)
+    const seenIds = statsRows.map((r) => r.character_id);
+    const unseenRows = await query(
+      `SELECT id AS character_id, 0 AS weakness_score,
+            'medium' AS difficulty_class, 0 AS mistake_streak,
+            NULL AS next_review,
+            kana, romaji, type, group_name, difficulty
+     FROM characters
+     ${typeFilterSimple ? typeFilterSimple : ""}
+     ORDER BY difficulty ASC
+     LIMIT 50`,
+      typeParams
+    );
+
+    // 5. Bucket characters
+    const buckets = {
+      weak: statsRows.filter((r) => r.difficulty_class === "weak"),
+      medium: [
+        ...statsRows.filter((r) => r.difficulty_class === "medium"),
+        ...unseenRows,
+      ],
+      strong: statsRows.filter((r) => r.difficulty_class === "strong"),
+    };
+
+    if (compassionMode) {
+      // In compassion mode: 80% strong/medium (easiest first) + 20% weak
+      const easyPool = [...buckets.strong, ...buckets.medium].sort(
+        (a, b) => a.weakness_score - b.weakness_score
+      );
+      selected = [
+        ..._sampleDue(easyPool, Math.ceil(size * 0.8)),
+        ..._sampleDue(buckets.weak, Math.ceil(size * 0.2)),
+      ];
+    } else {
+      selected = [
+        ..._sampleDue(buckets.weak, Math.round(size * QUIZ_DISTRIBUTION.weak)),
+        ..._sampleDue(
+          buckets.medium,
+          Math.round(size * QUIZ_DISTRIBUTION.medium)
+        ),
+        ..._sampleDue(
+          buckets.strong,
+          Math.round(size * QUIZ_DISTRIBUTION.strong)
+        ),
+      ];
+    }
+
+    // 6. Fill to `size` if pools were too small
+    if (selected.length < size) {
+      const allRemaining = [
+        ...buckets.weak,
+        ...buckets.medium,
+        ...buckets.strong,
+        ...unseenRows,
+      ].filter((r) => !selected.find((s) => s.character_id === r.character_id));
+      selected.push(..._sample(allRemaining, size - selected.length));
+    }
   }
 
-  // 6. Fill to `size` if pools were too small
-  if (selected.length < size) {
-    const allRemaining = [
-      ...buckets.weak,
-      ...buckets.medium,
-      ...buckets.strong,
-      ...unseenRows,
-    ].filter((r) => !selected.find((s) => s.character_id === r.character_id));
-    selected.push(..._sample(allRemaining, size - selected.length));
+  // Ensure we have questions
+  if (selected.length === 0) {
+    // Fallback: get any characters
+    selected = await query(
+      `SELECT id AS character_id, kana, romaji, type, group_name, difficulty FROM characters ORDER BY RAND() LIMIT ?`,
+      [size]
+    );
   }
 
   // Shuffle the final list for true randomness
@@ -392,7 +441,7 @@ async function generateQuiz(
   // 7. Attach multiple-choice distractors to each question
   const allChars = await query(
     `SELECT id, kana, romaji, type FROM characters ${
-      typeFilter ? "WHERE " + typeFilter.replace("AND", "") : ""
+      typeFilterSimple ? typeFilterSimple : ""
     }`,
     typeParams
   );
@@ -403,7 +452,7 @@ async function generateQuiz(
     romaji: item.romaji,
     type: item.type,
     groupName: item.group_name,
-    weaknessScore: parseFloat(item.weakness_score),
+    weaknessScore: parseFloat(item.weakness_score || 0),
     difficultyClass: item.difficulty_class ?? "medium",
     choices: _buildChoices(item, allChars, 4),
   }));

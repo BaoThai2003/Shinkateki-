@@ -222,8 +222,8 @@ CREATE TABLE quiz_questions (
     id               INT AUTO_INCREMENT PRIMARY KEY,
     lesson_id        INT          NOT NULL,
     question_type    ENUM('multiple_choice','romaji_to_kana','kana_to_meaning','sentence_completion') NOT NULL,
-    question_vi      TEXT         NOT NULL,
-    question_en      TEXT         NOT NULL,
+    question_text_vi TEXT         NOT NULL,
+    question_text_en TEXT         NOT NULL,
     romaji           VARCHAR(100),
     options_vi       JSON         NOT NULL,
     options_en       JSON         NOT NULL,
@@ -436,13 +436,15 @@ INSERT INTO characters (kana, romaji, hiragana, katakana, kanji, type, group_nam
 ('ケ', 'ke',  'け', 'ケ', NULL, 'katakana', 'k', 'beginner', 'Katakana KE', 'Katakana KE'),
 ('コ', 'ko',  'こ', 'コ', NULL, 'katakana', 'k', 'beginner', 'Katakana KO — hai vạch ngang ngắn', 'Katakana KO — two short horizontal lines');
 
--- Structured lessons form the default curriculum pathway.
-INSERT INTO structured_lessons (lesson_number, title_vi, title_en, content_vi, content_en, lesson_type, order_index) VALUES
-(1, 'Nguyên âm cơ bản',  'Basic Vowels',     'Học cách phát âm 5 nguyên âm cơ bản: あ い う え お', 'Learn to pronounce the 5 basic vowels: あ い う え お', 'character_learning', 1),
-(2, 'Hàng K',            'K Row',             'Học hàng K: か き く け こ',                           'Learn the K row: か き く け こ',                       'character_learning', 2),
-(3, 'Hàng S',            'S Row',             'Học hàng S: さ し す せ そ',                           'Learn the S row: さ し す せ そ',                       'character_learning', 3),
-(4, 'Hàng T',            'T Row',             'Học hàng T: た ち つ て と',                           'Learn the T row: た ち つ て と',                       'character_learning', 4),
-(5, 'Ôn tập tổng hợp',   'Review Quiz',       'Kiểm tra kiến thức nguyên âm và phụ âm đã học',       'Test your knowledge of the vowels and consonants covered so far', 'review', 5);
+-- Redesigned structured lessons
+INSERT INTO structured_lessons (lesson_number, title_vi, title_en, content_vi, content_en, lesson_type, script_type, order_index, is_active) VALUES
+(1, 'Bài 1: Hiragana Cơ Bản (46 ký tự)', 'Lesson 1: Basic Hiragana (46 characters)', 'Học và hiểu 46 ký tự Hiragana cơ bản. Mỗi ký tự có 5 từ ví dụ.', 'Learn and understand the 46 basic Hiragana characters. Each character has 5 example words.', 'character_learning', 'hiragana', 1, 1),
+(2, 'Bài 2: Dakuon Hiragana (25 ký tự)', 'Lesson 2: Dakuon Hiragana (25 characters)', 'Học và hiểu 25 ký tự Dakuon Hiragana.', 'Learn and understand the 25 Dakuon Hiragana characters.', 'character_learning', 'hiragana', 2, 1),
+(3, 'Bài 3: Yoon Hiragana (36 ký tự)', 'Lesson 3: Yoon Hiragana (36 characters)', 'Học và hiểu 36 ký tự Yoon Hiragana.', 'Learn and understand the 36 Yoon Hiragana characters.', 'character_learning', 'hiragana', 3, 1),
+(4, 'Bài 4: Katakana Cơ Bản (46 ký tự)', 'Lesson 4: Basic Katakana (46 characters)', 'Học và hiểu 46 ký tự Katakana cơ bản.', 'Learn and understand the 46 basic Katakana characters.', 'character_learning', 'katakana', 4, 1),
+(5, 'Bài 5: Dakuon Katakana (25 ký tự)', 'Lesson 5: Dakuon Katakana (25 characters)', 'Học và hiểu 25 ký tự Dakuon Katakana.', 'Learn and understand the 25 Dakuon Katakana characters.', 'character_learning', 'katakana', 5, 1),
+(6, 'Bài 6: Yoon Katakana (36 ký tự)', 'Lesson 6: Yoon Katakana (36 characters)', 'Học và hiểu 36 ký tự Yoon Katakana.', 'Learn and understand the 36 Yoon Katakana characters.', 'character_learning', 'katakana', 6, 1),
+(7, 'Bài 7: Giao Tiếp Cơ Bản', 'Lesson 7: Basic Communication', 'Học và hiểu các cụm từ giao tiếp cơ bản.', 'Learn and understand basic communication phrases.', 'practice', 'both', 7, 1);
 
 -- User-created lessons (tied to the test account).
 INSERT INTO lessons (user_id, title, content, is_public) VALUES
