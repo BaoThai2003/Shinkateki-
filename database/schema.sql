@@ -362,38 +362,522 @@ ALTER TABLE structured_lessons ADD FOREIGN KEY (section_id) REFERENCES sections(
 INSERT INTO users (username, email, password_hash, full_name, language) VALUES
 ('testuser', 'test@example.com', '$2b$10$dummy.hash.for.test.user', 'Test User', 'en');
 
--- INSERT CHAPTERS
+-- ===========================================================================
+-- CHAPTERS & SECTIONS — Curriculum structure aligned with structured_lessons
+-- Chapter 1 covers the kana writing systems (Lessons 1–6).
+-- Chapter 2 covers practical communication and kanji (Lesson 7 onward).
+-- Sections provide finer-grained grouping within each chapter.
+-- ===========================================================================
+
 INSERT INTO chapters (title_en, title_vi, description_en, description_vi, order_index) VALUES
-('Chapter 1: Alphabet Basics', 'Chapter 1: Cơ Bản Bảng Chữ Cái', 'Master the fundamental hiragana and katakana', 'Làm chủ bảng chữ cái cơ bản', 1),
-('Chapter 2: Kanji Fundamentals', 'Chapter 2: Kanji Cơ Bản', 'Introduction to basic kanji characters', 'Giới thiệu về các ký tự kanji cơ bản', 2);
+(
+  'Chapter 1: The Kana Writing Systems',
+  'Chương 1: Hệ Thống Chữ Kana',
+  'Build a complete foundation in hiragana and katakana — the two phonetic scripts that underpin all Japanese reading and writing. By the end of this chapter you will be able to read and write all 46 basic hiragana, 25 voiced/semi-voiced (dakuon) hiragana, 33 combination (yōon) hiragana, and their katakana equivalents.',
+  'Xây dựng nền tảng hoàn chỉnh về hiragana và katakana — hai bộ chữ biểu âm là cốt lõi của mọi hoạt động đọc và viết tiếng Nhật. Kết thúc chương này, bạn có thể đọc và viết đầy đủ 46 ký tự hiragana cơ bản, 25 hiragana dakuon (hữu thanh/bán hữu thanh) và 33 hiragana yōon (âm kết hợp), cùng các ký tự katakana tương đương.',
+  1
+),
+(
+  'Chapter 2: Communication and Kanji Foundations',
+  'Chương 2: Giao Tiếp và Nền Tảng Kanji',
+  'Move beyond the kana scripts into practical everyday Japanese. This chapter introduces essential conversational phrases, core N5 vocabulary, and the high-frequency kanji characters that appear most often on the JLPT N5 exam.',
+  'Tiến xa hơn bộ chữ kana vào tiếng Nhật thực dụng hàng ngày. Chương này giới thiệu các cụm từ giao tiếp thiết yếu, từ vựng N5 cốt lõi và các ký tự kanji tần suất cao xuất hiện nhiều nhất trong kỳ thi JLPT N5.',
+  2
+);
 
--- INSERT SECTIONS FOR CHAPTER 1
+-- Sections for Chapter 1 (kana writing systems)
 INSERT INTO sections (chapter_id, title_en, title_vi, description_en, description_vi, order_index) VALUES
-(1, 'Section 1.1: Vowels', 'Section 1.1: Nguyên Âm', 'Learn hiragana and katakana vowels', 'Học nguyên âm hiragana và katakana', 1),
-(1, 'Section 1.2: Consonants', 'Section 1.2: Phụ Âm', 'K, S, T rows and consonant combinations', 'Hàng K, S, T và các kết hợp phụ âm', 2);
+(
+  1,
+  'Section 1.1: Basic Hiragana (46 characters)',
+  'Mục 1.1: Hiragana Cơ Bản (46 ký tự)',
+  'Learn all 46 standard hiragana characters organised into the gojūon (50-sound) chart — the vowel row, and the K, S, T, N, H, M, Y, R, W rows plus the nasal ん. Covers correct stroke order, pronunciation, and beginner vocabulary for each character.',
+  'Học đầy đủ 46 ký tự hiragana tiêu chuẩn được sắp xếp theo bảng gojūon (50 âm) — hàng nguyên âm và các hàng K, S, T, N, H, M, Y, R, W cùng phụ âm mũi ん. Bao gồm thứ tự nét bút đúng, cách phát âm và từ vựng cơ bản cho từng ký tự.',
+  1
+),
+(
+  1,
+  'Section 1.2: Dakuon & Han-dakuon Hiragana (25 characters)',
+  'Mục 1.2: Hiragana Dakuon & Han-dakuon (25 ký tự)',
+  'Master the voiced and semi-voiced hiragana formed by adding nigori (゛) or maru (゜) diacritics — the G, Z, D, B, and P rows. Includes minimal pair drills to sharpen your ear for voiced vs. unvoiced contrasts.',
+  'Nắm vững các hiragana hữu thanh và bán hữu thanh được tạo bằng cách thêm dấu nigori (゛) hoặc maru (゜) — các hàng G, Z, D, B và P. Bao gồm bài luyện cặp tối thiểu để rèn luyện khả năng phân biệt hữu thanh và vô thanh.',
+  2
+),
+(
+  1,
+  'Section 1.3: Yōon Hiragana (33 combinations)',
+  'Mục 1.3: Hiragana Yōon (33 âm kết hợp)',
+  'Study the compound sounds formed when a ki/shi/chi/ni/hi/mi/ri/gi/ji/bi/pi kana is followed by a small や, ゆ, or よ — producing contracted syllables like きゃ (kya) and びょ (byo). Practice distinguishing single-mora from double-mora spellings.',
+  'Học các âm ghép được tạo khi một kana ki/shi/chi/ni/hi/mi/ri/gi/ji/bi/pi đứng trước や, ゆ, hoặc よ nhỏ — tạo ra các âm tiết rút gọn như きゃ (kya) và びょ (byo). Luyện phân biệt cách đánh vần một mora và hai mora.',
+  3
+),
+(
+  1,
+  'Section 1.4: Basic Katakana (46 characters)',
+  'Mục 1.4: Katakana Cơ Bản (46 ký tự)',
+  'Learn all 46 standard katakana characters, focusing on their visual differences from hiragana counterparts and their primary role in writing foreign loanwords (gairaigo), onomatopoeia, and emphasis.',
+  'Học đầy đủ 46 ký tự katakana tiêu chuẩn, tập trung vào sự khác biệt hình dạng so với hiragana tương ứng và vai trò chính trong việc viết từ vay mượn nước ngoài (gairaigo), từ tượng thanh và nhấn mạnh.',
+  4
+),
+(
+  1,
+  'Section 1.5: Dakuon & Yōon Katakana (58 characters)',
+  'Mục 1.5: Katakana Dakuon & Yōon (58 ký tự)',
+  'Complete your katakana knowledge with the voiced rows (G, Z, D, B, P) and combination sounds (kya, sha, chi, etc.), plus special extended-vowel and consonant clusters unique to katakana loanword spelling.',
+  'Hoàn thiện kiến thức katakana với các hàng hữu thanh (G, Z, D, B, P) và âm kết hợp (kya, sha, chi, v.v.), cùng các nguyên âm kéo dài và tổ hợp phụ âm đặc biệt dành riêng cho chính tả katakana.',
+  5
+);
 
--- INSERT KANJI CHARACTERS
-INSERT INTO characters (kana, romaji, hiragana, katakana, kanji, type, group_name, difficulty, mnemonic_vi, mnemonic_en) VALUES
-('赤', 'aka', NULL, NULL, '赤', 'kanji', 'colors', 'beginner', 'Chữ cộng chữ với - là cái túi, màu đỏ', 'Radical + fire stroke = red'),
-('青', 'ao', NULL, NULL, '青', 'kanji', 'colors', 'beginner', 'Giống hình khu vườn, xanh lá', 'Looks like growing plant = blue/green'),
-('木', 'ki', NULL, NULL, '木', 'kanji', 'nature', 'beginner', '3 gốc cây = rừng', 'Single tree character'),
-('火', 'hi', NULL, NULL, '火', 'kanji', 'nature', 'beginner', 'Hình lửa với đầu lửa', 'Looks like flames, fire'),
-('水', 'mizu', NULL, NULL, '水', 'kanji', 'nature', 'beginner', 'Ba nháy = nước chảy', 'Three lines = flowing water'),
-('日', 'hi', NULL, NULL, '日', 'kanji', 'time', 'beginner', 'Hộp vuông = mặt trời', 'Square = sun'),
-('月', 'tsuki', NULL, NULL, '月', 'kanji', 'time', 'beginner', 'Cửa sổ = mặt trăng', 'Window = moon'),
-('人', 'hito', NULL, NULL, '人', 'kanji', 'people', 'beginner', 'Hình người đứng = con người', 'Looks like standing person'),
-('子', 'ko', NULL, NULL, '子', 'kanji', 'people', 'beginner', 'Hình trẻ em ngồi = con', 'Child sitting = child'),
-('女', 'onna', NULL, NULL, '女', 'kanji', 'people', 'beginner', 'Kneeling person = phụ nữ', 'Kneeling person = woman'),
-('男', 'otoko', NULL, NULL, '男', 'kanji', 'people', 'beginner', 'Đồng ruộng + người = nam giới', 'Field + person = man'),
-('大', 'dai', NULL, NULL, '大', 'kanji', 'size', 'beginner', 'Người với tay ngang = to', 'Person with arms spread = big'),
-('小', 'shou', NULL, NULL, '小', 'kanji', 'size', 'beginner', 'Người nhỏ với 3 vạch = bé', 'Small person with 3 lines = small'),
-('金', 'kin', NULL, NULL, '金', 'kanji', 'materials', 'beginner', 'Khoáng sản = vàng/tiền', 'Mineral deposits = gold/money'),
-('食', 'taberu', NULL, NULL, '食', 'kanji', 'action', 'beginner', 'Tay che mặt ăn = ăn', 'Hand covering mouth = eat');
+-- Sections for Chapter 2 (communication and kanji)
+INSERT INTO sections (chapter_id, title_en, title_vi, description_en, description_vi, order_index) VALUES
+(
+  2,
+  'Section 2.1: Everyday Communication Phrases',
+  'Mục 2.1: Cụm Từ Giao Tiếp Hàng Ngày',
+  'Build a working toolkit of greetings, farewells, polite requests, apologies, and common conversational expressions. Includes situational dialogues for shopping, travel, and introductions.',
+  'Xây dựng bộ công cụ thực dụng gồm các lời chào hỏi, tạm biệt, yêu cầu lịch sự, xin lỗi và các mẫu câu hội thoại thông dụng. Bao gồm các đoạn hội thoại tình huống trong mua sắm, đi lại và giới thiệu bản thân.',
+  1
+),
+(
+  2,
+  'Section 2.2: High-Frequency N5 Kanji (100 characters)',
+  'Mục 2.2: Kanji N5 Tần Suất Cao (100 ký tự)',
+  'Study the 100 kanji characters that appear most frequently on the JLPT N5 exam. Each entry covers the character, its on-yomi (Chinese reading), kun-yomi (Japanese reading), core meaning, visual mnemonic, and example vocabulary.',
+  'Học 100 ký tự kanji xuất hiện thường xuyên nhất trong kỳ thi JLPT N5. Mỗi mục bao gồm ký tự, âm on-yomi (âm Hán-Nhật), âm kun-yomi (âm thuần Nhật), nghĩa cốt lõi, gợi nhớ hình ảnh và ví dụ từ vựng.',
+  2
+);
 
--- UPDATE structured_lessons with section_id 
-UPDATE structured_lessons SET section_id = 1, content_vi = 'Học cách phát âm 5 nguyên âm cơ bản: あ い う え お. Đây là nền tảng cho tất cả các âm tiếng Nhật.', content_en = 'Learn to pronounce the 5 basic vowels: あ い う え お. This is the foundation for all Japanese sounds.' WHERE lesson_number = 1;
-UPDATE structured_lessons SET section_id = 1, content_vi = 'Học cách phát âm các nguyên âm katakana: ア イ ウ エ オ. Katakana được sử dụng cho từ vựng ngoại lai.', content_en = 'Learn the katakana vowels: ア イ ウ エ オ. Katakana is used for foreign loanwords.' WHERE lesson_number = 2 AND lesson_type = 'character_learning';
-UPDATE structured_lessons SET section_id = 2 WHERE lesson_type IN ('character_learning', 'practice') AND lesson_number IN (2, 3, 4) AND lesson_type != 'character_learning' OR lesson_number > 5;
+-- Link structured_lessons to the appropriate sections
+-- Section IDs: 1=Basic Hiragana, 2=Dakuon Hiragana, 3=Yōon Hiragana,
+--              4=Basic Katakana, 5=Dakuon+Yōon Katakana,
+--              6=Communication Phrases, 7=N5 Kanji
+UPDATE structured_lessons SET section_id = 1 WHERE lesson_number = 1;
+UPDATE structured_lessons SET section_id = 2 WHERE lesson_number = 2;
+UPDATE structured_lessons SET section_id = 3 WHERE lesson_number = 3;
+UPDATE structured_lessons SET section_id = 4 WHERE lesson_number = 4;
+UPDATE structured_lessons SET section_id = 5 WHERE lesson_number = 5 AND lesson_type = 'character_learning';
+UPDATE structured_lessons SET section_id = 6 WHERE lesson_number = 6;
+UPDATE structured_lessons SET section_id = 7 WHERE lesson_number = 7;
+
+-- ===========================================================================
+-- KANJI CHARACTERS — 100 high-frequency JLPT N5 kanji
+-- Grouped thematically for easier memorisation.
+-- on_reading / kun_reading are stored in the romaji field (primary reading).
+-- Full readings are embedded in the mnemonic fields.
+-- ===========================================================================
+INSERT INTO characters (kana, romaji, hiragana, katakana, kanji, type, group_name, difficulty, mnemonic_vi, mnemonic_en, position_in_group) VALUES
+
+-- ── Numbers & Counting ───────────────────────────────────────────────────
+('一', 'ichi / hito(tsu)', NULL, NULL, '一', 'kanji', 'numbers', 'beginner',
+ 'Một nét nằm ngang duy nhất = số một. Đơn giản nhất trong tất cả kanji.',
+ 'A single horizontal stroke = one. The simplest of all kanji.', 1),
+
+('二', 'ni / futa(tsu)', NULL, NULL, '二', 'kanji', 'numbers', 'beginner',
+ 'Hai nét nằm ngang = số hai. Nét dưới dài hơn nét trên.',
+ 'Two horizontal strokes = two. The lower stroke is longer than the upper.', 2),
+
+('三', 'san / mit(tsu)', NULL, NULL, '三', 'kanji', 'numbers', 'beginner',
+ 'Ba nét nằm ngang = số ba. Nét giữa ngắn nhất.',
+ 'Three horizontal strokes = three. The middle stroke is the shortest.', 3),
+
+('四', 'shi / yot(tsu)', NULL, NULL, '四', 'kanji', 'numbers', 'beginner',
+ 'Hình hộp với hai chân thò ra = số bốn. Hình dáng giống chiếc ghế bốn chân.',
+ 'A box with two legs dangling = four. The shape resembles a four-legged stool.', 4),
+
+('五', 'go / itsu(tsu)', NULL, NULL, '五', 'kanji', 'numbers', 'beginner',
+ 'Hình chữ Z đặt nằm ngang với cây gậy đâm qua = số năm. Đếm năm ngón tay.',
+ 'A sideways Z with a rod through it = five. Picture counting five fingers.', 5),
+
+('六', 'roku / mut(tsu)', NULL, NULL, '六', 'kanji', 'numbers', 'beginner',
+ 'Mái nhà với hai chân = số sáu. Hình dáng như ngôi nhà nhỏ.',
+ 'A roof with two legs = six. Picture a little house with a pointed roof.', 6),
+
+('七', 'shichi / nana(tsu)', NULL, NULL, '七', 'kanji', 'numbers', 'beginner',
+ 'Số 7 bị cắt chéo = số bảy. Nét xiên từ phải sang trái là nét đặc trưng.',
+ 'A crossed 7 shape = seven. The diagonal slash from right to left is distinctive.', 7),
+
+('八', 'hachi / yat(tsu)', NULL, NULL, '八', 'kanji', 'numbers', 'beginner',
+ 'Hai nét toé ra như chữ V ngược = số tám. Tượng trưng cho sự phồn thịnh vì toé ra rộng.',
+ 'Two strokes spreading apart like an upside-down V = eight. Considered lucky for its expanding shape.', 8),
+
+('九', 'kyuu / kokono(tsu)', NULL, NULL, '九', 'kanji', 'numbers', 'beginner',
+ 'Dấu câu hỏi cong cong = số chín. Nét móc xuống như tay người đang kéo.',
+ 'A curved question-mark shape = nine. The hooking stroke looks like a reaching hand.', 9),
+
+('十', 'juu / too', NULL, NULL, '十', 'kanji', 'numbers', 'beginner',
+ 'Hình chữ thập = mười. Nét dọc cắt qua nét ngang tạo thành dấu cộng.',
+ 'A cross shape = ten. A vertical stroke intersecting a horizontal one, like a plus sign.', 10),
+
+('百', 'hyaku', NULL, NULL, '百', 'kanji', 'numbers', 'beginner',
+ 'Số một trên đầu hộp chữ nhật = một trăm. Tưởng tượng 100 hộp xếp thành hàng.',
+ 'One perched on top of a rectangular box = one hundred. Imagine 100 boxes stacked in a row.', 11),
+
+('千', 'sen / chi', NULL, NULL, '千', 'kanji', 'numbers', 'beginner',
+ 'Dấu gạch xiên trên chữ thập = một nghìn. Chữ thập với mái che bên trên.',
+ 'A diagonal cap atop a cross = one thousand. A cross wearing a little slanted hat.', 12),
+
+('万', 'man / yorozu', NULL, NULL, '万', 'kanji', 'numbers', 'beginner',
+ 'Hình bướm hoặc cờ bay = mười nghìn. Nét ngang trên đầu biểu tượng cho số lượng rất lớn.',
+ 'A butterfly or waving flag shape = ten thousand. The horizontal cap suggests an enormous quantity.', 13),
+
+-- ── Time ─────────────────────────────────────────────────────────────────
+('日', 'nichi / hi / ka', NULL, NULL, '日', 'kanji', 'time', 'beginner',
+ 'Hình tròn có đường kẻ giữa = mặt trời / ngày. Người Nhật cổ đại vẽ mặt trời là hình tròn sáng rực.',
+ 'A circle with a centre line = sun / day. Ancient Japanese depicted the sun as a bright, bounded circle.', 14),
+
+('月', 'getsu / tsuki', NULL, NULL, '月', 'kanji', 'time', 'beginner',
+ 'Cửa sổ lưỡi liềm với hai dấu chấm bên trong = mặt trăng / tháng. Hai nét trong là ánh trăng rọi qua.',
+ 'A crescent window with two interior marks = moon / month. The two inner strokes are moonbeams shining through.', 15),
+
+('年', 'nen / toshi', NULL, NULL, '年', 'kanji', 'time', 'beginner',
+ 'Bông lúa cúi xuống trên cọc = năm. Thu hoạch lúa mỗi năm một lần là nhịp đời của người Nhật xưa.',
+ 'A bent grain stalk above a stake = year. The annual rice harvest marked the rhythm of traditional Japanese life.', 16),
+
+('時', 'ji / toki', NULL, NULL, '時', 'kanji', 'time', 'beginner',
+ 'Chữ Nhật (mặt trời) + bộ thổ + tấc đất = thời gian. Mặt trời đi qua bầu trời đo thời gian.',
+ 'Sun radical + earth + measuring unit = time. The sun traversing the sky is how ancient people measured hours.', 17),
+
+('間', 'kan / ma / aida', NULL, NULL, '間', 'kanji', 'time', 'beginner',
+ 'Mặt trăng nhìn qua khe cửa = khoảng thời gian / khoảng không gian. Ánh sáng lọt qua khe hở.',
+ 'Moonlight visible through a gate gap = interval / space between. Light filtering through an opening.', 18),
+
+('今', 'kon / ima', NULL, NULL, '今', 'kanji', 'time', 'beginner',
+ 'Mái nhà che một người đang ngồi xuống = bây giờ. Hành động ngồi xuống diễn ra ngay lúc này.',
+ 'A roof sheltering a person bending down = now. The act of sitting down is happening at this very moment.', 19),
+
+('前', 'zen / mae', NULL, NULL, '前', 'kanji', 'time', 'beginner',
+ 'Thuyền + dao = phía trước / trước đây. Con thuyền cắt qua sóng tiến về phía trước.',
+ 'A boat + knife = front / before. A boat cutting forward through the waves with a blade at its prow.', 20),
+
+('後', 'go / kou / ato / nochi', NULL, NULL, '後', 'kanji', 'time', 'beginner',
+ 'Người đi nhỏ + sợi chỉ nhỏ = phía sau / sau này. Sợi chỉ kéo người đi chậm lại phía sau.',
+ 'Small-step radical + tiny thread = behind / after. A little thread slowing the walking figure from behind.', 21),
+
+-- ── People & Family ───────────────────────────────────────────────────────
+('人', 'jin / nin / hito', NULL, NULL, '人', 'kanji', 'people', 'beginner',
+ 'Hai nét như người đứng dạng chân = người. Hình bóng con người nhìn từ bên cạnh.',
+ 'Two strokes like a person standing with legs apart = person. A silhouette of a human viewed from the side.', 22),
+
+('子', 'shi / ko', NULL, NULL, '子', 'kanji', 'people', 'beginner',
+ 'Hình trẻ em ngồi với tay giơ lên và chân bó = con / đứa trẻ. Tư thế của em bé bị quấn tã.',
+ 'A child sitting with arms raised and legs wrapped = child. The posture of a baby bundled in swaddling.', 23),
+
+('女', 'jo / onna', NULL, NULL, '女', 'kanji', 'people', 'beginner',
+ 'Người phụ nữ quỳ gối chắp tay = phụ nữ. Phản ánh vai trò truyền thống trong xã hội Nhật cổ.',
+ 'A kneeling figure with hands folded = woman. Reflects the demure posture in classical Japanese depictions.', 24),
+
+('男', 'dan / nan / otoko', NULL, NULL, '男', 'kanji', 'people', 'beginner',
+ 'Đồng ruộng (田) + sức mạnh (力) = đàn ông. Người làm việc ngoài đồng bằng sức lực.',
+ 'Field (田) + strength (力) = man. A person who works the fields using physical power.', 25),
+
+('父', 'fu / chichi', NULL, NULL, '父', 'kanji', 'people', 'beginner',
+ 'Tay cầm gậy = cha. Người đàn ông cầm gậy quyền uy trong gia đình.',
+ 'A hand gripping a rod = father. The figure of authority in the household holding a staff.', 26),
+
+('母', 'bo / haha', NULL, NULL, '母', 'kanji', 'people', 'beginner',
+ 'Phụ nữ với hai dấu chấm = mẹ. Hai dấu chấm tượng trưng cho bộ ngực nuôi con.',
+ 'Woman shape with two dots added = mother. The two dots symbolise a nursing mother.', 27),
+
+('友', 'yuu / tomo', NULL, NULL, '友', 'kanji', 'people', 'beginner',
+ 'Tay phải + tay phải = bạn bè. Hai bàn tay phải bắt chặt nhau = tình bạn.',
+ 'Right hand + right hand = friend. Two right hands clasped together in friendship.', 28),
+
+('先', 'sen / saki', NULL, NULL, '先', 'kanji', 'people', 'beginner',
+ 'Người đang bước đi với đất bên dưới = trước / người đi trước. Tiên sinh = người sinh ra trước.',
+ 'A walking person with ground beneath = ahead / one who came before. Sensei literally means "born before".', 29),
+
+('生', 'sei / shou / i(kiru) / u(mareru)', NULL, NULL, '生', 'kanji', 'people', 'beginner',
+ 'Cây mầm mọc từ đất = sống / sinh ra. Hình ảnh sự sống nảy nở từ lòng đất.',
+ 'A seedling sprouting from the ground = life / to be born. The image of life pushing up through the soil.', 30),
+
+-- ── Body & Health ─────────────────────────────────────────────────────────
+('口', 'kou / kuchi', NULL, NULL, '口', 'kanji', 'body', 'beginner',
+ 'Hình vuông mở = miệng. Dạng đơn giản nhất của cái miệng đang mở.',
+ 'An open square = mouth. The most elemental depiction of an open mouth.', 31),
+
+('目', 'moku / me', NULL, NULL, '目', 'kanji', 'body', 'beginner',
+ 'Hình con mắt dựng đứng với lòng trắng và lòng đen = mắt. Người Nhật cổ vẽ mắt đứng.',
+ 'An upright eye shape with two horizontal pupils = eye. Classical Japanese art depicted eyes vertically.', 32),
+
+('耳', 'ji / mimi', NULL, NULL, '耳', 'kanji', 'body', 'beginner',
+ 'Hình bộ phận tai với nhiều ngăn = tai. Các đường kẻ bên trong giống cấu trúc tai trong.',
+ 'An ear shape with inner chambers = ear. The horizontal lines suggest the inner ear structure.', 33),
+
+('手', 'shu / te', NULL, NULL, '手', 'kanji', 'body', 'beginner',
+ 'Bàn tay xòe với ngón cái ngang = bàn tay. Ba nét trên là các ngón, nét cong là lòng bàn tay.',
+ 'A spread hand with a horizontal thumb = hand. The three upper strokes are fingers; the curve is the palm.', 34),
+
+('足', 'soku / ashi', NULL, NULL, '足', 'kanji', 'body', 'beginner',
+ 'Miệng trên + chân đi bộ dưới = chân / đủ. Chân là thứ đủ để giúp ta di chuyển.',
+ 'Mouth shape above a walking-leg stroke = leg / sufficient. Feet are enough to carry you anywhere.', 35),
+
+-- ── Nature ────────────────────────────────────────────────────────────────
+('山', 'san / yama', NULL, NULL, '山', 'kanji', 'nature', 'beginner',
+ 'Ba đỉnh núi nhọn = núi. Đỉnh giữa cao nhất, biểu trưng cho núi Phú Sĩ.',
+ 'Three mountain peaks = mountain. The tallest centre peak evokes Mount Fuji.', 36),
+
+('川', 'sen / kawa', NULL, NULL, '川', 'kanji', 'nature', 'beginner',
+ 'Ba đường chảy song song xuống = sông. Dòng nước chảy từ trên xuống dưới.',
+ 'Three parallel downward flowing lines = river. Water streaming downward.', 37),
+
+('木', 'moku / ki', NULL, NULL, '木', 'kanji', 'nature', 'beginner',
+ 'Thân cây với cành trên và rễ dưới = cây / gỗ. Hình cây hoàn chỉnh với cành và rễ.',
+ 'A trunk with branches above and roots below = tree / wood. A complete tree with canopy and roots.', 38),
+
+('林', 'rin / hayashi', NULL, NULL, '林', 'kanji', 'nature', 'beginner',
+ 'Cây + cây = rừng nhỏ. Hai cây đứng cạnh nhau tạo nên một khu rừng nhỏ.',
+ 'Tree + tree = grove. Two trees side by side make a small woodland.', 39),
+
+('森', 'shin / mori', NULL, NULL, '森', 'kanji', 'nature', 'beginner',
+ 'Ba cây = rừng lớn. Nhiều hơn hai cây tạo nên một cánh rừng rậm rạp.',
+ 'Three trees = forest. More than two trees together create a dense forest.', 40),
+
+('火', 'ka / hi', NULL, NULL, '火', 'kanji', 'nature', 'beginner',
+ 'Hình ngọn lửa bùng lên với tia lửa tứ phía = lửa. Nét giữa là ngọn, các nét bên là tia lửa.',
+ 'Flames rising with sparks flying to either side = fire. The centre stroke is the main flame; side strokes are sparks.', 41),
+
+('水', 'sui / mizu', NULL, NULL, '水', 'kanji', 'nature', 'beginner',
+ 'Nét trung tâm có ba nét nhỏ toé ra = nước. Các tia nhỏ tượng trưng cho nước chảy tứ phía.',
+ 'A central stroke with three small splashing lines = water. The splashes suggest water flowing in all directions.', 42),
+
+('土', 'do / to / tsuchi', NULL, NULL, '土', 'kanji', 'nature', 'beginner',
+ 'Cây gậy cắm vào mặt đất = đất. Chữ thập dưới là mặt đất, nét trên là mầm cây.',
+ 'A rod planted in the ground = earth / soil. The lower cross is the ground; the top stroke is a sprouting plant.', 43),
+
+('金', 'kin / kon / kane', NULL, NULL, '金', 'kanji', 'nature', 'beginner',
+ 'Mái nhà + đất + hai hạt khoáng sản = vàng / tiền. Khoáng sản quý chôn vùi trong lòng đất.',
+ 'Roof + earth + two mineral nuggets = gold / money. Precious ore hidden underground.', 44),
+
+('空', 'kuu / sora / a(ku)', NULL, NULL, '空', 'kanji', 'nature', 'beginner',
+ 'Mái nhà + công cụ đào = bầu trời / trống rỗng. Đào rỗng bên trong để thấy bầu trời trên đầu.',
+ 'Roof + digging tool = sky / empty. Hollowing out beneath a roof reveals the open sky above.', 45),
+
+('雨', 'u / ame', NULL, NULL, '雨', 'kanji', 'nature', 'beginner',
+ 'Mây ngang với bốn giọt mưa rơi xuống = mưa. Rèm mây và các giọt nước tượng trưng cho cơn mưa.',
+ 'A horizontal cloud with four raindrops falling = rain. The cloud canopy with falling drops captures a rainfall.', 46),
+
+('花', 'ka / hana', NULL, NULL, '花', 'kanji', 'nature', 'beginner',
+ 'Bộ cỏ trên đầu + biến đổi = hoa. Cây cỏ trải qua biến đổi để nở ra hoa rực rỡ.',
+ 'Grass radical above + transformation = flower. Plants undergo transformation (化) to bloom into flowers.', 47),
+
+('石', 'seki / ishi', NULL, NULL, '石', 'kanji', 'nature', 'beginner',
+ 'Vách núi với hòn đá dưới chân = đá. Đá lăn từ vách núi xuống.',
+ 'A cliff face with a stone at its foot = rock / stone. Rocks fall from cliffs to the ground below.', 48),
+
+('気', 'ki / ke', NULL, NULL, '気', 'kanji', 'nature', 'beginner',
+ 'Hơi nước bốc lên từ cơm trong nồi = khí / tinh thần / thời tiết. Hơi nóng bốc lên là "khí".',
+ 'Steam rising from rice in a pot = spirit / energy / weather. Rising vapour captures the concept of life-energy.', 49),
+
+-- ── Location & Direction ──────────────────────────────────────────────────
+('上', 'jou / ue / a(garu)', NULL, NULL, '上', 'kanji', 'location', 'beginner',
+ 'Điểm trên đường thẳng = phía trên. Điểm nhấn nằm bên trên đường nền.',
+ 'A mark above a baseline = above / up. A reference point sitting above the ground line.', 50),
+
+('下', 'ka / ge / shita / sa(garu)', NULL, NULL, '下', 'kanji', 'location', 'beginner',
+ 'Điểm dưới đường thẳng = phía dưới. Đối lập trực tiếp với chữ 上.',
+ 'A mark below a baseline = below / down. The direct mirror of 上.', 51),
+
+('中', 'chuu / naka', NULL, NULL, '中', 'kanji', 'location', 'beginner',
+ 'Hình hộp chữ nhật bị mũi tên xuyên qua giữa = ở giữa / trong. Mũi tên trúng đúng tâm.',
+ 'A rectangle pierced through its centre = middle / inside. An arrow hitting the exact centre of a target.', 52),
+
+('右', 'u / migi', NULL, NULL, '右', 'kanji', 'location', 'beginner',
+ 'Tay phải + miệng = phải. Tay phải dùng để ăn = hướng phải.',
+ 'Right hand + mouth = right (direction). The right hand is used for eating, hence "right" direction.', 53),
+
+('左', 'sa / hidari', NULL, NULL, '左', 'kanji', 'location', 'beginner',
+ 'Tay trái + công cụ = trái. Tay trái cầm công cụ hỗ trợ tay phải.',
+ 'Left hand + tool = left (direction). The left hand holds the tool to assist the dominant right hand.', 54),
+
+('東', 'tou / higashi', NULL, NULL, '東', 'kanji', 'location', 'beginner',
+ 'Mặt trời mọc sau cây = phía đông. Mặt trời buổi sáng lấp ló sau lưng cây.', 
+ 'The sun rising behind a tree = east. The morning sun peeks from behind a tree trunk.', 55),
+
+('西', 'sei / nishi', NULL, NULL, '西', 'kanji', 'location', 'beginner',
+ 'Chim đậu trên tổ lúc chiều tối = phía tây. Chim bay về phía tây về tổ khi hoàng hôn.',
+ 'A bird settling into its nest at dusk = west. Birds fly westward home at sunset.', 56),
+
+('南', 'nan / minami', NULL, NULL, '南', 'kanji', 'location', 'beginner',
+ 'Thảo mộc đang mọc = phía nam. Cây trưởng thành hướng về phía mặt trời chiếu nhiều nhất (nam).',
+ 'A thriving plant growing tall = south. Plants lean toward the most sunlit direction — the south.', 57),
+
+('北', 'hoku / kita', NULL, NULL, '北', 'kanji', 'location', 'beginner',
+ 'Hai người quay lưng vào nhau = phía bắc. Khi lạnh người ta quay lưng về hướng bắc lạnh giá.',
+ 'Two people sitting back-to-back = north. When cold, people turn their backs to the icy north wind.', 58),
+
+('外', 'gai / soto / hoka', NULL, NULL, '外', 'kanji', 'location', 'beginner',
+ 'Chiều tối + bói toán = bên ngoài. Người xưa bói bên ngoài vào lúc chiều tối.',
+ 'Evening + divination = outside. Ancients performed divination rituals outside at dusk.', 59),
+
+('内', 'nai / uchi / nai', NULL, NULL, '内', 'kanji', 'location', 'beginner',
+ 'Người bên trong mái nhà = bên trong / ở trong nhà. Người đứng dưới mái che.',
+ 'A person sheltered under a roof = inside / one''s own home. The figure is safely beneath a covering.', 60),
+
+-- ── Things & Objects ─────────────────────────────────────────────────────
+('車', 'sha / kuruma', NULL, NULL, '車', 'kanji', 'objects', 'beginner',
+ 'Bánh xe nhìn từ trên xuống với trục ở giữa = xe. Hình dạng bánh xe và nan hoa.',
+ 'A wheel viewed from above with a central axle = vehicle. The wheel with spokes and hub.', 61),
+
+('電', 'den', NULL, NULL, '電', 'kanji', 'objects', 'beginner',
+ 'Mưa + sét đánh xuống = điện. Tia sét trong cơn mưa là nguồn gốc của điện trong tự nhiên.',
+ 'Rain + lightning striking down = electricity. Lightning in a rainstorm — the natural origin of electricity.', 62),
+
+('本', 'hon / moto', NULL, NULL, '本', 'kanji', 'objects', 'beginner',
+ 'Cây (木) với dấu gạch ở gốc = gốc rễ / quyển sách. Dấu gạch chỉ nơi quan trọng nhất của cây.',
+ 'Tree (木) with a mark at the base = origin / book. The mark highlights the most important part of a tree — its root.', 63),
+
+('門', 'mon / kado', NULL, NULL, '門', 'kanji', 'objects', 'beginner',
+ 'Hai cánh cổng mở ra = cổng / cửa lớn. Hình ảnh trực quan của một cánh cổng gỗ truyền thống.',
+ 'Two gate panels swung open = gate / large door. A vivid picture of a traditional wooden gate.', 64),
+
+('国', 'koku / kuni', NULL, NULL, '国', 'kanji', 'objects', 'beginner',
+ 'Đất đai được bao quanh bởi biên giới = quốc gia. Phần trong là viên ngọc / tài nguyên của đất nước.',
+ 'Bordered land surrounding a jewel = country. The interior jewel represents a nation''s treasured resources.', 65),
+
+('語', 'go / kata(ru)', NULL, NULL, '語', 'kanji', 'objects', 'beginner',
+ 'Lời nói + ngã + miệng = ngôn ngữ / kể chuyện. Tôi dùng miệng để nói ngôn ngữ.',
+ 'Words + I + mouth = language / to speak. I use my mouth to speak a language.', 66),
+
+('字', 'ji / aza', NULL, NULL, '字', 'kanji', 'objects', 'beginner',
+ 'Mái nhà + con = chữ. Đứa trẻ học chữ dưới mái trường.',
+ 'Roof + child = character / letter. A child learning characters under a school roof.', 67),
+
+('名', 'mei / myou / na', NULL, NULL, '名', 'kanji', 'objects', 'beginner',
+ 'Chiều tối + miệng = tên. Lúc tối không thấy nhau nên phải gọi tên bằng miệng.',
+ 'Evening + mouth = name. When it''s dark and you cannot see someone, you call out their name.', 68),
+
+('食', 'shoku / ta(beru)', NULL, NULL, '食', 'kanji', 'objects', 'beginner',
+ 'Cái nắp + cơm trong bát = ăn. Nhấc nắp lên để ăn thức ăn bên trong.',
+ 'A lid + rice in a bowl = to eat. Lift the lid to eat what is inside the bowl.', 69),
+
+('飲', 'in / no(mu)', NULL, NULL, '飲', 'kanji', 'objects', 'beginner',
+ 'Thức ăn (食) + ngáp / há miệng = uống. Ngẩng đầu há miệng để uống từ bình.',
+ 'Food radical (食) + yawning / open mouth = to drink. Tilting the head back and opening wide to drink from a vessel.', 70),
+
+-- ── School & Learning ─────────────────────────────────────────────────────
+('学', 'gaku / mana(bu)', NULL, NULL, '学', 'kanji', 'school', 'beginner',
+ 'Mái nhà + bàn tay + đứa trẻ = học. Đứa trẻ được bàn tay dẫn dắt vào học dưới mái trường.',
+ 'Roof + guiding hands + child = to study / learning. A child guided by hands to learn beneath a schoolhouse roof.', 71),
+
+('校', 'kou', NULL, NULL, '校', 'kanji', 'school', 'beginner',
+ 'Cây (木) + giao nhau = trường học. Nhiều học sinh giao nhau dưới tán cây.',
+ 'Tree (木) + crossing paths = school. Many students crossing paths under the shade of trees.', 72),
+
+('先', 'sen / saki', NULL, NULL, '先', 'kanji', 'school', 'beginner',
+ 'Người tiên phong bước về phía trước = trước / thầy cô. Thầy là người đi trước học trò.',
+ 'A pioneer stepping forward = ahead / teacher. The teacher goes ahead of the student.', 73),
+
+('読', 'doku / yomi / yo(mu)', NULL, NULL, '読', 'kanji', 'school', 'beginner',
+ 'Lời nói + bán = đọc. Đọc sách là "bán" ý tưởng từ người viết sang người đọc.',
+ 'Words + to sell = to read. Reading is "selling" ideas from the writer to the reader.', 74),
+
+('書', 'sho / ka(ku)', NULL, NULL, '書', 'kanji', 'school', 'beginner',
+ 'Lông vũ / bút + mặt trời / ngày = viết. Cầm bút ghi lại những gì diễn ra mỗi ngày.',
+ 'Brush / feather + sun / day = to write. Holding a brush to record what happens each day.', 75),
+
+('聞', 'bun / mon / ki(ku)', NULL, NULL, '聞', 'kanji', 'school', 'beginner',
+ 'Cổng (門) + tai (耳) = nghe / hỏi. Đặt tai vào cổng để nghe những gì bên trong.',
+ 'Gate (門) + ear (耳) = to listen / to ask. Press your ear to the gate to hear what is inside.', 76),
+
+('話', 'wa / hana(su)', NULL, NULL, '話', 'kanji', 'school', 'beginner',
+ 'Lời nói + lưỡi = nói chuyện. Lưỡi là công cụ tạo ra lời nói.',
+ 'Words + tongue = to talk. The tongue is the instrument that produces speech.', 77),
+
+('見', 'ken / mi(ru)', NULL, NULL, '見', 'kanji', 'school', 'beginner',
+ 'Mắt (目) đứng trên chân người = nhìn / xem. Người đứng nhìn bằng đôi mắt.',
+ 'An eye (目) atop a walking figure = to see / to look. A person standing and seeing with their eyes.', 78),
+
+('言', 'gen / gon / i(u)', NULL, NULL, '言', 'kanji', 'school', 'beginner',
+ 'Miệng phát ra nhiều lời = nói. Miệng ở dưới, nhiều nét sóng phía trên là âm thanh phát ra.',
+ 'A mouth emitting multiple sound waves = to say / words. The mouth below with wavy lines above represents speech.', 79),
+
+-- ── Verbs & Actions ───────────────────────────────────────────────────────
+('行', 'kou / gyou / i(ku) / yu(ku)', NULL, NULL, '行', 'kanji', 'verbs', 'beginner',
+ 'Ngã tư đường = đi / hành. Nơi ngã tư là nơi người ta đi lại.',
+ 'A crossroads = to go / to travel. Crossroads are where people are always going somewhere.', 80),
+
+('来', 'rai / ku(ru) / ki(taru)', NULL, NULL, '来', 'kanji', 'verbs', 'beginner',
+ 'Cây lúa mì chín trên đồng = đến / đến nơi. Lúa mì chín thì người ta đến gặt.',
+ 'A ripe wheat plant on a field = to come / to arrive. When the wheat is ripe, people come to harvest it.', 81),
+
+('出', 'shutsu / de(ru) / da(su)', NULL, NULL, '出', 'kanji', 'verbs', 'beginner',
+ 'Cây mầm mọc ra khỏi mặt đất, cao hơn = ra / xuất. Nảy mầm vươn ra ngoài.',
+ 'A sprout pushing out of the ground, growing taller = to exit / to put out. Life pushing outward and upward.', 82),
+
+('入', 'nyuu / i(ru) / hai(ru)', NULL, NULL, '入', 'kanji', 'verbs', 'beginner',
+ 'Nét chỉ hướng vào trong = vào. Mũi tên đi vào trong.',
+ 'A stroke pointing inward = to enter. An arrow directed inward.', 83),
+
+('見', 'ken / mi(ru)', NULL, NULL, '見', 'kanji', 'verbs', 'beginner',
+ 'Mắt trên chân người = nhìn. Người dùng mắt để nhìn xung quanh.',
+ 'Eye above a person = to see. A person using their eyes to look around.', 84),
+
+('買', 'bai / ka(u)', NULL, NULL, '買', 'kanji', 'verbs', 'beginner',
+ 'Lưới + bối (vỏ sò dùng làm tiền) = mua. Dùng tiền (vỏ sò) để mua hàng trong lưới.',
+ 'Net + shell-money = to buy. Using shell currency (ancient money) to purchase goods in a net bag.', 85),
+
+('帰', 'ki / kae(ru)', NULL, NULL, '帰', 'kanji', 'verbs', 'beginner',
+ 'Quét sạch + mái nhà = về nhà. Quét dọn nhà cửa trước khi về.',
+ 'Broom + home = to return home. Sweeping up before you go home.', 86),
+
+('起', 'ki / o(kiru) / o(kosu)', NULL, NULL, '起', 'kanji', 'verbs', 'beginner',
+ 'Chạy + bản thân = thức dậy / xảy ra. Bản thân mình đứng dậy và bắt đầu chạy.',
+ 'Running + self = to wake up / to happen. You yourself rising and starting to move.', 87),
+
+('立', 'ritsu / ta(tsu)', NULL, NULL, '立', 'kanji', 'verbs', 'beginner',
+ 'Người đứng trên mặt đất = đứng. Người thẳng đứng trên nền đất.',
+ 'A person standing on the ground = to stand. A figure erect upon the ground.', 88),
+
+('待', 'tai / ma(tsu)', NULL, NULL, '待', 'kanji', 'verbs', 'beginner',
+ 'Đi nhỏ + chùa = chờ đợi. Đứng nán lại trước cửa chùa chờ.',
+ 'Small steps + temple = to wait. Standing still before a temple, waiting patiently.', 89),
+
+('使', 'shi / tsuka(u)', NULL, NULL, '使', 'kanji', 'verbs', 'beginner',
+ 'Người + quan lại = sử dụng / đại sứ. Người được giao việc phải dùng các phương tiện sẵn có.',
+ 'Person + official = to use / envoy. A person tasked with an official mission, using all available means.', 90),
+
+-- ── Adjectives & Qualities ────────────────────────────────────────────────
+('大', 'dai / tai / oo(kii)', NULL, NULL, '大', 'kanji', 'adjectives', 'beginner',
+ 'Người dang rộng tay = to lớn. Cánh tay giang rộng hết mức biểu thị sự lớn lao.',
+ 'A person with arms spread wide = big / large. Arms stretched as far as possible to show great size.', 91),
+
+('小', 'shou / chii(sai) / ko', NULL, NULL, '小', 'kanji', 'adjectives', 'beginner',
+ 'Nét trung tâm với hai nét nhỏ ở hai bên = nhỏ. Hai nét nhỏ bị đẩy ra xa nét trung tâm.',
+ 'A central stroke with two tiny side marks pushed apart = small. The small marks are squeezed away from the centre.', 92),
+
+('高', 'kou / taka(i)', NULL, NULL, '高', 'kanji', 'adjectives', 'beginner',
+ 'Tòa tháp cao với cổng vào = cao / đắt. Tháp cổng của kinh thành ngày xưa rất cao và quý giá.',
+ 'A tall tower with an entrance gate = tall / expensive. Ancient gatehouse towers were both towering and costly.', 93),
+
+('長', 'chou / naga(i)', NULL, NULL, '長', 'kanji', 'adjectives', 'beginner',
+ 'Người già với mái tóc dài = dài / lâu. Tóc người già mọc dài theo năm tháng.',
+ 'An elder with long flowing hair = long. An old person''s hair grows long over many years.', 94),
+
+('新', 'shin / atara(shii) / ara(ta)', NULL, NULL, '新', 'kanji', 'adjectives', 'beginner',
+ 'Đứng cạnh cây + rìu = mới. Đốn cây bằng rìu để tạo ra vật liệu mới tinh.',
+ 'Stand beside a tree + axe = new. Felling a tree with an axe to produce fresh new timber.', 95),
+
+('古', 'ko / furu(i)', NULL, NULL, '古', 'kanji', 'adjectives', 'beginner',
+ 'Mười (十) + miệng (口) = cũ. Truyền miệng qua mười thế hệ là thứ đã cũ.',
+ 'Ten (十) + mouth (口) = old / ancient. Passed by word of mouth through ten generations = old.', 96),
+
+('白', 'haku / shiro(i)', NULL, NULL, '白', 'kanji', 'adjectives', 'beginner',
+ 'Mặt trời với tia sáng = trắng. Ánh sáng mặt trời chiếu vào là màu trắng thuần túy.',
+ 'Sun with a ray of light = white. Pure sunlight streaming down is the purest white.', 97),
+
+('赤', 'seki / aka(i)', NULL, NULL, '赤', 'kanji', 'adjectives', 'beginner',
+ 'Đất + lửa = đỏ. Đất nung nóng bởi lửa chuyển thành màu đỏ.',
+ 'Earth + fire = red. Earth heated by fire turns a deep, glowing red.', 98),
+
+('青', 'sei / ao(i)', NULL, NULL, '青', 'kanji', 'adjectives', 'beginner',
+ 'Cây mọc + mặt trăng = xanh lam / xanh lá. Cây cỏ và bầu trời đêm đều xanh theo cách riêng.',
+ 'Growing plant + moon = blue / green. Plants and the moonlit sky are each "ao" in their own way.', 99),
+
+('黒', 'koku / kuro(i)', NULL, NULL, '黒', 'kanji', 'adjectives', 'beginner',
+ 'Cửa sổ bị muội than phủ đen = đen. Muội than bám vào cửa sổ phía trên lò sưởi.',
+ 'A window blackened with soot = black. Soot from a fire coating the window above a hearth.', 100);
+
+-- (section_id assignments are handled in the chapters/sections block above)
 
 -- Hiragana and katakana characters grouped by consonant row.
 -- Each row also carries its katakana equivalent in the same record.
@@ -436,15 +920,59 @@ INSERT INTO characters (kana, romaji, hiragana, katakana, kanji, type, group_nam
 ('ケ', 'ke',  'け', 'ケ', NULL, 'katakana', 'k', 'beginner', 'Katakana KE', 'Katakana KE'),
 ('コ', 'ko',  'こ', 'コ', NULL, 'katakana', 'k', 'beginner', 'Katakana KO — hai vạch ngang ngắn', 'Katakana KO — two short horizontal lines');
 
--- Redesigned structured lessons
+-- ===========================================================================
+-- STRUCTURED LESSONS — Textbook-quality bilingual lesson content
+-- ===========================================================================
 INSERT INTO structured_lessons (lesson_number, title_vi, title_en, content_vi, content_en, lesson_type, script_type, order_index, is_active) VALUES
-(1, 'Bài 1: Hiragana Cơ Bản (46 ký tự)', 'Lesson 1: Basic Hiragana (46 characters)', 'Học và hiểu 46 ký tự Hiragana cơ bản. Mỗi ký tự có 5 từ ví dụ.', 'Learn and understand the 46 basic Hiragana characters. Each character has 5 example words.', 'character_learning', 'hiragana', 1, 1),
-(2, 'Bài 2: Dakuon Hiragana (25 ký tự)', 'Lesson 2: Dakuon Hiragana (25 characters)', 'Học và hiểu 25 ký tự Dakuon Hiragana.', 'Learn and understand the 25 Dakuon Hiragana characters.', 'character_learning', 'hiragana', 2, 1),
-(3, 'Bài 3: Yoon Hiragana (36 ký tự)', 'Lesson 3: Yoon Hiragana (36 characters)', 'Học và hiểu 36 ký tự Yoon Hiragana.', 'Learn and understand the 36 Yoon Hiragana characters.', 'character_learning', 'hiragana', 3, 1),
-(4, 'Bài 4: Katakana Cơ Bản (46 ký tự)', 'Lesson 4: Basic Katakana (46 characters)', 'Học và hiểu 46 ký tự Katakana cơ bản.', 'Learn and understand the 46 basic Katakana characters.', 'character_learning', 'katakana', 4, 1),
-(5, 'Bài 5: Dakuon Katakana (25 ký tự)', 'Lesson 5: Dakuon Katakana (25 characters)', 'Học và hiểu 25 ký tự Dakuon Katakana.', 'Learn and understand the 25 Dakuon Katakana characters.', 'character_learning', 'katakana', 5, 1),
-(6, 'Bài 6: Yoon Katakana (36 ký tự)', 'Lesson 6: Yoon Katakana (36 characters)', 'Học và hiểu 36 ký tự Yoon Katakana.', 'Learn and understand the 36 Yoon Katakana characters.', 'character_learning', 'katakana', 6, 1),
-(7, 'Bài 7: Giao Tiếp Cơ Bản', 'Lesson 7: Basic Communication', 'Học và hiểu các cụm từ giao tiếp cơ bản.', 'Learn and understand basic communication phrases.', 'practice', 'both', 7, 1);
+
+(1,
+ 'Bài 1: Hiragana Cơ Bản (46 ký tự)',
+ 'Lesson 1: Basic Hiragana (46 Characters)',
+ '## Hiragana là gì?\n\nHiragana (平仮名) là một trong hai bộ ký tự biểu âm của tiếng Nhật. Bộ chữ này gồm **46 ký tự cơ bản**, mỗi ký tự đại diện cho một âm tiết (mora) duy nhất. Hiragana là hệ thống chữ viết bạn cần học **đầu tiên và quan trọng nhất** vì nó xuất hiện trong hầu hết mọi văn bản tiếng Nhật.\n\n## Lịch sử ngắn gọn\n\nHiragana được phát triển vào khoảng thế kỷ 9 từ chữ Hán (kanji) được đơn giản hóa. Ban đầu chủ yếu do phụ nữ quý tộc Heian sử dụng để viết thơ và nhật ký. Ngày nay nó được dùng cho:\n- **Từ ngữ thuần Nhật** không có kanji (ví dụ: ここ, ある)\n- **Furigana**: phiên âm nhỏ trên kanji để hướng dẫn cách đọc\n- **Okurigana**: phần biến đổi ngữ pháp của động từ và tính từ (ví dụ: 食べ**る**)\n- **Trợ từ ngữ pháp**: は、が、を、に、で、も…\n\n## Bảng Gojūon (五十音)\n\nHiragana được sắp xếp theo bảng **Gojūon** (50 âm) gồm 5 hàng nguyên âm (a, i, u, e, o) và 10 cột phụ âm:\n\n| | a | i | u | e | o |\n|---|---|---|---|---|---|\n| ∅ | **あ** | **い** | **う** | **え** | **お** |\n| k | **か** | **き** | **く** | **け** | **こ** |\n| s | **さ** | **し** | **す** | **せ** | **そ** |\n| t | **た** | **ち** | **つ** | **て** | **と** |\n| n | **な** | **に** | **ぬ** | **ね** | **の** |\n| h | **は** | **ひ** | **ふ** | **へ** | **ほ** |\n| m | **ま** | **み** | **む** | **め** | **も** |\n| y | **や** | — | **ゆ** | — | **よ** |\n| r | **ら** | **り** | **る** | **れ** | **ろ** |\n| w | **わ** | — | — | — | **を** |\n| n | **ん** | | | | |\n\n## Các đặc điểm phát âm quan trọng\n\n**し (shi)** — Không phải "si"; lưỡi không chạm vòm miệng.\n**ち (chi)** — Không phải "ti"; âm "ch" như trong "cheese".\n**つ (tsu)** — Không phải "tu"; âm "ts" như trong "tsunami".\n**ふ (fu)** — Không phải "hu" hay "fu" tiếng Anh; môi hơi khép lại thổi nhẹ.\n**ん (n)** — Âm mũi độc lập; phát âm thay đổi theo phụ âm đứng sau.\n\n## Luyện tập thứ tự nét bút\n\nViết đúng thứ tự nét bút giúp bạn viết nhanh và đẹp hơn. Quy tắc chung:\n1. Từ trên xuống dưới\n2. Từ trái sang phải\n3. Nét ngang trước nét dọc (với một số ngoại lệ)\n\n**Ví dụ — あ (a):** Nét 1 nằm ngang (trên), Nét 2 vòng cong (giữa), Nét 3 xoáy tròn (dưới phải).\n\n## Mẹo ghi nhớ nhanh\n\n- **あ** trông như người đang há miệng to nói "A"\n- **い** là hai nét thẳng đứng như chữ số 1 và 1 — hai âm tiết "i-i"\n- **く** trông như mỏ chim đang há\n- **し** như cây câu cong xuống\n- **の** là vòng tròn chữ O với cái đuôi — "no"\n\n## Bài tập đề xuất\n\n1. Viết mỗi ký tự 10 lần theo đúng thứ tự nét bút.\n2. Đọc to từng ký tự khi viết.\n3. Dùng thẻ flash (flashcard) để ôn mỗi ngày 10 phút.\n4. Sau 3 ngày, thử nhận diện ký tự không cần nhìn bảng.',
+ '## What is Hiragana?\n\nHiragana (平仮名) is one of two Japanese phonetic scripts. It consists of **46 base characters**, each representing a single syllable (mora). Hiragana is the **first and most essential** writing system to learn, as it appears in virtually every piece of Japanese text.\n\n## Brief History\n\nHiragana evolved around the 9th century from simplified Chinese characters (kanji). It was initially used primarily by Heian court women to write poetry and diaries. Today it is used for:\n- **Native Japanese words** without kanji (e.g., ここ, ある)\n- **Furigana**: small phonetic guides printed above kanji\n- **Okurigana**: the inflectional endings of verbs and adjectives (e.g., 食べ**る**)\n- **Grammatical particles**: は、が、を、に、で、も…\n\n## The Gojūon Chart (五十音)\n\nHiragana is arranged in the **Gojūon** ("fifty-sound") chart with 5 vowel rows (a, i, u, e, o) across 10 consonant columns:\n\n| | a | i | u | e | o |\n|---|---|---|---|---|---|\n| ∅ | **あ** | **い** | **う** | **え** | **お** |\n| k | **か** | **き** | **く** | **け** | **こ** |\n| s | **さ** | **し** | **す** | **せ** | **そ** |\n| t | **た** | **ち** | **つ** | **て** | **と** |\n| n | **な** | **に** | **ぬ** | **ね** | **の** |\n| h | **は** | **ひ** | **ふ** | **へ** | **ほ** |\n| m | **ま** | **み** | **む** | **め** | **も** |\n| y | **や** | — | **ゆ** | — | **よ** |\n| r | **ら** | **り** | **る** | **れ** | **ろ** |\n| w | **わ** | — | — | — | **を** |\n| n | **ん** | | | | |\n\n## Key Pronunciation Points\n\n**し (shi)** — Not "si"; the tongue does not touch the palate.\n**ち (chi)** — Not "ti"; the "ch" sound as in "cheese".\n**つ (tsu)** — Not "tu"; the "ts" cluster as in "tsunami".\n**ふ (fu)** — Neither English "hu" nor "fu"; lips slightly parted with a soft breath.\n**ん (n)** — A standalone nasal; its exact sound shifts depending on the following consonant.\n\n## Stroke Order\n\nCorrect stroke order helps you write quickly and legibly. General rules:\n1. Top to bottom\n2. Left to right\n3. Horizontal strokes before vertical (with some exceptions)\n\n**Example — あ (a):** Stroke 1 horizontal (top), Stroke 2 curved loop (middle), Stroke 3 spiral (lower-right).\n\n## Quick Memory Tips\n\n- **あ** looks like someone opening their mouth wide to say "Ah"\n- **い** is two upright strokes — like two "1"s standing side by side\n- **く** looks like a bird''s open beak\n- **し** is a fishing hook curving down\n- **の** is a circular O with a trailing tail — "no"\n\n## Suggested Practice\n\n1. Write each character 10 times in correct stroke order.\n2. Say the sound aloud as you write.\n3. Use flashcards for 10-minute daily review sessions.\n4. After 3 days, try recognising characters without the chart.',
+ 'character_learning', 'hiragana', 1, 1),
+
+(2,
+ 'Bài 2: Hiragana Dakuon — Âm Hữu Thanh (25 ký tự)',
+ 'Lesson 2: Dakuon Hiragana — Voiced Sounds (25 Characters)',
+ '## Dakuon là gì?\n\n**Dakuon** (濁音, âm hữu thanh) là các ký tự hiragana được tạo ra bằng cách thêm dấu **nigori** (゛) — hai chấm nhỏ ở góc trên bên phải — vào một số ký tự hiragana cơ bản. Dấu này chỉ ra rằng phụ âm ban đầu đã được "hữu thanh hóa" (dây thanh rung khi phát âm).\n\nNgoài ra, hàng **H** khi thêm dấu **maru** (゜) — một vòng tròn nhỏ — sẽ tạo ra âm **bán hữu thanh** (han-dakuon) là hàng P.\n\n## Bảng Dakuon đầy đủ\n\n| Gốc | → Dakuon | Gốc | → Dakuon |\n|---|---|---|---|\n| か ka → | **が ga** | き ki → | **ぎ gi** |\n| く ku → | **ぐ gu** | け ke → | **げ ge** |\n| こ ko → | **ご go** | さ sa → | **ざ za** |\n| し shi → | **じ ji** | す su → | **ず zu** |\n| せ se → | **ぜ ze** | そ so → | **ぞ zo** |\n| た ta → | **だ da** | ち chi → | **ぢ ji*** |\n| つ tsu → | **づ zu*** | て te → | **で de** |\n| と to → | **ど do** | は ha → | **ば ba** |\n| ひ hi → | **び bi** | ふ fu → | **ぶ bu** |\n| へ he → | **べ be** | ほ ho → | **ぼ bo** |\n\n*Lưu ý: ぢ và づ ngày nay đọc giống じ (ji) và ず (zu). Chúng ít dùng hơn nhưng vẫn xuất hiện trong một số từ nhất định.*\n\n## Bảng Han-dakuon (P)\n\n| は ha → | **ぱ pa** | ひ hi → | **ぴ pi** |\n|---|---|---|---|\n| ふ fu → | **ぷ pu** | へ he → | **ぺ pe** |\n| ほ ho → | **ぽ po** | | |\n\n## Luyện nghe phân biệt\n\nNhiều học viên nhầm lẫn giữa âm vô thanh và hữu thanh. Hãy luyện tập theo cặp:\n\n| Vô thanh | Hữu thanh | Ví dụ |\n|---|---|---|\n| か ka | が ga | **か**ど (góc đường) vs **が**っこう (trường học) |\n| さ sa | ざ za | **さ**けび (tiếng la) vs **ざ**っし (tạp chí) |\n| た ta | だ da | **た**べる (ăn) vs **だ**れ (ai) |\n| は ha | ば ba | **は**な (hoa/mũi) vs **ば**な (chuối) |\n\n## Mẹo phân biệt\n\n- Đặt tay lên cổ họng. Với âm **hữu thanh** bạn sẽ cảm thấy dây thanh rung.\n- Âm **ka** → **ga**: giống như "ka" nhưng miệng hơi mở hơn và có độ rung.\n- Âm **sa** → **za**: giống âm "za" trong "pizza".\n- Hàng **P** rất ít gặp trong từ thuần Nhật — chủ yếu trong từ vay mượn và từ tượng thanh như **ぴかぴか** (pikapika = sáng lấp lánh).',
+ '## What is Dakuon?\n\n**Dakuon** (濁音, "voiced sounds") are hiragana characters created by adding a **nigori** diacritic (゛) — two small diagonal marks in the upper-right corner — to certain base characters. This mark signals that the original consonant has been "voiced" (the vocal cords vibrate during pronunciation).\n\nAdditionally, the **H row** gains a **maru** diacritic (゜) — a small circle — to produce the **semi-voiced** (han-dakuon) **P row**.\n\n## Complete Dakuon Table\n\n| Base | → Dakuon | Base | → Dakuon |\n|---|---|---|---|\n| か ka → | **が ga** | き ki → | **ぎ gi** |\n| く ku → | **ぐ gu** | け ke → | **げ ge** |\n| こ ko → | **ご go** | さ sa → | **ざ za** |\n| し shi → | **じ ji** | す su → | **ず zu** |\n| せ se → | **ぜ ze** | そ so → | **ぞ zo** |\n| た ta → | **だ da** | ち chi → | **ぢ ji*** |\n| つ tsu → | **づ zu*** | て te → | **で de** |\n| と to → | **ど do** | は ha → | **ば ba** |\n| ひ hi → | **び bi** | ふ fu → | **ぶ bu** |\n| へ he → | **べ be** | ほ ho → | **ぼ bo** |\n\n*Note: ぢ and づ are today pronounced identically to じ (ji) and ず (zu). They appear in a specific set of words but are rarely written.*\n\n## Han-dakuon Table (P Row)\n\n| は ha → | **ぱ pa** | ひ hi → | **ぴ pi** |\n|---|---|---|---|\n| ふ fu → | **ぷ pu** | へ he → | **ぺ pe** |\n| ほ ho → | **ぽ po** | | |\n\n## Ear Training: Voiced vs. Unvoiced\n\nMany learners confuse unvoiced and voiced pairs. Practise these minimal pairs:\n\n| Unvoiced | Voiced | Example |\n|---|---|---|\n| か ka | が ga | **か**ど (street corner) vs **が**っこう (school) |\n| さ sa | ざ za | **さ**けび (shout) vs **ざ**っし (magazine) |\n| た ta | だ da | **た**べる (to eat) vs **だ**れ (who) |\n| は ha | ば ba | **は**な (flower/nose) vs **ば**な (banana) |\n\n## Tips for Distinction\n\n- Place a hand on your throat. With **voiced** sounds you will feel the vocal cords vibrating.\n- **ka** → **ga**: like "ka" but with the throat open and buzzing.\n- **sa** → **za**: similar to the "za" in "pizza".\n- The **P row** is rare in native Japanese — mostly found in loanwords and mimetic words like **ぴかぴか** (pikapika = sparkling bright).',
+ 'character_learning', 'hiragana', 2, 1),
+
+(3,
+ 'Bài 3: Hiragana Yōon — Âm Kết Hợp (36 tổ hợp)',
+ 'Lesson 3: Yōon Hiragana — Combination Sounds (36 Combinations)',
+ '## Yōon là gì?\n\n**Yōon** (拗音, âm kết hợp) là các âm được tạo ra khi một ký tự hàng "i" (き、し、ち、に、ひ、み、り — và các dakuon tương ứng ぎ、じ、ぢ、び、ぴ) được ghép với **や、ゆ、hoặc よ viết nhỏ** (ゃ ゅ ょ). Hai ký tự này đọc thành **một âm tiết duy nhất**, ngắn hơn và nhanh hơn.\n\n## Bảng Yōon cơ bản\n\n| | + ゃ ya | + ゅ yu | + ょ yo |\n|---|---|---|---|\n| き ki | **きゃ kya** | **きゅ kyu** | **きょ kyo** |\n| し shi | **しゃ sha** | **しゅ shu** | **しょ sho** |\n| ち chi | **ちゃ cha** | **ちゅ chu** | **ちょ cho** |\n| に ni | **にゃ nya** | **にゅ nyu** | **にょ nyo** |\n| ひ hi | **ひゃ hya** | **ひゅ hyu** | **ひょ hyo** |\n| み mi | **みゃ mya** | **みゅ myu** | **みょ myo** |\n| り ri | **りゃ rya** | **りゅ ryu** | **りょ ryo** |\n\n## Bảng Yōon dakuon\n\n| | + ゃ ya | + ゅ yu | + ょ yo |\n|---|---|---|---|\n| ぎ gi | **ぎゃ gya** | **ぎゅ gyu** | **ぎょ gyo** |\n| じ ji | **じゃ ja** | **じゅ ju** | **じょ jo** |\n| び bi | **びゃ bya** | **びゅ byu** | **びょ byo** |\n| ぴ pi | **ぴゃ pya** | **ぴゅ pyu** | **ぴょ pyo** |\n\n## Điểm quan trọng: Ya/yu/yo phải viết NHỎ\n\nKích thước rất quan trọng! So sánh:\n- **きや** = ki + ya (HAI âm tiết riêng biệt: "ki-ya")\n- **きゃ** = kya (MỘT âm tiết: "kya")\n\nNếu viết ゃゅょ to, người đọc sẽ hiểu nhầm thành hai âm!\n\n## Từ vựng thực tế sử dụng Yōon\n\n| Yōon | Từ ví dụ | Nghĩa |\n|---|---|---|\n| しゃ sha | しゃしん (写真) | ảnh chụp |\n| しょ sho | しょくじ (食事) | bữa ăn |\n| ちゃ cha | おちゃ (お茶) | trà |\n| りょ ryo | りょこう (旅行) | du lịch |\n| じゅ ju | じゅぎょう (授業) | giờ học |\n| にゅ nyu | にゅうがく (入学) | nhập học |\n\n## Mẹo phát âm\n\n- **ちゃ (cha)** nghe giống "cha" trong "chai tea"\n- **しゃ (sha)** nghe giống "sha" trong "shall"\n- **じゃ (ja)** nghe giống "ja" trong "jar"\n- **りょ (ryo)** — lưỡi chạm lợi trên, miệng tròn lại thành "o"',
+ '## What is Yōon?\n\n**Yōon** (拗音, "contracted sounds") are sounds formed when an "i-row" character (き、し、ち、に、ひ、み、り — and their dakuon counterparts ぎ、じ、ぢ、び、ぴ) is combined with a **small** や、ゆ、or よ (written as ゃ ゅ ょ). The two characters merge into **a single syllable** — shorter and faster than reading them separately.\n\n## Basic Yōon Chart\n\n| | + ゃ ya | + ゅ yu | + ょ yo |\n|---|---|---|---|\n| き ki | **きゃ kya** | **きゅ kyu** | **きょ kyo** |\n| し shi | **しゃ sha** | **しゅ shu** | **しょ sho** |\n| ち chi | **ちゃ cha** | **ちゅ chu** | **ちょ cho** |\n| に ni | **にゃ nya** | **にゅ nyu** | **にょ nyo** |\n| ひ hi | **ひゃ hya** | **ひゅ hyu** | **ひょ hyo** |\n| み mi | **みゃ mya** | **みゅ myu** | **みょ myo** |\n| り ri | **りゃ rya** | **りゅ ryu** | **りょ ryo** |\n\n## Voiced Yōon Chart\n\n| | + ゃ ya | + ゅ yu | + ょ yo |\n|---|---|---|---|\n| ぎ gi | **ぎゃ gya** | **ぎゅ gyu** | **ぎょ gyo** |\n| じ ji | **じゃ ja** | **じゅ ju** | **じょ jo** |\n| び bi | **びゃ bya** | **びゅ byu** | **びょ byo** |\n| ぴ pi | **ぴゃ pya** | **ぴゅ pyu** | **ぴょ pyo** |\n\n## Critical Point: ya/yu/yo MUST be written small\n\nSize matters enormously! Compare:\n- **きや** = ki + ya (TWO separate syllables: "ki-ya")\n- **きゃ** = kya (ONE syllable: "kya")\n\nWriting ゃゅょ at full size tells the reader to pronounce two separate morae!\n\n## Real Vocabulary Using Yōon\n\n| Yōon | Example word | Meaning |\n|---|---|---|\n| しゃ sha | しゃしん (写真) | photograph |\n| しょ sho | しょくじ (食事) | meal |\n| ちゃ cha | おちゃ (お茶) | tea |\n| りょ ryo | りょこう (旅行) | travel |\n| じゅ ju | じゅぎょう (授業) | class / lesson |\n| にゅ nyu | にゅうがく (入学) | school enrolment |\n\n## Pronunciation Tips\n\n- **ちゃ (cha)** sounds like "cha" in "chai tea"\n- **しゃ (sha)** sounds like "sha" in "shall"\n- **じゃ (ja)** sounds like "ja" in "jar"\n- **りょ (ryo)** — tip the tongue behind the upper teeth, round the lips to "o"',
+ 'character_learning', 'hiragana', 3, 1),
+
+(4,
+ 'Bài 4: Katakana Cơ Bản (46 ký tự)',
+ 'Lesson 4: Basic Katakana (46 Characters)',
+ '## Katakana là gì?\n\n**Katakana** (片仮名) là bộ ký tự thứ hai trong hệ thống kana của tiếng Nhật. Giống như hiragana, katakana cũng có **46 ký tự cơ bản** đại diện cho các âm tiết giống hệt nhau. Sự khác biệt nằm ở **hình dạng góc cạnh** và **chức năng sử dụng**.\n\n## Katakana được dùng để viết gì?\n\n1. **Gairaigo** (外来語) — Từ vay mượn từ nước ngoài:\n - アイスクリーム (*aisu kuriimu* = ice cream)\n - コーヒー (*koohii* = coffee)\n - テレビ (*terebi* = television)\n\n2. **Tên nước ngoài và tên người nước ngoài:**\n - アメリカ (*Amerika* = America)\n - フランス (*Furansu* = France)\n - マイケル (*Maikeru* = Michael)\n\n3. **Tên khoa học và kỹ thuật:**\n - タンパク質 (*tanpaku shitsu* = protein)\n - ウイルス (*uirusu* = virus)\n\n4. **Nhấn mạnh** — tương tự chữ in đậm/in nghiêng trong tiếng Việt:\n - ここが**ポイント**だ (ĐÂY là điểm quan trọng)\n\n5. **Từ tượng thanh:**\n - ワンワン (*wan wan* = tiếng chó sủa)\n - ニャーニャー (*nyaa nyaa* = tiếng mèo kêu)\n\n## So sánh Hiragana ↔ Katakana\n\n| Hiragana | Katakana | Romaji | | Hiragana | Katakana | Romaji |\n|---|---|---|---|---|---|---|\n| あ | **ア** | a | | か | **カ** | ka |\n| い | **イ** | i | | き | **キ** | ki |\n| う | **ウ** | u | | く | **ク** | ku |\n| え | **エ** | e | | け | **ケ** | ke |\n| お | **オ** | o | | こ | **コ** | ko |\n\n## Các ký tự dễ nhầm lẫn\n\n| Cặp hay nhầm | Gợi nhớ |\n|---|---|\n| ソ (so) và ン (n) | ソ nghiêng nhiều hơn như chữ "S"; ン ngắn hơn trông như "N" |\n| シ (shi) và ツ (tsu) | シ có hai nét nhỏ hơi nằm ngang; ツ có hai nét dựng đứng hơn |\n| ア (a) và マ (ma) | ア có nét đầu từ phải sang; マ có nét đầu từ trái sang |\n| ウ (u) và ヲ (wo) | ウ nhỏ gọn; ヲ (hiếm dùng) có thêm nét cong phía trên |\n\n## Nguyên âm kéo dài trong Katakana\n\nKatakana dùng dấu **ー** (dấu gạch dài, gọi là chōon-pu) để kéo dài nguyên âm:\n- コーヒー = ko-o-hi-i = coffee\n- ケーキ = ke-e-ki = cake\n- ノート = no-o-to = notebook\n\nDấu ー KHÔNG dùng trong hiragana — hiragana dùng ký tự kép (おおきい).',
+ '## What is Katakana?\n\n**Katakana** (片仮名) is the second Japanese phonetic script. Like hiragana, it has **46 base characters** representing the same set of syllables. The key differences are its **angular, sharp appearance** and its **distinct range of uses**.\n\n## When is Katakana Used?\n\n1. **Gairaigo** (外来語) — Foreign loanwords:\n - アイスクリーム (*aisu kuriimu* = ice cream)\n - コーヒー (*koohii* = coffee)\n - テレビ (*terebi* = television)\n\n2. **Foreign names and place names:**\n - アメリカ (*Amerika* = America)\n - フランス (*Furansu* = France)\n - マイケル (*Maikeru* = Michael)\n\n3. **Scientific and technical terms:**\n - タンパク質 (*tanpaku shitsu* = protein)\n - ウイルス (*uirusu* = virus)\n\n4. **Emphasis** — similar to bold or italics in English:\n - ここが**ポイント**だ (THIS is the important point)\n\n5. **Onomatopoeia and sound effects:**\n - ワンワン (*wan wan* = dog barking)\n - ニャーニャー (*nyaa nyaa* = cat meowing)\n\n## Hiragana ↔ Katakana Comparison\n\n| Hiragana | Katakana | Romaji | | Hiragana | Katakana | Romaji |\n|---|---|---|---|---|---|---|\n| あ | **ア** | a | | か | **カ** | ka |\n| い | **イ** | i | | き | **キ** | ki |\n| う | **ウ** | u | | く | **ク** | ku |\n| え | **エ** | e | | け | **ケ** | ke |\n| お | **オ** | o | | こ | **コ** | ko |\n\n## Frequently Confused Pairs\n\n| Confusing pair | Memory tip |\n|---|---|\n| ソ (so) vs ン (n) | ソ slants more steeply like an S; ン is more compact like an N |\n| シ (shi) vs ツ (tsu) | シ has two small near-horizontal strokes; ツ has two more vertical strokes |\n| ア (a) vs マ (ma) | ア''s first stroke goes from right; マ''s first stroke goes from left |\n| ウ (u) vs ヲ (wo) | ウ is compact; ヲ (rare) has an extra curved top stroke |\n\n## Long Vowels in Katakana\n\nKatakana uses a **ー** mark (chōon-pu, "long vowel mark") to extend vowel sounds:\n- コーヒー = ko-o-hi-i = coffee\n- ケーキ = ke-e-ki = cake\n- ノート = no-o-to = notebook\n\nThe ー mark is NOT used in hiragana — hiragana doubles the vowel letter instead (おおきい).',
+ 'character_learning', 'katakana', 4, 1),
+
+(5,
+ 'Bài 5: Katakana Dakuon & Yōon (58 tổ hợp)',
+ 'Lesson 5: Dakuon & Yōon Katakana (58 Combinations)',
+ '## Tổng quan\n\nBài này hoàn thiện bộ katakana của bạn với các âm hữu thanh (dakuon), bán hữu thanh (han-dakuon), và âm kết hợp (yōon). Cấu tạo hoàn toàn giống với hiragana — chỉ khác về hình dạng ký tự.\n\n## Katakana Dakuon\n\n| Gốc | Dakuon | | Gốc | Dakuon |\n|---|---|---|---|---|\n| カ ka | **ガ ga** | | キ ki | **ギ gi** |\n| ク ku | **グ gu** | | ケ ke | **ゲ ge** |\n| コ ko | **ゴ go** | | サ sa | **ザ za** |\n| シ shi | **ジ ji** | | ス su | **ズ zu** |\n| セ se | **ゼ ze** | | ソ so | **ゾ zo** |\n| タ ta | **ダ da** | | チ chi | **ヂ ji** |\n| ツ tsu | **ヅ zu** | | テ te | **デ de** |\n| ト to | **ド do** | | ハ ha | **バ ba** |\n| ヒ hi | **ビ bi** | | フ fu | **ブ bu** |\n| ヘ he | **ベ be** | | ホ ho | **ボ bo** |\n\n**Han-dakuon (P):** パ ピ プ ペ ポ\n\n## Katakana Yōon — Âm kết hợp gốc Nhật\n\nGiống hiragana: ký tự hàng "i" + ャ ュ ョ nhỏ\n- **キャ kya** / **キュ kyu** / **キョ kyo**\n- **シャ sha** / **シュ shu** / **ショ sho**\n- **チャ cha** / **チュ chu** / **チョ cho**\n- **ニャ nya** / **ニュ nyu** / **ニョ nyo**\n\n## Âm đặc biệt trong Katakana (dành cho từ vay mượn)\n\nKatakana có thêm các tổ hợp đặc biệt **không có trong hiragana** để biểu diễn các âm nước ngoài:\n\n| Tổ hợp | Âm | Ví dụ |\n|---|---|---|\n| **ファ** | fa | ファン (fan hâm mộ) |\n| **フィ** | fi | フィリピン (Philippines) |\n| **フェ** | fe | フェリー (phà/ferry) |\n| **フォ** | fo | フォーク (fork/nhạc folk) |\n| **ウィ** | wi | ウィーン (Vienna) |\n| **ウェ** | we | ウェールズ (Wales) |\n| **ヴァ** | va | ヴァイオリン (violin) |\n| **ティ** | ti | パーティー (party) |\n| **ディ** | di | ディズニー (Disney) |\n\n## Luyện đọc từ vay mượn\n\nThử đọc các từ katakana sau — bạn có nhận ra không?\n\n1. アイスクリーム = ?\n2. ピザ = ?\n3. スマートフォン = ?\n4. チョコレート = ?\n5. インターネット = ?\n\n*(Đáp án: ice cream, pizza, smartphone, chocolate, internet)*',
+ '## Overview\n\nThis lesson completes your katakana repertoire with voiced sounds (dakuon), semi-voiced sounds (han-dakuon), and combination sounds (yōon). The mechanics are identical to hiragana — only the character shapes differ.\n\n## Katakana Dakuon\n\n| Base | Dakuon | | Base | Dakuon |\n|---|---|---|---|---|\n| カ ka | **ガ ga** | | キ ki | **ギ gi** |\n| ク ku | **グ gu** | | ケ ke | **ゲ ge** |\n| コ ko | **ゴ go** | | サ sa | **ザ za** |\n| シ shi | **ジ ji** | | ス su | **ズ zu** |\n| セ se | **ゼ ze** | | ソ so | **ゾ zo** |\n| タ ta | **ダ da** | | チ chi | **ヂ ji** |\n| ツ tsu | **ヅ zu** | | テ te | **デ de** |\n| ト to | **ド do** | | ハ ha | **バ ba** |\n| ヒ hi | **ビ bi** | | フ fu | **ブ bu** |\n| ヘ he | **ベ be** | | ホ ho | **ボ bo** |\n\n**Han-dakuon (P):** パ ピ プ ペ ポ\n\n## Katakana Yōon — Native-pattern combinations\n\nSame as hiragana: i-row character + small ャ ュ ョ\n- **キャ kya** / **キュ kyu** / **キョ kyo**\n- **シャ sha** / **シュ shu** / **ショ sho**\n- **チャ cha** / **チュ chu** / **チョ cho**\n- **ニャ nya** / **ニュ nyu** / **ニョ nyo**\n\n## Special Katakana Sounds (for loanwords)\n\nKatakana has additional combinations **not found in hiragana** to represent foreign sounds:\n\n| Combination | Sound | Example |\n|---|---|---|\n| **ファ** | fa | ファン (fan) |\n| **フィ** | fi | フィリピン (Philippines) |\n| **フェ** | fe | フェリー (ferry) |\n| **フォ** | fo | フォーク (fork / folk) |\n| **ウィ** | wi | ウィーン (Vienna) |\n| **ウェ** | we | ウェールズ (Wales) |\n| **ヴァ** | va | ヴァイオリン (violin) |\n| **ティ** | ti | パーティー (party) |\n| **ディ** | di | ディズニー (Disney) |\n\n## Loanword Reading Practice\n\nTry reading these katakana words — can you guess them?\n\n1. アイスクリーム = ?\n2. ピザ = ?\n3. スマートフォン = ?\n4. チョコレート = ?\n5. インターネット = ?\n\n*(Answers: ice cream, pizza, smartphone, chocolate, internet)*',
+ 'character_learning', 'katakana', 5, 1),
+
+(6,
+ 'Bài 6: Katakana Yōon Mở Rộng (36 ký tự)',
+ 'Lesson 6: Extended Yōon Katakana (36 Characters)',
+ '## Ôn lại và Nâng cao\n\nBài này củng cố toàn bộ yōon katakana từ bài 5 và bổ sung các tổ hợp nâng cao dành riêng cho katakana.\n\n## Bảng Yōon Dakuon Katakana đầy đủ\n\n| | + ャ ya | + ュ yu | + ョ yo |\n|---|---|---|---|\n| ギ gi | **ギャ gya** | **ギュ gyu** | **ギョ gyo** |\n| ジ ji | **ジャ ja** | **ジュ ju** | **ジョ jo** |\n| ビ bi | **ビャ bya** | **ビュ byu** | **ビョ byo** |\n| ピ pi | **ピャ pya** | **ピュ pyu** | **ピョ pyo** |\n\n## Từ vay mượn nâng cao\n\n| Katakana | Phiên âm | Nghĩa |\n|---|---|---|\n| ジュース | juusu | juice (nước ép) |\n| ショッピング | shoppingu | shopping |\n| ギャラリー | gyararii | gallery (phòng triển lãm) |\n| ジョギング | jogingu | jogging |\n| ビュッフェ | byuffe | buffet |\n\n## Kiểm tra tổng kết Katakana\n\nSau bài học này, bạn đã hoàn thành toàn bộ bộ katakana. Hãy tự kiểm tra bằng cách:\n1. Đọc menu nhà hàng Nhật Bản (phần katakana)\n2. Nhận diện tên nước ngoài trong văn bản tiếng Nhật\n3. Viết tên của bạn bằng katakana',
+ '## Review and Advancement\n\nThis lesson reinforces all yōon katakana from Lesson 5 and adds advanced combinations unique to katakana.\n\n## Complete Voiced Yōon Katakana Table\n\n| | + ャ ya | + ュ yu | + ョ yo |\n|---|---|---|---|\n| ギ gi | **ギャ gya** | **ギュ gyu** | **ギョ gyo** |\n| ジ ji | **ジャ ja** | **ジュ ju** | **ジョ jo** |\n| ビ bi | **ビャ bya** | **ビュ byu** | **ビョ byo** |\n| ピ pi | **ピャ pya** | **ピュ pyu** | **ピョ pyo** |\n\n## Advanced Loanwords\n\n| Katakana | Romanisation | Meaning |\n|---|---|---|\n| ジュース | juusu | juice |\n| ショッピング | shoppingu | shopping |\n| ギャラリー | gyararii | gallery |\n| ジョギング | jogingu | jogging |\n| ビュッフェ | byuffe | buffet |\n\n## Katakana Completion Check\n\nAfter this lesson you have covered the entire katakana system. Test yourself by:\n1. Reading the katakana sections of a Japanese restaurant menu\n2. Identifying foreign names in Japanese text\n3. Writing your own name in katakana',
+ 'character_learning', 'katakana', 6, 1),
+
+(7,
+ 'Bài 7: Giao Tiếp Cơ Bản — Những Câu Nói Đầu Tiên',
+ 'Lesson 7: Basic Communication — Your First Conversations',
+ '## Mục tiêu bài học\n\nSau bài học này, bạn có thể:\n- Chào hỏi và từ biệt đúng thời điểm trong ngày\n- Tự giới thiệu bản thân\n- Thể hiện sự cảm ơn và xin lỗi lịch sự\n- Hỏi và trả lời các câu hỏi cơ bản\n\n## Lời chào theo thời điểm\n\n| Tiếng Nhật | Romaji | Nghĩa | Thời điểm sử dụng |\n|---|---|---|---|\n| おはようございます | *ohayou gozaimasu* | Chào buổi sáng (lịch sự) | 5:00 – 10:00 |\n| おはよう | *ohayou* | Chào buổi sáng (thân mật) | Với bạn bè/gia đình |\n| こんにちは | *konnichiwa* | Xin chào | 10:00 – 18:00 |\n| こんばんは | *konbanwa* | Chào buổi tối | Sau 18:00 |\n| おやすみなさい | *oyasumi nasai* | Chúc ngủ ngon | Khi đi ngủ |\n\n## Lời từ biệt\n\n| Tiếng Nhật | Romaji | Sắc thái |\n|---|---|---|\n| さようなら | *sayounara* | Tạm biệt (chia tay lâu) |\n| じゃあね | *jaa ne* | Tạm biệt (thân mật, gặp lại sớm) |\n| またね | *mata ne* | Hẹn gặp lại nhé |\n| またあした | *mata ashita* | Hẹn gặp ngày mai |\n| いってきます | *ittekimasu* | Con/anh/chị đi đây (ra khỏi nhà) |\n| いってらっしゃい | *itterasshai* | Đi cẩn thận nhé (người ở nhà nói) |\n\n## Tự giới thiệu\n\n**Mẫu câu giới thiệu cơ bản:**\n\n> はじめまして。わたしは [tên] です。\n> *Hajimemashite. Watashi wa [name] desu.*\n> Rất vui được gặp bạn. Tôi là [tên].\n\n> [quê hương] から きました。\n> *[country] kara kimashita.*\n> Tôi đến từ [quê hương].\n\n> どうぞ よろしく おねがいします。\n> *Douzo yoroshiku onegaishimasu.*\n> Rất mong được quan tâm giúp đỡ. (Lời kết khi giới thiệu)\n\n## Lời cảm ơn và xin lỗi\n\n| Tiếng Nhật | Romaji | Mức độ lịch sự |\n|---|---|---|\n| ありがとう | *arigatou* | Thường (với bạn bè) |\n| ありがとうございます | *arigatou gozaimasu* | Lịch sự |\n| どうもありがとうございます | *doumo arigatou gozaimasu* | Rất lịch sự |\n| すみません | *sumimasen* | Xin lỗi / Xin phép (đa năng) |\n| ごめんなさい | *gomennasai* | Xin lỗi (thành thật) |\n| もうしわけありません | *moushiwake arimasen* | Xin lỗi (rất trang trọng) |\n\n## Câu hỏi và trả lời thiết yếu\n\n**Hỏi tên:**\n> お名前は なんですか？\n> *Onamae wa nan desu ka?*\n> Tên bạn là gì?\n\n**Trả lời:**\n> [tên] と もうします。\n> *[name] to moushimasu.*\n> Tôi tên là [tên]. (Trang trọng)\n\n**Hỏi nguồn gốc:**\n> どちら から いらっしゃいましたか？\n> *Dochira kara irasshaimashita ka?*\n> Bạn đến từ đâu? (Lịch sự)\n\n**Không hiểu:**\n> もういちど おねがいします。\n> *Mou ichido onegaishimasu.*\n> Xin nói lại một lần nữa.\n\n> ゆっくり はなして ください。\n> *Yukkuri hanashite kudasai.*\n> Xin nói chậm hơn.\n\n## Văn hóa: Cúi chào (お辞儀 — Ojigi)\n\nĐi kèm với lời chào là cử chỉ cúi đầu:\n- **15°** — Chào thông thường hằng ngày\n- **30°** — Cảm ơn thành thật, gặp người lớn tuổi\n- **45°** — Xin lỗi sâu sắc, gặp khách hàng/cấp trên\n\nKhách nước ngoài không bắt buộc phải cúi chào, nhưng một cái gật đầu nhẹ luôn được đánh giá cao.',
+ '## Lesson Objectives\n\nBy the end of this lesson you will be able to:\n- Greet and farewell people at the correct time of day\n- Introduce yourself\n- Express thanks and apologies politely\n- Ask and answer basic questions\n\n## Time-of-Day Greetings\n\n| Japanese | Romaji | Meaning | When to use |\n|---|---|---|---|\n| おはようございます | *ohayou gozaimasu* | Good morning (polite) | 5:00 – 10:00 |\n| おはよう | *ohayou* | Good morning (casual) | With friends / family |\n| こんにちは | *konnichiwa* | Hello / Good afternoon | 10:00 – 18:00 |\n| こんばんは | *konbanwa* | Good evening | After 18:00 |\n| おやすみなさい | *oyasumi nasai* | Good night | When going to sleep |\n\n## Farewells\n\n| Japanese | Romaji | Register |\n|---|---|---|\n| さようなら | *sayounara* | Goodbye (implies longer separation) |\n| じゃあね | *jaa ne* | See you (casual, soon) |\n| またね | *mata ne* | See you again |\n| またあした | *mata ashita* | See you tomorrow |\n| いってきます | *ittekimasu* | I''m heading out (leaving home) |\n| いってらっしゃい | *itterasshai* | Take care (said by those staying behind) |\n\n## Self-Introduction\n\n**Standard introduction pattern:**\n\n> はじめまして。わたしは [name] です。\n> *Hajimemashite. Watashi wa [name] desu.*\n> Nice to meet you. I am [name].\n\n> [country] から きました。\n> *[country] kara kimashita.*\n> I came from [country].\n\n> どうぞ よろしく おねがいします。\n> *Douzo yoroshiku onegaishimasu.*\n> Please treat me well. (Standard closing phrase for introductions)\n\n## Thanks and Apologies\n\n| Japanese | Romaji | Politeness level |\n|---|---|---|\n| ありがとう | *arigatou* | Casual (friends) |\n| ありがとうございます | *arigatou gozaimasu* | Polite |\n| どうもありがとうございます | *doumo arigatou gozaimasu* | Very polite |\n| すみません | *sumimasen* | Excuse me / Sorry (versatile) |\n| ごめんなさい | *gomennasai* | I''m sorry (sincere) |\n| もうしわけありません | *moushiwake arimasen* | I am truly sorry (formal) |\n\n## Essential Questions and Answers\n\n**Asking someone''s name:**\n> お名前は なんですか？\n> *Onamae wa nan desu ka?*\n> What is your name?\n\n**Answering:**\n> [name] と もうします。\n> *[name] to moushimasu.*\n> My name is [name]. (Formal)\n\n**Asking origin:**\n> どちら から いらっしゃいましたか？\n> *Dochira kara irasshaimashita ka?*\n> Where are you from? (Polite)\n\n**When you don''t understand:**\n> もういちど おねがいします。\n> *Mou ichido onegaishimasu.*\n> Please say that one more time.\n\n> ゆっくり はなして ください。\n> *Yukkuri hanashite kudasai.*\n> Please speak more slowly.\n\n## Culture Note: Bowing (お辞儀 — Ojigi)\n\nJapanese greetings are accompanied by bowing:\n- **15°** — Everyday casual greeting\n- **30°** — Sincere thanks, meeting elders\n- **45°** — Deep apology, meeting clients or superiors\n\nForeigners are not expected to bow, but a small nod is always appreciated.',
+ 'practice', 'both', 7, 1);
 
 -- User-created lessons (tied to the test account).
 INSERT INTO lessons (user_id, title, content, is_public) VALUES
@@ -1033,16 +1561,272 @@ INSERT INTO vocabulary (lesson_id, word_kanji, word_hiragana, romaji, meaning_vi
  'A route designed for vehicles. Distinguished from "michi", which covers footpaths and smaller lanes.',
  'noun', 'N5', 'beginner', 110);
 
--- Example sentences illustrating vocabulary in natural context.
+-- ===========================================================================
+-- EXAMPLE SENTENCES — 30 bilingual sentences with grammar notes
+-- Covers vocabulary from lessons 1–5; ordered by vocabulary_id.
+-- ===========================================================================
 INSERT INTO examples (vocabulary_id, jp_sentence_hiragana, jp_sentence_kanji, romaji_sentence, vi_meaning, en_meaning, grammar_note_vi, grammar_note_en, order_index) VALUES
-(1,  'あかいりんごがすきです',   '赤いリンゴが好きです',    'Akai ringo ga suki desu',           'Tôi thích táo đỏ',                 'I like red apples',                'Tính từ + Danh từ + が + 好きです', 'Adjective + Noun + が + 好きです', 1),
-(1,  'かおがあかくなりました',   '顔が赤くなりました',       'Kao ga akaku narimashita',          'Khuôn mặt tôi đỏ lên',             'My face turned red',               'Chỉ sự thay đổi trạng thái',       'Indicates a change of state',      2),
-(2,  'あさごはんをたべます',     '朝ご飯を食べます',         'Asa gohan o tabemasu',              'Tôi ăn sáng',                      'I eat breakfast',                  'Danh từ thời gian + を + Động từ', 'Time noun + を + Verb',            3),
-(9,  'このえいがはいいですね',   'この映画はいいですね',     'Kono eiga wa ii desu ne',           'Bộ phim này hay nhỉ',              'This movie is good, isn''t it?',   'Tính từ + ですね (đồng tình)',     'Adjective + ですね (seeking agreement)', 4),
-(7,  'いぬがかわいいです',       '犬が可愛いです',           'Inu ga kawaii desu',                'Con chó thật dễ thương',           'The dog is cute',                  'Danh từ + が + Tính từ',           'Noun + が + Adjective',            5),
-(10, 'うみがきれいです',         '海がきれいです',           'Umi ga kirei desu',                 'Biển đẹp quá',                     'The sea is beautiful',             'Mô tả cảnh thiên nhiên',           'Describing natural scenery',       6),
-(12, 'えきでまっています',       '駅で待っています',         'Eki de matte imasu',                'Tôi đang chờ ở ga',                'I am waiting at the station',      'Địa điểm + で + Động từ tiếp diễn', 'Place + で + Continuous verb',   7),
-(14, 'おおきいへやですね',       '大きい部屋ですね',         'Ookii heya desu ne',                'Phòng rộng nhỉ',                   'It''s a big room, isn''t it?',     'Tính từ + Danh từ + です',         'Adjective + Noun + です',          8);
+
+-- vocab 1 (赤い / akai — red)
+(1, 'あのりんごはあかいです',
+    'あのリンゴは赤いです',
+    'Ano ringo wa akai desu',
+    'Quả táo kia có màu đỏ',
+    'That apple is red',
+    'あの + Danh từ + は + Tính từ-i + です: Mô tả màu sắc của vật ở xa',
+    'あの + Noun + は + i-adjective + です: Describing the colour of a distant object', 1),
+
+(1, 'かおがあかくなりました',
+    '顔が赤くなりました',
+    'Kao ga akaku narimashita',
+    'Khuôn mặt tôi ửng đỏ lên (vì xấu hổ)',
+    'My face turned red (from embarrassment)',
+    'Tính từ-i ở dạng く + なる = "trở nên [trạng thái]". Chỉ sự thay đổi trạng thái.',
+    'i-adjective in く form + なる = "to become [state]". Indicates a change of state.', 2),
+
+-- vocab 2 (朝 / asa — morning)
+(2, 'まいあさにほんごをべんきょうします',
+    '毎朝日本語を勉強します',
+    'Maiasa Nihongo o benkyou shimasu',
+    'Mỗi buổi sáng tôi học tiếng Nhật',
+    'I study Japanese every morning',
+    'まい + Danh từ thời gian = "mỗi [khoảng thời gian]". を + する = làm hành động gì đó.',
+    'まい + time noun = "every [time period]". を + する = to do something.', 3),
+
+(2, 'あさはやくおきます',
+    '朝早く起きます',
+    'Asa hayaku okimasu',
+    'Tôi thức dậy sớm vào buổi sáng',
+    'I wake up early in the morning',
+    'あさ là trạng ngữ thời gian đặt trước động từ. はやく là dạng trạng từ của tính từ はやい.',
+    'あさ functions as a time adverb before the verb. はやく is the adverbial form of the adjective はやい.', 4),
+
+-- vocab 7 (犬 / inu — dog)
+(7, 'いぬがにわでまっています',
+    '犬が庭で待っています',
+    'Inu ga niwa de matte imasu',
+    'Con chó đang chờ ngoài sân',
+    'The dog is waiting in the garden',
+    'Danh từ + が + Địa điểm + で + Động từ-ている: Hành động tiếp diễn tại một địa điểm.',
+    'Noun + が + Place + で + Verb-ている: An action in progress at a location.', 5),
+
+(7, 'わたしはいぬがすきです',
+    '私は犬が好きです',
+    'Watashi wa inu ga suki desu',
+    'Tôi thích chó',
+    'I like dogs',
+    'は chỉ chủ đề; が đánh dấu đối tượng của 好き (sở thích/ghét dùng が không dùng を).',
+    'は marks the topic; が marks the object of 好き (verbs of preference take が not を).', 6),
+
+-- vocab 8 (今 / ima — now)
+(8, 'いまなんじですか',
+    '今何時ですか',
+    'Ima nanji desu ka',
+    'Bây giờ là mấy giờ?',
+    'What time is it now?',
+    'いま + なんじ + ですか: Hỏi giờ. なん là "bao nhiêu/cái gì" trước các từ đếm.',
+    'いま + なんじ + ですか: Asking the time. なん = "what/how many" before counters.', 7),
+
+(8, 'いまはいそがしいです',
+    '今は忙しいです',
+    'Ima wa isogashii desu',
+    'Bây giờ tôi đang bận',
+    'I am busy right now',
+    'いまは nhấn mạnh thời điểm "ngay lúc này" bằng trợ từ chủ đề は.',
+    'いまは uses the topic particle は to stress the contrast "right now (but not always)".', 8),
+
+-- vocab 10 (海 / umi — sea)
+(10, 'なつはうみでおよぎます',
+    '夏は海で泳ぎます',
+    'Natsu wa umi de oyogimasu',
+    'Vào mùa hè tôi bơi ở biển',
+    'In summer I swim in the sea',
+    'Season + は = "as for summer". で = nơi diễn ra hành động.',
+    'Season + は = "as for summer". で marks where the action takes place.', 9),
+
+(10, 'うみがとてもきれいでした',
+    '海がとても綺麗でした',
+    'Umi ga totemo kirei deshita',
+    'Biển hôm đó đẹp lắm',
+    'The sea was very beautiful',
+    'とても + Tính từ: tăng cường mức độ. でした là quá khứ của です.',
+    'とても + adjective: intensifier. でした is the past tense of です.', 10),
+
+-- vocab 12 (駅 / eki — station)
+(12, 'えきはここからとおいですか',
+    '駅はここから遠いですか',
+    'Eki wa koko kara tooi desu ka',
+    'Ga tàu có xa từ đây không?',
+    'Is the station far from here?',
+    'から = từ (điểm xuất phát). とおい = xa (tính từ-i). か cuối câu = câu hỏi có/không.',
+    'から = from (starting point). とおい = far (i-adjective). か at sentence-end marks a yes/no question.', 11),
+
+(12, 'えきでともだちをまちます',
+    '駅で友達を待ちます',
+    'Eki de tomodachi o machimasu',
+    'Tôi đợi bạn bè ở ga tàu',
+    'I wait for my friend at the station',
+    'で chỉ địa điểm diễn ra hành động. を chỉ đối tượng tác động trực tiếp.',
+    'で marks where the action happens. を marks the direct object of the verb.', 12),
+
+-- vocab 14 (大きい / ookii — big)
+(14, 'あのびょういんはとてもおおきいです',
+    'あの病院はとても大きいです',
+    'Ano byouin wa totemo ookii desu',
+    'Bệnh viện kia rất lớn',
+    'That hospital over there is very big',
+    'あの + Danh từ = "cái [vật] ở xa kia". とても + Tính từ = mô tả mức độ cao.',
+    'あの + Noun = "that [thing] over there". とても + adjective = describes a high degree.', 13),
+
+-- vocab 21 (聞く / kiku — to listen/ask)
+(21, 'おんがくをきいています',
+    '音楽を聴いています',
+    'Ongaku o kiite imasu',
+    'Tôi đang nghe nhạc',
+    'I am listening to music',
+    'を + 聞く = nghe [nội dung cụ thể]. ています = đang làm (tiếp diễn hiện tại).',
+    'を + 聞く = to listen to [specific content]. ています = currently doing (present progressive).', 14),
+
+(21, 'せんせいにしつもんをきいてもいいですか',
+    '先生に質問を聞いてもいいですか',
+    'Sensei ni shitsumon o kiite mo ii desu ka',
+    'Tôi có thể hỏi thầy/cô một câu hỏi không?',
+    'May I ask the teacher a question?',
+    'に chỉ người nhận hành động. ～てもいいですか = "có được phép làm … không?"',
+    'に marks the recipient of the action. ～てもいいですか = "may I / is it okay to …?"', 15),
+
+-- vocab 27 (来る / kuru — to come)
+(27, 'ともだちがきました',
+    '友達が来ました',
+    'Tomodachi ga kimashita',
+    'Bạn tôi đã đến rồi',
+    'My friend has arrived',
+    'が đánh dấu chủ ngữ của câu khai báo thông tin mới. ました = quá khứ lịch sự.',
+    'が marks the subject in an informational/new-information sentence. ました = polite past tense.', 16),
+
+(27, 'あしたなんじにきますか',
+    '明日何時に来ますか',
+    'Ashita nanji ni kimasu ka',
+    'Ngày mai bạn đến lúc mấy giờ?',
+    'What time will you come tomorrow?',
+    'に sau giờ cụ thể chỉ thời điểm. なんじ = "mấy giờ" (câu hỏi về giờ).',
+    'に after a specific time indicates when. なんじ = "what time" (time question).', 17),
+
+-- vocab 33 (好き / suki — to like)
+(33, 'すしとさしみとどちらがすきですか',
+    '寿司と刺身とどちらが好きですか',
+    'Sushi to sashimi to dochira ga suki desu ka',
+    'Bạn thích sushi hay sashimi hơn?',
+    'Which do you prefer, sushi or sashimi?',
+    'AとBとどちらが好きですか = Hỏi sở thích giữa hai lựa chọn.',
+    'AとBとどちらが好きですか = Asking which of two options is preferred.', 18),
+
+-- vocab 37 (少し / sukoshi — a little)
+(37, 'すこしまってください',
+    '少し待ってください',
+    'Sukoshi matte kudasai',
+    'Xin chờ một chút',
+    'Please wait a moment',
+    'すこし = phó từ chỉ lượng nhỏ. ～てください = yêu cầu lịch sự.',
+    'すこし = adverb of small quantity. ～てください = polite request form.', 19),
+
+-- vocab 44 (高い / takai — tall/expensive)
+(44, 'このレストランはたかいですね',
+    'このレストランは高いですね',
+    'Kono resutoran wa takai desu ne',
+    'Nhà hàng này đắt nhỉ',
+    'This restaurant is expensive, isn''t it?',
+    'ね cuối câu = tìm kiếm sự đồng ý của người nghe (giống "nhỉ" trong tiếng Việt).',
+    'ね at sentence-end seeks the listener''s agreement — similar to "isn''t it?" in English.', 20),
+
+-- vocab 45 (食べる / taberu — to eat)
+(45, 'なにをたべたいですか',
+    '何を食べたいですか',
+    'Nani o tabetai desu ka',
+    'Bạn muốn ăn gì?',
+    'What do you want to eat?',
+    '～たい = muốn làm gì (nguyện vọng ngôi thứ nhất/hỏi ngôi thứ hai). を chỉ tân ngữ.',
+    '～たい = want to do (first-person desire or second-person question). を marks the object.', 21),
+
+(45, 'もうすこしたべませんか',
+    'もう少し食べませんか',
+    'Mou sukoshi tabemasen ka',
+    'Bạn ăn thêm một chút nữa đi?',
+    'Won''t you eat a little more?',
+    '～ませんか = lời mời thân thiện ("sao không …?"). もうすこし = thêm một chút nữa.',
+    '～ませんか = friendly invitation ("why don''t you …?"). もうすこし = a little more.', 22),
+
+-- vocab 68 (読む / yomu — to read)
+(68, 'まいばんほんをよみます',
+    '毎晩本を読みます',
+    'Maiban hon o yomimasu',
+    'Mỗi buổi tối tôi đọc sách',
+    'I read a book every evening',
+    'まい + 晩 = mỗi buổi tối. Trạng ngữ thời gian đặt trước động từ trong tiếng Nhật.',
+    'まい + 晩 = every evening. Time adverbs typically precede the verb in Japanese.', 23),
+
+-- vocab 71 (料理 / ryouri — cooking)
+(71, 'かあさんのりょうりはおいしいです',
+    'お母さんの料理は美味しいです',
+    'Okaasan no ryouri wa oishii desu',
+    'Món ăn của mẹ rất ngon',
+    'Mom''s cooking is delicious',
+    'の nối hai danh từ biểu thị sở hữu ("của"). おいしい là tính từ-i chỉ vị ngon.',
+    'の links two nouns to show possession ("''s"). おいしい is an i-adjective meaning delicious.', 24),
+
+-- vocab 79 (ありがとう / arigatou — thank you)
+(79, 'てつだってくれてありがとうございます',
+    '手伝ってくれてありがとうございます',
+    'Tetsudatte kurete arigatou gozaimasu',
+    'Cảm ơn bạn đã giúp tôi',
+    'Thank you for helping me',
+    '～てくれて + ありがとう = cảm ơn ai vì đã làm gì cho mình. Cấu trúc biểu đạt lòng biết ơn cụ thể.',
+    '～てくれて + ありがとう = thank someone specifically for doing something for you.', 25),
+
+-- vocab 84 (飲む / nomu — to drink)
+(84, 'まいあさコーヒーをのみます',
+    '毎朝コーヒーを飲みます',
+    'Maiasa koohii o nomimasu',
+    'Mỗi sáng tôi uống cà phê',
+    'I drink coffee every morning',
+    'カタカナ コーヒー là từ vay mượn (coffee). を chỉ đối tượng uống.',
+    'Katakana コーヒー is a loanword. を marks the thing being drunk.', 26),
+
+-- vocab 90 (買う / kau — to buy)
+(90, 'デパートでふくをかいました',
+    'デパートで服を買いました',
+    'Depaato de fuku o kaimashita',
+    'Tôi đã mua quần áo ở trung tâm thương mại',
+    'I bought clothes at the department store',
+    'で chỉ địa điểm mua. を chỉ thứ được mua. ました = quá khứ lịch sự.',
+    'で marks where the buying happened. を marks what was bought. ました = polite past.', 27),
+
+-- vocab 91 (書く / kaku — to write)
+(91, 'にほんごでてがみをかきます',
+    '日本語で手紙を書きます',
+    'Nihongo de tegami o kakimasu',
+    'Tôi viết thư bằng tiếng Nhật',
+    'I write letters in Japanese',
+    'で sau ngôn ngữ/công cụ = "bằng [ngôn ngữ/phương tiện]". を chỉ tân ngữ.',
+    'で after language/tool = "in / by means of [language or instrument]". を marks the object.', 28),
+
+-- vocab 82 (日本語 / nihongo — Japanese language)
+(82, 'にほんごをはなすのはむずかしいです',
+    '日本語を話すのは難しいです',
+    'Nihongo o hanasu no wa muzukashii desu',
+    'Nói tiếng Nhật thì khó',
+    'Speaking Japanese is difficult',
+    '動詞 + の = danh từ hóa động từ ("việc làm gì"). の + は = chủ đề câu.',
+    'Verb + の = nominalisation ("the act of doing"). の + は = this act becomes the sentence topic.', 29),
+
+-- vocab 86 (先生 / sensei — teacher)
+(86, 'せんせいはまいにちくるまでがっこうにきます',
+    '先生は毎日車で学校に来ます',
+    'Sensei wa mainichi kuruma de gakkou ni kimasu',
+    'Thầy/cô giáo đi xe đến trường mỗi ngày',
+    'The teacher comes to school by car every day',
+    'で sau phương tiện di chuyển = "bằng [phương tiện]". に chỉ điểm đến.',
+    'で after transport = "by [vehicle]". に marks the destination.', 30);
 
 -- ===========================================================================
 -- FUNCTIONS & TRIGGERS
