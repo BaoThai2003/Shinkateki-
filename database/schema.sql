@@ -994,7 +994,7 @@ INSERT INTO lesson_questions (lesson_id, question_text, option_a, option_b, opti
 (3, 'What is the romaji for し?', 'sa',  'shi', 'su',  'se', 'b');
 
 -- Structured quiz questions with bilingual support.
-INSERT INTO quiz_questions (lesson_id, question_type, question_vi, question_en, romaji, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, difficulty_level, points, order_index) VALUES
+INSERT INTO quiz_questions (lesson_id, question_type, question_text_vi, question_text_en, romaji, options_vi, options_en, correct_answer_vi, correct_answer_en, explanation_vi, explanation_en, difficulty_level, points, order_index) VALUES
 (1, 'multiple_choice', 'あ đọc là gì?',        'How is あ pronounced?',    'a',  '["a","i","u","e"]',         '["a","i","u","e"]',         'a',  'a',  'あ là nguyên âm cơ bản a', 'あ is the basic vowel a', 'easy', 1, 1),
 (1, 'romaji_to_kana',  'Hiragana của "a" là?', 'Which hiragana spells "a"?','a',  '["あ","い","う","え"]',      '["あ","い","う","え"]',      'あ', 'あ', 'あ đọc là a',              'あ reads as a',           'easy', 1, 2),
 (2, 'multiple_choice', 'か đọc là gì?',        'How is か pronounced?',    'ka', '["ka","ki","ku","ke"]',      '["ka","ki","ku","ke"]',      'ka', 'ka', 'か là ka',                'か reads as ka',          'easy', 1, 3),
