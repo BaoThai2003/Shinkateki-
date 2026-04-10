@@ -8,5 +8,6 @@ router.get("/", ctrl.getQuizQuestions);
 router.get("/generate", authenticate, ctrl.generateQuiz);
 router.get("/vocabulary", authenticate, ctrl.generateVocabularyQuiz);
 router.post("/submit", authenticate, ctrl.submitAnswers);
+router.get("/statistics", authenticate, ctrl.getStatistics);
 
 module.exports = router;

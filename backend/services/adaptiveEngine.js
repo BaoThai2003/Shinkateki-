@@ -440,60 +440,70 @@ async function generateQuiz(
 
   // 7. Attach multiple-choice distractors to each question
   const allChars = await query(
-    `SELECT id, kana, romaji, type FROM characters ${
+    `SELECT id, kana, romaji, type, reading_kana FROM characters ${
       typeFilterSimple ? typeFilterSimple : ""
     }`,
     typeParams
   );
 
-  return selected.map((item) => ({
-    characterId: item.character_id,
-    character: item.kana,
-    romaji: item.romaji,
-    type: item.type,
-    groupName: item.group_name,
-    weaknessScore: parseFloat(item.weakness_score || 0),
-    difficultyClass: item.difficulty_class ?? "medium",
-    choices: _buildChoices(item, allChars, 4),
-  }));
+  return selected.map((item) => {
+    const displayField = item.type === "kanji" ? "reading_kana" : "romaji";
+    return {
+      characterId: item.character_id,
+      character: item.kana,
+      romaji: item.romaji,
+      reading_kana: item.reading_kana,
+      type: item.type,
+      groupName: item.group_name,
+      weaknessScore: parseFloat(item.weakness_score || 0),
+      difficultyClass: item.difficulty_class ?? "medium",
+      correct_display: item[displayField],
+      choices: _buildChoices(item, allChars, 4),
+    };
+  });
 }
 
 /**
  * Build an array of N multiple-choice options including the correct answer.
- * ENSURES: No duplicate romaji answers, must be 100% different
+ * ENSURES: No duplicate answers, must be 100% different
  */
 function _buildChoices(targetChar, allChars, count) {
+  const displayField = targetChar.type === "kanji" ? "reading_kana" : "romaji";
   const correct = {
     id: targetChar.character_id,
-    romaji: targetChar.romaji,
+    romaji: targetChar[displayField],
     correct: true,
   };
 
-  // Filter out the correct answer and get candidates with UNIQUE romaji
-  const usedRomaji = new Set([targetChar.romaji]);
+  // Filter candidates of same type, exclude correct
+  const candidates = allChars.filter(
+    (c) => c.type === targetChar.type && c.id !== targetChar.character_id
+  );
+
+  // Filter out the correct answer and get candidates with UNIQUE display
+  const usedDisplay = new Set([targetChar[displayField]]);
   const pool = [];
 
-  // Shuffle allChars first, then take unique romaji only
-  const shuffled = _shuffle(
-    allChars.filter((c) => c.id !== targetChar.character_id)
-  );
+  // Shuffle candidates first, then take unique display only
+  const shuffled = _shuffle(candidates);
 
   for (const char of shuffled) {
     if (pool.length >= count - 1) break;
-    if (!usedRomaji.has(char.romaji)) {
+    const display = char[displayField];
+    if (display && !usedDisplay.has(display)) {
       pool.push({
         id: char.id,
-        romaji: char.romaji,
+        romaji: display,
         correct: false,
       });
-      usedRomaji.add(char.romaji);
+      usedDisplay.add(display);
     }
   }
 
   // If we don't have enough unique options, log a warning but continue
   if (pool.length < count - 1) {
     console.warn(
-      `Warning: Only ${pool.length} unique distractors found for ${targetChar.romaji}`
+      `Warning: Only ${pool.length} unique distractors found for ${targetChar[displayField]}`
     );
   }
 

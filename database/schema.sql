@@ -93,6 +93,7 @@ CREATE TABLE characters (
     hiragana         VARCHAR(10),
     katakana         VARCHAR(10),
     kanji            VARCHAR(10),
+    reading_kana     VARCHAR(50),
     type             ENUM('hiragana','katakana','kanji') DEFAULT 'hiragana',
     group_name       VARCHAR(50),
     difficulty       ENUM('beginner','intermediate','advanced') DEFAULT 'beginner',
@@ -150,6 +151,18 @@ CREATE TABLE attempts (
     FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
     INDEX idx_user_session (user_id, session_id),
     INDEX idx_created_at   (created_at)
+);
+
+-- Test results for tracking quick tests and reviews
+CREATE TABLE test_results (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    user_id          INT NOT NULL,
+    test_type        ENUM('quick_test', 'review') NOT NULL,
+    score            INT NOT NULL,
+    total_questions  INT NOT NULL,
+    timestamp        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_test (user_id, test_type, timestamp)
 );
 
 -- Aggregated hourly performance — useful for surfacing study-time

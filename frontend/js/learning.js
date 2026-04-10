@@ -669,10 +669,40 @@ function createVocabularyElement(word) {
           )}"</div>`
         : ""
     }
+    <div class="vocab-actions">
+      <button class="btn-toggle" onclick="toggleCard(${
+        word.id
+      })">↓ Show More</button>
+    </div>
+    <div class="vocab-expanded" id="expanded-${word.id}" style="display: none;">
+      <div class="vocab-kana">${normalizeText(
+        word.hiragana || word.katakana || ""
+      )}</div>
+      <div class="vocab-romaji">${normalizeText(word.romaji)}</div>
+      <div class="vocab-example">${normalizeText(
+        word.example_sentence || ""
+      )}</div>
+      <div class="vocab-detailed">${normalizeText(
+        word.detailed_explanation || ""
+      )}</div>
+    </div>
   `;
 
   return wordDiv;
 }
+
+function toggleCard(id) {
+  const expanded = document.getElementById(`expanded-${id}`);
+  const btn = event.target;
+  if (expanded.style.display === "none") {
+    expanded.style.display = "block";
+    btn.textContent = "↑ Show Less";
+  } else {
+    expanded.style.display = "none";
+    btn.textContent = "↓ Show More";
+  }
+}
+
 async function loadDictionarySuggestions(searchTerm = "") {
   const suggestions = document.getElementById("dictionary-suggestions");
   if (!suggestions) return;

@@ -207,6 +207,8 @@ async function searchVocabulary(req, res) {
     const { q: searchTerm } = req.query;
     const userLanguage = req.user.language || "en";
 
+    console.log("Dictionary search term:", searchTerm);
+
     if (!searchTerm || searchTerm.length < 2) {
       return res.json([]);
     }

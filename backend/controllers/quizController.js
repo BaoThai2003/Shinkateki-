@@ -121,7 +121,9 @@ async function submitAnswers(req, res) {
 
     // Fetch all characters once for lookup
     const charMap = {};
-    const chars = await query("SELECT id, romaji FROM characters");
+    const chars = await query(
+      "SELECT id, romaji, reading_kana, type FROM characters"
+    );
     chars.forEach((c) => (charMap[c.id] = c));
 
     let sessionScore = 0;
@@ -131,8 +133,12 @@ async function submitAnswers(req, res) {
       const char = charMap[answer.characterId];
       if (!char) continue;
 
+      const correctValue =
+        char.type === "kanji" ? char.reading_kana : char.romaji;
       const isCorrect =
-        char.romaji.toLowerCase() === (answer.choiceRomaji || "").toLowerCase();
+        correctValue &&
+        correctValue.toLowerCase() ===
+          (answer.choiceRomaji || "").toLowerCase();
       const responseMs = Math.max(100, parseInt(answer.responseTimeMs || 3000));
 
       const update = await adaptiveEngine.recordAttempt({
@@ -159,10 +165,51 @@ async function submitAnswers(req, res) {
       (results.filter((r) => r.isCorrect).length / results.length) * 100
     );
 
+    const totalCorrect = results.filter((r) => r.isCorrect).length;
+    await query(
+      "INSERT INTO test_results (user_id, test_type, score, total_questions) VALUES (?, 'quick_test', ?, ?)",
+      [userId, totalCorrect, results.length]
+    );
+
     return res.json({ sessionId, results, accuracy, sessionScore });
   } catch (err) {
     console.error("[submitAnswers]", err);
     return res.status(500).json({ error: "Failed to submit answers." });
+  }
+}
+
+// GET /api/quiz/statistics
+async function getStatistics(req, res) {
+  try {
+    const userId = req.user.id;
+    const results = await query(
+      "SELECT test_type, score, total_questions, timestamp FROM test_results WHERE user_id = ? ORDER BY timestamp DESC",
+      [userId]
+    );
+
+    const totalTests = results.length;
+    const totalScore = results.reduce((sum, r) => sum + r.score, 0);
+    const totalQuestions = results.reduce(
+      (sum, r) => sum + r.total_questions,
+      0
+    );
+    const accuracy =
+      totalQuestions > 0 ? ((totalScore / totalQuestions) * 100).toFixed(2) : 0;
+
+    return res.json({
+      totalTests,
+      averageScore: parseFloat(accuracy),
+      accuracy: parseFloat(accuracy),
+      history: results,
+    });
+  } catch (err) {
+    console.error("getStatistics error:", err);
+    return res.json({
+      totalTests: 0,
+      averageScore: 0,
+      accuracy: 0,
+      history: [],
+    });
   }
 }
 
@@ -171,6 +218,7 @@ module.exports = {
   generateQuiz,
   generateVocabularyQuiz,
   submitAnswers,
+  getStatistics,
 };
 
 // Points earned per correct answer based on difficulty class

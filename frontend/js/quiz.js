@@ -169,7 +169,8 @@ function handleAnswer(selectedRomaji, clickedBtn) {
   stopQuestionTimer();
 
   const q = quizState.questions[quizState.current];
-  const isCorrect = selectedRomaji.toLowerCase() === q.romaji.toLowerCase();
+  const isCorrect =
+    selectedRomaji.toLowerCase() === q.correct_display.toLowerCase();
 
   // Update streak display
   if (isCorrect) {
@@ -196,8 +197,8 @@ function handleAnswer(selectedRomaji, clickedBtn) {
       isCorrect ? "correct" : "incorrect"
     }`;
     feedbackEl.textContent = isCorrect
-      ? `✓ Correct! ${q.romaji}`
-      : `✗ It was "${q.romaji}"`;
+      ? `✓ Correct! ${q.correct_display}`
+      : `✗ It was "${q.correct_display}"`;
   }
 
   // Store answer for batch submit

@@ -13,7 +13,7 @@ window.loadStats = async function () {
   if (content) content.style.opacity = "0.3";
 
   try {
-    const dash = await api.get("/stats/dashboard");
+    const dash = await api.get("/quiz/statistics");
     renderAll(dash);
   } catch (err) {
     console.error("Stats load failed", err);
@@ -69,92 +69,34 @@ function renderInstantStats(stats) {
   `;
 }
 
-function renderCumulativeStats(longTerm) {
+function renderCumulativeStats(dash) {
   const container = document.getElementById("stats-cumulative");
   if (!container) return;
 
-  if (!longTerm) {
+  if (!dash || dash.totalTests === 0) {
     container.innerHTML =
       '<p style="color:var(--fog)">No cumulative stats available yet.</p>';
     return;
   }
 
-  const topCorrect = (longTerm.topCorrect || [])
+  const historyHTML = (dash.history || [])
+    .slice(0, 10)
     .map(
-      (q) => `<li>${q.kana || q.romaji} — ${q.accuracy}% (${q.attempts})</li>`
+      (r) =>
+        `<li>${r.test_type} - ${r.score}/${r.total_questions} (${new Date(
+          r.timestamp
+        ).toLocaleDateString()})</li>`
     )
-    .join("");
-  const topWrong = (longTerm.topIncorrect || [])
-    .map(
-      (q) => `<li>${q.kana || q.romaji} — ${q.accuracy}% (${q.attempts})</li>`
-    )
-    .join("");
-
-  const quizSessions = (longTerm.quizSessions || [])
-    .map(
-      (s) =>
-        `<li>${s.session_type}: ${s.count} sessions, ${s.avg_accuracy?.toFixed(
-          1
-        )}% avg</li>`
-    )
-    .join("");
-
-  const mostCorrectQ = (longTerm.mostCorrectQuestions || [])
-    .map(
-      (q) =>
-        `<li>${q.question_text_en?.substring(0, 50)}... — ${q.accuracy?.toFixed(
-          1
-        )}%</li>`
-    )
-    .join("");
-  const mostIncorrectQ = (longTerm.mostIncorrectQuestions || [])
-    .map(
-      (q) =>
-        `<li>${q.question_text_en?.substring(0, 50)}... — ${q.accuracy?.toFixed(
-          1
-        )}%</li>`
-    )
-    .join("");
-
-  const quizDayOfWeek = (longTerm.quizDayOfWeek || [])
-    .map((d) => `<li>${_dayName(d.day)} — ${d.count}</li>`)
-    .join("");
-  const quizTimeOfDay = (longTerm.quizTimeOfDay || [])
-    .map((t) => `<li>${t.hour}:00 — ${t.count}</li>`)
     .join("");
 
   container.innerHTML = `
     <div class="stats-card">
-      <h4>Character Learning Stats</h4>
-      <p><strong>Total Attempts:</strong> ${longTerm.totalAttempts}</p>
-      <p><strong>Total Correct:</strong> ${longTerm.totalCorrect}</p>
-      <p><strong>Total Wrong:</strong> ${longTerm.totalWrong}</p>
-      <p><strong>Overall Accuracy:</strong> ${longTerm.accuracy}%</p>
-      <p><strong>Top Correct Characters</strong></p>
-      <ul>${topCorrect || "<li>Insufficient data</li>"}</ul>
-      <p><strong>Top Incorrect Characters</strong></p>
-      <ul>${topWrong || "<li>Insufficient data</li>"}</ul>
-      <p><strong>Peak Time Slots</strong></p>
-      <ul>${(longTerm.habitTimeOfDay || [])
-        .map((t) => `<li>${t.label} (${t.hour}:00) — ${t.count}</li>`)
-        .join("")}</ul>
-      <p><strong>Weekly Activity</strong></p>
-      <ul>${(longTerm.habitWeekDay || [])
-        .map((d) => `<li>${d.day} — ${d.count}</li>`)
-        .join("")}</ul>
-    </div>
-    <div class="stats-card">
-      <h4>Quiz History Stats</h4>
-      <p><strong>Quiz Sessions</strong></p>
-      <ul>${quizSessions || "<li>No quiz sessions yet</li>"}</ul>
-      <p><strong>Most Correct Questions</strong></p>
-      <ul>${mostCorrectQ || "<li>Insufficient data</li>"}</ul>
-      <p><strong>Most Incorrect Questions</strong></p>
-      <ul>${mostIncorrectQ || "<li>Insufficient data</li>"}</ul>
-      <p><strong>Quiz Days of Week</strong></p>
-      <ul>${quizDayOfWeek || "<li>No data</li>"}</ul>
-      <p><strong>Quiz Times of Day</strong></p>
-      <ul>${quizTimeOfDay || "<li>No data</li>"}</ul>
+      <h4>Cumulative Statistics</h4>
+      <p><strong>Total Tests:</strong> ${dash.totalTests}</p>
+      <p><strong>Average Score:</strong> ${dash.averageScore}%</p>
+      <p><strong>Accuracy:</strong> ${dash.accuracy}%</p>
+      <h5>Recent History</h5>
+      <ul>${historyHTML}</ul>
     </div>
   `;
 }
@@ -174,7 +116,7 @@ function _dayName(dow) {
 
 function renderAll(dash) {
   renderInstantStats(window.instantStats);
-  renderCumulativeStats(dash?.longTerm);
+  renderCumulativeStats(dash);
 
   if (!dash || typeof dash !== "object") {
     document.getElementById("stats-content").innerHTML =

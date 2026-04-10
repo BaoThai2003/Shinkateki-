@@ -109,6 +109,8 @@ async function getLesson(req, res) {
     const lessonId = req.params.id;
     const userLanguage = req.user ? req.user.language || "en" : "vi";
 
+    console.log("Lesson API hit:", lessonId);
+
     // Get lesson details
     const lessons = await query(
       `
