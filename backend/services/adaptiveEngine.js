@@ -1,13 +1,12 @@
 // services/adaptiveEngine.js
 //
 // ════════════════════════════════════════════════════════════════
-//  SHINKATEKI — ADAPTIVE LEARNING ENGINE
+//  SHINKATEKI — ADAPTIVE LEARNING ENGINE  (FIXED)
 //
-//  Responsibilities:
-//  1. Compute weakness_score for a user+character after each attempt
-//  2. Classify characters → strong / medium / weak
-//  3. Generate an adaptive quiz with the 70/20/10 distribution
-//  4. Schedule next_review using spaced repetition
+//  KEY FIX: Answer display rule:
+//  - type === 'kanji'    → display reading_kana (NEVER romaji)
+//  - type === 'hiragana' → display romaji
+//  - type === 'katakana' → display romaji
 // ════════════════════════════════════════════════════════════════
 "use strict";
 
@@ -21,47 +20,28 @@ const DIFFICULTY = {
   WEAK: "weak",
 };
 
-// Thresholds that classify weakness_score
 const THRESHOLD = {
-  STRONG: 3, // 0 – 3   → strong
-  MEDIUM: 8, // 4 – 8   → medium
-  // > 8          → weak
+  STRONG: 3,
+  MEDIUM: 8,
 };
 
-// Minutes until next review per difficulty class
 const REVIEW_DELAY_MIN = {
   weak: 5,
-  medium: 60 * 24, // 1 day
-  strong: 60 * 24 * 3, // 3 days
+  medium: 60 * 24,
+  strong: 60 * 24 * 3,
 };
 
-// Quiz generation target distribution
 const QUIZ_DISTRIBUTION = {
   weak: 0.7,
   medium: 0.2,
   strong: 0.1,
 };
 
-// Default quiz size
 const DEFAULT_QUIZ_SIZE = 10;
-
-// Number of consecutive wrong answers that triggers "compassion mode"
 const COMPASSION_THRESHOLD = 5;
 
 // ── Weakness Score ───────────────────────────────────────────────
 
-/**
- * Compute a fresh weakness_score from raw attempt data.
- *
- * Formula (per-attempt contribution):
- *   score += (wrong * 2) + (response_time_s) + (mistake_streak * 3)
- *
- * The final score is a rolling weighted average:
- *   new_score = old_score * 0.6 + latest_contribution * 0.4
- *
- * This gives more weight to recent behaviour (recency bias) while
- * still remembering historical trouble with a character.
- */
 function computeWeaknessScore({
   oldScore = 0,
   isCorrect,
@@ -70,28 +50,17 @@ function computeWeaknessScore({
 }) {
   const wrong = isCorrect ? 0 : 1;
   const responseTimeSec = responseTimeMs / 1000;
-
-  // Raw contribution of this single attempt
   const contribution = wrong * 2 + responseTimeSec + mistakeStreak * 3;
-
-  // Exponential moving average — recent attempts dominate
   const newScore = oldScore * 0.6 + contribution * 0.4;
-
   return Math.max(0, parseFloat(newScore.toFixed(4)));
 }
 
-/**
- * Map a numeric weakness_score to a difficulty class.
- */
 function classify(weaknessScore) {
   if (weaknessScore <= THRESHOLD.STRONG) return DIFFICULTY.STRONG;
   if (weaknessScore <= THRESHOLD.MEDIUM) return DIFFICULTY.MEDIUM;
   return DIFFICULTY.WEAK;
 }
 
-/**
- * Compute next_review datetime from difficulty class.
- */
 function nextReviewDate(difficultyClass) {
   const delayMs = REVIEW_DELAY_MIN[difficultyClass] * 60 * 1000;
   return new Date(Date.now() + delayMs);
@@ -99,9 +68,6 @@ function nextReviewDate(difficultyClass) {
 
 // ── Database helpers ─────────────────────────────────────────────
 
-/**
- * Load or initialise performance_stats row for user+character.
- */
 async function getOrCreateStat(conn, userId, characterId) {
   const [rows] = await conn.execute(
     `SELECT * FROM performance_stats WHERE user_id = ? AND character_id = ?`,
@@ -109,7 +75,6 @@ async function getOrCreateStat(conn, userId, characterId) {
   );
   if (rows[0]) return rows[0];
 
-  // First encounter — insert a default row
   await conn.execute(
     `INSERT INTO performance_stats
        (user_id, character_id, weakness_score, difficulty_class,
@@ -126,19 +91,8 @@ async function getOrCreateStat(conn, userId, characterId) {
   return newRows[0];
 }
 
-// ── Core update: called after every answer ───────────────────────
+// ── Core update ──────────────────────────────────────────────────
 
-/**
- * Record an attempt and update all derived state in one transaction.
- *
- * @param {object} opts
- * @param {number}  opts.userId
- * @param {number}  opts.characterId
- * @param {boolean} opts.isCorrect
- * @param {number}  opts.responseTimeMs  - client-measured round-trip ms
- * @param {string}  opts.sessionId       - UUID grouping a quiz session
- * @returns {object}  Updated performance_stats row + new weakness_score
- */
 async function recordAttempt({
   userId,
   characterId,
@@ -147,13 +101,9 @@ async function recordAttempt({
   sessionId,
 }) {
   return withTransaction(async (conn) => {
-    // 1. Load current stat (creates if missing)
     const stat = await getOrCreateStat(conn, userId, characterId);
-
-    // 2. Update mistake_streak
     const newStreak = isCorrect ? 0 : stat.mistake_streak + 1;
 
-    // 3. Compute new weakness score
     const newScore = computeWeaknessScore({
       oldScore: stat.weakness_score,
       isCorrect,
@@ -161,21 +111,15 @@ async function recordAttempt({
       mistakeStreak: newStreak,
     });
 
-    // 4. Classify
     const difficultyClass = classify(newScore);
-
-    // 5. Running average of response time
     const totalAttempts = stat.correct_count + stat.wrong_count + 1;
     const newAvgMs = Math.round(
       (stat.avg_response_ms * (totalAttempts - 1) + responseTimeMs) /
         totalAttempts
     );
-
-    // 6. Next review schedule
     const nextReview = nextReviewDate(difficultyClass);
-
-    // 7. Insert attempt record
     const hourOfDay = new Date().getUTCHours();
+
     await conn.execute(
       `INSERT INTO attempts
          (user_id, character_id, is_correct, response_time,
@@ -192,7 +136,6 @@ async function recordAttempt({
       ]
     );
 
-    // 8. Upsert performance_stats
     await conn.execute(
       `UPDATE performance_stats SET
          weakness_score   = ?,
@@ -217,7 +160,6 @@ async function recordAttempt({
       ]
     );
 
-    // 9. Update time-of-day stats (upsert)
     await _updateTimeOfDayStat(
       conn,
       userId,
@@ -235,9 +177,6 @@ async function recordAttempt({
   });
 }
 
-/**
- * Maintain a running accuracy/response-time average per hour-slot.
- */
 async function _updateTimeOfDayStat(
   conn,
   userId,
@@ -285,28 +224,18 @@ async function _updateTimeOfDayStat(
 // ── Quiz Generation ──────────────────────────────────────────────
 
 /**
- * Generate an adaptive quiz for a user.
+ * FIX: Answer display rule enforced here:
+ *   kanji   → correct_display = reading_kana  (kana reading, e.g. "いち")
+ *   hiragana/katakana → correct_display = romaji (e.g. "a", "ka")
  *
- * Behaviour:
- * - Prefer characters whose next_review <= NOW (due for review)
- * - Apply 70/20/10 distribution across weak/medium/strong
- * - If user has a long mistake_streak (≥ COMPASSION_THRESHOLD),
- *   temporarily inject easy characters to rebuild confidence
- * - New characters (no stat row) are treated as medium
- * - For "all" or null type: includes Hiragana, Katakana, AND Kanji
- *
- * @param {number} userId
- * @param {object} opts  { size, type }  type = 'hiragana'|'katakana'|'kanji'|null
- * @returns {Array}  Array of character objects with distractors
+ * _buildChoices also respects this rule for distractor options.
  */
 async function generateQuiz(
   userId,
   { size = DEFAULT_QUIZ_SIZE, type = null } = {}
 ) {
-  // 1. Check for compassion mode
   const compassionMode = await _isCompassionMode(userId);
 
-  // 2. Build type filter — if type is null/all, include all three; otherwise filter by type
   let typeFilterJoined = "";
   let typeFilterSimple = "";
   let typeParams = [];
@@ -316,72 +245,69 @@ async function generateQuiz(
     typeParams = [type];
   }
 
-  // 3. Handle different quiz modes
   let selected = [];
 
   if (type === "all") {
-    // For "all" mode: ≥30% hiragana, ≥30% katakana, ≥30% kanji
+    // Balanced distribution across all three types
     const hiraganaChars = await query(
-      `SELECT id AS character_id, kana, romaji, 'hiragana' AS type, group_name, difficulty FROM characters WHERE type = 'hiragana' ORDER BY RAND() LIMIT ${Math.ceil(
-        size * 0.35
-      )}`
+      `SELECT id AS character_id, kana, romaji, reading_kana, 'hiragana' AS type, group_name, difficulty
+       FROM characters WHERE type = 'hiragana' ORDER BY RAND() LIMIT ${Math.ceil(
+         size * 0.35
+       )}`
     );
     const katakanaChars = await query(
-      `SELECT id AS character_id, kana, romaji, 'katakana' AS type, group_name, difficulty FROM characters WHERE type = 'katakana' ORDER BY RAND() LIMIT ${Math.ceil(
-        size * 0.35
-      )}`
+      `SELECT id AS character_id, kana, romaji, reading_kana, 'katakana' AS type, group_name, difficulty
+       FROM characters WHERE type = 'katakana' ORDER BY RAND() LIMIT ${Math.ceil(
+         size * 0.35
+       )}`
     );
     const kanjiChars = await query(
-      `SELECT id AS character_id, kana, romaji, 'kanji' AS type, group_name, difficulty FROM characters WHERE type = 'kanji' ORDER BY RAND() LIMIT ${Math.ceil(
-        size * 0.35
-      )}`
+      `SELECT id AS character_id, kana, romaji, reading_kana, 'kanji' AS type, group_name, difficulty
+       FROM characters WHERE type = 'kanji' ORDER BY RAND() LIMIT ${Math.ceil(
+         size * 0.35
+       )}`
     );
     selected = [...hiraganaChars, ...katakanaChars, ...kanjiChars];
-    // Fill remaining with random from any type
+
     if (selected.length < size) {
       const remaining = await query(
-        `SELECT id AS character_id, kana, romaji, type, group_name, difficulty FROM characters ORDER BY RAND() LIMIT ${
-          size - selected.length
-        }`
+        `SELECT id AS character_id, kana, romaji, reading_kana, type, group_name, difficulty
+         FROM characters ORDER BY RAND() LIMIT ${size - selected.length}`
       );
       selected.push(...remaining);
     }
     selected = selected.slice(0, size);
   } else if (type === "hiragana" || type === "katakana" || type === "kanji") {
-    // Specific type mode
     selected = await query(
-      `SELECT id AS character_id, kana, romaji, type, group_name, difficulty FROM characters WHERE type = ? ORDER BY RAND() LIMIT ?`,
+      `SELECT id AS character_id, kana, romaji, reading_kana, type, group_name, difficulty
+       FROM characters WHERE type = ? ORDER BY RAND() LIMIT ?`,
       [type, size]
     );
   } else {
-    // Default adaptive mode (original logic)
-    // 3. Fetch all characters the user has stats for, split by class
+    // Adaptive mode
     const statsRows = await query(
       `SELECT ps.character_id, ps.weakness_score, ps.difficulty_class,
-            ps.mistake_streak, ps.next_review,
-            c.kana, c.romaji, c.type, c.group_name, c.difficulty
-     FROM performance_stats ps
-     JOIN characters c ON c.id = ps.character_id
-     WHERE ps.user_id = ? ${typeFilterJoined}
-     ORDER BY ps.weakness_score DESC`,
+              ps.mistake_streak, ps.next_review,
+              c.kana, c.romaji, c.reading_kana, c.type, c.group_name, c.difficulty
+       FROM performance_stats ps
+       JOIN characters c ON c.id = ps.character_id
+       WHERE ps.user_id = ? ${typeFilterJoined}
+       ORDER BY ps.weakness_score DESC`,
       [userId, ...typeParams]
     );
 
-    // 4. Fetch characters the user has NEVER seen (no stat row)
-    const seenIds = statsRows.map((r) => r.character_id);
     const unseenRows = await query(
       `SELECT id AS character_id, 0 AS weakness_score,
-            'medium' AS difficulty_class, 0 AS mistake_streak,
-            NULL AS next_review,
-            kana, romaji, type, group_name, difficulty
-     FROM characters
-     ${typeFilterSimple ? typeFilterSimple : ""}
-     ORDER BY difficulty ASC
-     LIMIT 50`,
+              'medium' AS difficulty_class, 0 AS mistake_streak,
+              NULL AS next_review,
+              kana, romaji, reading_kana, type, group_name, difficulty
+       FROM characters
+       ${typeFilterSimple ? typeFilterSimple : ""}
+       ORDER BY difficulty ASC
+       LIMIT 50`,
       typeParams
     );
 
-    // 5. Bucket characters
     const buckets = {
       weak: statsRows.filter((r) => r.difficulty_class === "weak"),
       medium: [
@@ -392,7 +318,6 @@ async function generateQuiz(
     };
 
     if (compassionMode) {
-      // In compassion mode: 80% strong/medium (easiest first) + 20% weak
       const easyPool = [...buckets.strong, ...buckets.medium].sort(
         (a, b) => a.weakness_score - b.weakness_score
       );
@@ -414,7 +339,6 @@ async function generateQuiz(
       ];
     }
 
-    // 6. Fill to `size` if pools were too small
     if (selected.length < size) {
       const allRemaining = [
         ...buckets.weak,
@@ -426,28 +350,27 @@ async function generateQuiz(
     }
   }
 
-  // Ensure we have questions
   if (selected.length === 0) {
-    // Fallback: get any characters
     selected = await query(
-      `SELECT id AS character_id, kana, romaji, type, group_name, difficulty FROM characters ORDER BY RAND() LIMIT ?`,
+      `SELECT id AS character_id, kana, romaji, reading_kana, type, group_name, difficulty
+       FROM characters ORDER BY RAND() LIMIT ?`,
       [size]
     );
   }
 
-  // Shuffle the final list for true randomness
   selected = _shuffle(selected).slice(0, size);
 
-  // 7. Attach multiple-choice distractors to each question
+  // Load all characters for distractor pool
   const allChars = await query(
-    `SELECT id, kana, romaji, type, reading_kana FROM characters ${
-      typeFilterSimple ? typeFilterSimple : ""
-    }`,
-    typeParams
+    `SELECT id, kana, romaji, reading_kana, type FROM characters`
   );
 
   return selected.map((item) => {
-    const displayField = item.type === "kanji" ? "reading_kana" : "romaji";
+    // ── CRITICAL FIX: Answer display rule ──
+    // kanji → show kana reading (reading_kana)
+    // hiragana/katakana → show romaji
+    const correctDisplay = _getCorrectDisplay(item);
+
     return {
       characterId: item.character_id,
       character: item.kana,
@@ -457,61 +380,73 @@ async function generateQuiz(
       groupName: item.group_name,
       weaknessScore: parseFloat(item.weakness_score || 0),
       difficultyClass: item.difficulty_class ?? "medium",
-      correct_display: item[displayField],
+      correct_display: correctDisplay,
       choices: _buildChoices(item, allChars, 4),
     };
   });
 }
 
 /**
- * Build an array of N multiple-choice options including the correct answer.
- * ENSURES: No duplicate answers, must be 100% different
+ * CRITICAL FIX: Determine what value to display as the correct answer.
+ * kanji    → reading_kana (e.g. "いち", "ニホン")
+ * hiragana → romaji       (e.g. "a", "ka", "shi")
+ * katakana → romaji       (e.g. "a", "ka", "shi")
+ */
+function _getCorrectDisplay(char) {
+  if (char.type === "kanji") {
+    // Use reading_kana; fallback to romaji only if reading_kana is missing
+    const kana = char.reading_kana || char.kana;
+    if (!kana) {
+      console.warn(
+        `[AdaptiveEngine] Kanji ${char.kana} missing reading_kana — falling back to romaji`
+      );
+    }
+    return kana || char.romaji || "?";
+  }
+  // hiragana and katakana: always romaji
+  return char.romaji || "?";
+}
+
+/**
+ * Build multiple-choice options.
+ * Distractors are selected from same type, using same display rule.
+ * No duplicate display values allowed.
  */
 function _buildChoices(targetChar, allChars, count) {
-  const displayField = targetChar.type === "kanji" ? "reading_kana" : "romaji";
+  const correctDisplay = _getCorrectDisplay(targetChar);
   const correct = {
     id: targetChar.character_id,
-    romaji: targetChar[displayField],
+    romaji: correctDisplay, // "romaji" field is reused for display value
     correct: true,
   };
 
-  // Filter candidates of same type, exclude correct
+  // Only compare against same type
   const candidates = allChars.filter(
     (c) => c.type === targetChar.type && c.id !== targetChar.character_id
   );
 
-  // Filter out the correct answer and get candidates with UNIQUE display
-  const usedDisplay = new Set([targetChar[displayField]]);
+  const usedDisplay = new Set([correctDisplay]);
   const pool = [];
-
-  // Shuffle candidates first, then take unique display only
   const shuffled = _shuffle(candidates);
 
   for (const char of shuffled) {
     if (pool.length >= count - 1) break;
-    const display = char[displayField];
+    const display = _getCorrectDisplay(char);
     if (display && !usedDisplay.has(display)) {
-      pool.push({
-        id: char.id,
-        romaji: display,
-        correct: false,
-      });
+      pool.push({ id: char.id, romaji: display, correct: false });
       usedDisplay.add(display);
     }
   }
 
-  // If we don't have enough unique options, log a warning but continue
   if (pool.length < count - 1) {
     console.warn(
-      `Warning: Only ${pool.length} unique distractors found for ${targetChar[displayField]}`
+      `[AdaptiveEngine] Only ${pool.length} unique distractors for "${correctDisplay}" (type: ${targetChar.type})`
     );
   }
 
   return _shuffle([correct, ...pool]);
 }
-/**
- * Sample up to `n` items, prioritising those due for review (next_review <= NOW).
- */
+
 function _sampleDue(pool, n) {
   if (!pool.length || n <= 0) return [];
   const now = Date.now();
@@ -529,7 +464,6 @@ function _sample(arr, n) {
 }
 
 function _shuffle(arr) {
-  // True randomness using Fisher-Yates shuffle
   const result = [...arr];
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -538,47 +472,25 @@ function _shuffle(arr) {
   return result;
 }
 
-/**
- * Check whether any character for this user has a live streak >= threshold.
- */
 async function _isCompassionMode(userId) {
   const row = await queryOne(
-    `SELECT MAX(mistake_streak) AS maxStreak
-     FROM performance_stats
-     WHERE user_id = ?`,
+    `SELECT MAX(mistake_streak) AS maxStreak FROM performance_stats WHERE user_id = ?`,
     [userId]
   );
   return (row?.maxStreak ?? 0) >= COMPASSION_THRESHOLD;
 }
 
-// ── Exports ───────────────────────────────────────────────────────
+// ── Vocabulary Quiz ───────────────────────────────────────────────
 
-module.exports = {
-  recordAttempt,
-  generateQuiz,
-  generateVocabularyQuiz,
-  computeWeaknessScore,
-  classify,
-  DIFFICULTY,
-  THRESHOLD,
-  COMPASSION_THRESHOLD,
-};
-
-/**
- * Generate vocabulary questions from the vocabulary table
- * @param {number} userId
- * @param {object} opts { size, jlptLevel }
- * @returns {Array} Array of vocabulary question objects
- */
 async function generateVocabularyQuiz(
   userId,
   { size = 10, jlptLevel = "N5" } = {}
 ) {
   const questionsCount = Math.min(size, 20);
 
-  // Get vocabulary words to quiz on
   const vocabQuestions = await query(
-    `SELECT id, word_kanji, word_hiragana, word_katakana, romaji, meaning_en, meaning_vi, part_of_speech
+    `SELECT id, word_kanji, word_hiragana, word_katakana, romaji,
+            meaning_en, meaning_vi, part_of_speech
      FROM vocabulary
      WHERE jlpt_level = ?
      ORDER BY RAND()
@@ -586,22 +498,17 @@ async function generateVocabularyQuiz(
     [jlptLevel, questionsCount]
   );
 
-  if (!vocabQuestions || vocabQuestions.length === 0) {
-    return [];
-  }
+  if (!vocabQuestions || vocabQuestions.length === 0) return [];
 
-  // Get all vocabulary for distractors
   const allVocab = await query(
     `SELECT romaji FROM vocabulary WHERE jlpt_level = ? LIMIT 100`,
     [jlptLevel]
   );
 
   return vocabQuestions.map((word) => {
-    // Display form (kanji if available, else hiragana, else katakana)
     const displayForm =
       word.word_kanji || word.word_hiragana || word.word_katakana || "?";
 
-    // Create unique romaji options including the correct answer
     const usedRomaji = new Set([word.romaji]);
     const options = [word.romaji];
 
@@ -613,10 +520,8 @@ async function generateVocabularyQuiz(
       }
     }
 
-    // Ensure we have 4 options
     while (options.length < 4) {
-      const fallback = `option${options.length + 1}`;
-      options.push(fallback);
+      options.push(`option${options.length + 1}`);
     }
 
     return {
@@ -635,3 +540,14 @@ async function generateVocabularyQuiz(
     };
   });
 }
+
+module.exports = {
+  recordAttempt,
+  generateQuiz,
+  generateVocabularyQuiz,
+  computeWeaknessScore,
+  classify,
+  DIFFICULTY,
+  THRESHOLD,
+  COMPASSION_THRESHOLD,
+};

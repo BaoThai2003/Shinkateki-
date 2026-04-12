@@ -1,7 +1,5 @@
-// js/quiz.js — Full adaptive quiz engine (frontend)
+// js/quiz.js — Full adaptive quiz engine (frontend) — FIXED
 "use strict";
-
-// Use shared API helper from app.js (includes token, error handling)
 
 // ── State ────────────────────────────────────────────────────────
 let quizState = {
@@ -9,13 +7,13 @@ let quizState = {
   questions: [],
   current: 0,
   answers: [],
-  startTime: null, // timestamp when current question was shown
+  startTime: null,
   timerInterval: null,
   questionType: "",
   streakDisplay: 0,
 };
 
-const QUESTION_TIMEOUT_MS = 8000; // 8 s per question
+const QUESTION_TIMEOUT_MS = 8000;
 
 // ── Entry point ──────────────────────────────────────────────────
 
@@ -23,6 +21,18 @@ window.startQuiz = function (type = "") {
   quizState.questionType = type;
   showView("quiz");
   showQuizSection("lobby");
+
+  // FIX: Update lobby title to reflect selected type
+  const titleEl = document.getElementById("quiz-lobby-title");
+  if (titleEl) {
+    const typeLabels = {
+      "": "Tất Cả",
+      hiragana: "Hiragana", // FIXED: was "Higarana"
+      katakana: "Katakana",
+      kanji: "Kanji",
+    };
+    titleEl.textContent = `Phiên Luyện Tập — ${typeLabels[type] || "Tất Cả"}`;
+  }
 };
 
 // ── Lobby ────────────────────────────────────────────────────────
@@ -31,11 +41,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("btn-begin-quiz")
     ?.addEventListener("click", beginQuiz);
-
-  document.getElementById("btn-retry")?.addEventListener("click", () => {
-    showQuizSection("lobby");
-  });
-
+  document
+    .getElementById("btn-retry")
+    ?.addEventListener("click", () => showQuizSection("lobby"));
   document.getElementById("btn-view-stats")?.addEventListener("click", () => {
     showView("stats");
     window.loadStats?.();
@@ -46,47 +54,99 @@ async function beginQuiz() {
   const size = parseInt(document.getElementById("quiz-size")?.value || "10");
   const type = quizState.questionType;
 
+  console.log(`[beginQuiz] size=${size} type="${type}"`);
+
   try {
-    // Quick quiz: review-only pool (structured lessons review section)
-    const params = new URLSearchParams({ size });
-    if (type) params.set("script", type);
+    let questionData = [];
 
-    let questionData = await api.get(
-      `/structured-lessons/review-quiz?${params}`
-    );
-
-    if (!Array.isArray(questionData) || questionData.length === 0) {
-      // fallback to adaptive general quiz
-      const fallbackParams = new URLSearchParams({ size });
-      if (type) fallbackParams.set("type", type);
-      const data = await api.get(`/quiz/generate?${fallbackParams}`);
+    // ── ALWAYS try structured review quiz first (for hiragana/katakana modes)
+    // For kanji or "all", use the adaptive engine which respects reading_kana
+    if (type === "kanji" || type === "all" || type === "") {
+      // Use adaptive quiz generator (returns correct_display already set)
+      const params = new URLSearchParams({ size });
+      if (type) params.set("type", type);
+      const data = await api.get(`/quiz/generate?${params}`);
       quizState.sessionId = data.sessionId;
-      quizState.questions = data.questions;
+      quizState.questions = (data.questions || []).map(normalizeQuestion);
     } else {
-      // map review quiz format into same question representation used by quiz engine
-      quizState.sessionId = `review-${Date.now()}`;
-      quizState.questions = questionData.map((q) => ({
-        characterId: q.id,
-        character: q.question || q.kanji || q.hiragana || q.katakana || "？",
-        romaji: q.romaji || "",
-        type: "review",
-        choices: (q.options || []).map((option) => ({
-          romaji: option,
-          correct: option === q.correct_answer,
-        })),
-      }));
+      // hiragana / katakana: try review quiz first, fall back to generate
+      const reviewParams = new URLSearchParams({ size });
+      reviewParams.set("script", type);
+      const reviewData = await api.get(
+        `/structured-lessons/review-quiz?${reviewParams}`
+      );
+
+      if (Array.isArray(reviewData) && reviewData.length > 0) {
+        quizState.sessionId = `review-${Date.now()}`;
+        quizState.questions = reviewData.map((q) =>
+          normalizeReviewQuestion(q, type)
+        );
+      } else {
+        const params = new URLSearchParams({ size, type });
+        const data = await api.get(`/quiz/generate?${params}`);
+        quizState.sessionId = data.sessionId;
+        quizState.questions = (data.questions || []).map(normalizeQuestion);
+      }
+    }
+
+    if (!quizState.questions.length) {
+      alert("Không có câu hỏi nào. Vui lòng thử lại sau.");
+      return;
     }
 
     quizState.current = 0;
     quizState.answers = [];
     quizState.streakDisplay = 0;
 
+    console.log(`[beginQuiz] loaded ${quizState.questions.length} questions`);
     showQuizSection("active");
     renderQuestion();
   } catch (err) {
-    alert("Could not load quiz. Is the server running?");
-    console.error(err);
+    console.error("[beginQuiz] ERROR:", err);
+    alert("Không thể tải câu hỏi. Máy chủ có thể chưa hoạt động.");
   }
+}
+
+/**
+ * Normalize a question from /quiz/generate endpoint.
+ * correct_display is already set by the backend following the rule:
+ *   kanji → reading_kana,  hiragana/katakana → romaji
+ */
+function normalizeQuestion(q) {
+  return {
+    characterId: q.characterId,
+    character: q.character,
+    romaji: q.romaji,
+    reading_kana: q.reading_kana,
+    type: q.type,
+    groupName: q.groupName,
+    weaknessScore: q.weaknessScore,
+    difficultyClass: q.difficultyClass || "medium",
+    correct_display: q.correct_display || q.romaji || "",
+    choices: q.choices || [],
+  };
+}
+
+/**
+ * Normalize a question from the structured review quiz endpoint.
+ * For review questions, answers are always the option text itself.
+ */
+function normalizeReviewQuestion(q, scriptType) {
+  const correctAnswer = q.correct_answer || "";
+  return {
+    characterId: q.id,
+    character: q.question || q.kanji || q.hiragana || q.katakana || "？",
+    romaji: q.romaji || "",
+    type: "review",
+    groupName: "",
+    weaknessScore: 0,
+    difficultyClass: "medium",
+    correct_display: correctAnswer,
+    choices: (q.options || []).map((option) => ({
+      romaji: option,
+      correct: option === correctAnswer,
+    })),
+  };
 }
 
 // ── Question rendering ───────────────────────────────────────────
@@ -101,13 +161,13 @@ function renderQuestion() {
     return;
   }
 
-  // Progress bar
+  // Progress
   const pct = (idx / tot) * 100;
   const fill = document.getElementById("quiz-progress-fill");
   if (fill) fill.style.width = `${pct}%`;
   setText("quiz-counter", `${idx + 1} / ${tot}`);
 
-  // Streak indicator
+  // Streak
   const streakEl = document.getElementById("quiz-streak-display");
   if (streakEl) {
     streakEl.textContent =
@@ -116,52 +176,65 @@ function renderQuestion() {
         : "";
   }
 
-  // Card content
-  setText("quiz-type-badge", q.type);
+  // Type badge — FIX "Higarana" typo and use proper labels
+  const typeBadgeMap = {
+    hiragana: "Hiragana",
+    katakana: "Katakana",
+    kanji: "Kanji",
+    review: "Ôn Tập",
+    "": "Tất Cả",
+  };
+  setText("quiz-type-badge", typeBadgeMap[q.type] || q.type);
 
-  // Some character payloads may be HTML-encoded or in incorrect encoding path.
-  // If we get non-Japanese text here, fallback to a romaji->kana mapper.
-  const labelCharacter = /^[\u3040-\u30FF\u4E00-\u9FFF]+$/.test(q.character)
-    ? q.character
-    : romajiToKana(q.romaji) || q.character;
-  setText("quiz-character", labelCharacter);
+  // Character display
+  const charEl = document.getElementById("quiz-character");
+  if (charEl) {
+    charEl.textContent = q.character || "？";
+  }
 
-  // Choices
+  // Prompt text — adjust based on type
+  const promptEl = document.getElementById("quiz-prompt");
+  if (promptEl) {
+    if (q.type === "kanji") {
+      promptEl.textContent = "Cách đọc kana là gì?";
+    } else {
+      promptEl.textContent = "Romaji là gì?";
+    }
+  }
+
+  // Render choices
   const choicesEl = document.getElementById("quiz-choices");
   if (choicesEl) {
     choicesEl.innerHTML = "";
     q.choices.forEach((choice) => {
       const btn = document.createElement("button");
       btn.className = "choice-btn";
-      btn.textContent = choice.romaji;
-      btn.dataset.romaji = choice.romaji;
+      btn.textContent = choice.romaji; // "romaji" holds display value (kana or romaji)
+      btn.dataset.display = choice.romaji;
       btn.dataset.correct = choice.correct ? "1" : "0";
       btn.addEventListener("click", () => handleAnswer(choice.romaji, btn));
       choicesEl.appendChild(btn);
     });
   }
 
-  // Hide feedback
+  // Reset feedback
   const feedbackEl = document.getElementById("quiz-feedback");
   if (feedbackEl) {
     feedbackEl.className = "quiz-feedback hidden";
     feedbackEl.textContent = "";
   }
 
-  // Remove card state classes
+  // Reset card state
   const card = document.getElementById("quiz-card");
   if (card) card.classList.remove("correct", "incorrect");
 
-  // Start timer
   startQuestionTimer();
-
-  // Record question start time for response-time measurement
   quizState.startTime = Date.now();
 }
 
 // ── Answer handling ──────────────────────────────────────────────
 
-function handleAnswer(selectedRomaji, clickedBtn) {
+function handleAnswer(selectedDisplay, clickedBtn) {
   if (!quizState.startTime) return; // already answered
 
   const responseTimeMs = Date.now() - quizState.startTime;
@@ -169,46 +242,50 @@ function handleAnswer(selectedRomaji, clickedBtn) {
   stopQuestionTimer();
 
   const q = quizState.questions[quizState.current];
-  const isCorrect =
-    selectedRomaji.toLowerCase() === q.correct_display.toLowerCase();
 
-  // Update streak display
+  // ── CRITICAL FIX: Compare display values (kana for kanji, romaji for kana)
+  const isCorrect =
+    (selectedDisplay || "").trim().toLowerCase() ===
+    (q.correct_display || "").trim().toLowerCase();
+
+  console.log(
+    `[handleAnswer] type=${q.type} selected="${selectedDisplay}" correct="${q.correct_display}" → ${isCorrect}`
+  );
+
   if (isCorrect) {
     quizState.streakDisplay++;
   } else {
     quizState.streakDisplay = 0;
   }
 
-  // Disable all buttons
+  // Disable buttons, highlight correct/wrong
   document.querySelectorAll(".choice-btn").forEach((btn) => {
     btn.disabled = true;
     if (btn.dataset.correct === "1") btn.classList.add("correct-ans");
   });
   if (!isCorrect) clickedBtn.classList.add("wrong-ans");
 
-  // Card visual state
   const card = document.getElementById("quiz-card");
   if (card) card.classList.add(isCorrect ? "correct" : "incorrect");
 
-  // Feedback message
   const feedbackEl = document.getElementById("quiz-feedback");
   if (feedbackEl) {
     feedbackEl.className = `quiz-feedback ${
       isCorrect ? "correct" : "incorrect"
     }`;
     feedbackEl.textContent = isCorrect
-      ? `✓ Correct! ${q.correct_display}`
-      : `✗ It was "${q.correct_display}"`;
+      ? `✓ Đúng! ${q.correct_display}`
+      : `✗ Đáp án: "${q.correct_display}"`;
   }
 
-  // Store answer for batch submit
+  // Store answer — send the display value as choiceRomaji
+  // Backend will re-derive correct answer from the same rule
   quizState.answers.push({
     characterId: q.characterId,
-    choiceRomaji: selectedRomaji,
+    choiceRomaji: selectedDisplay,
     responseTimeMs,
   });
 
-  // Advance after a brief pause
   setTimeout(
     () => {
       quizState.current++;
@@ -218,54 +295,47 @@ function handleAnswer(selectedRomaji, clickedBtn) {
   );
 }
 
-// ── Timer ─────────────────────────────────────────────────────────
+// ── Timer ────────────────────────────────────────────────────────
 
 function startQuestionTimer() {
   stopQuestionTimer();
-
   const fill = document.getElementById("quiz-timer-fill");
-  const start = Date.now();
-
-  if (fill) fill.style.transition = "none";
-  if (fill) fill.style.width = "100%";
-
-  // Force reflow so CSS transition applies
-  if (fill) void fill.offsetWidth;
   if (fill) {
+    fill.style.transition = "none";
+    fill.style.width = "100%";
+    void fill.offsetWidth; // reflow
     fill.style.transition = `width ${QUESTION_TIMEOUT_MS}ms linear`;
     fill.style.width = "0%";
   }
 
   quizState.timerInterval = setTimeout(() => {
-    // Auto-submit as wrong with max response time if user doesn't answer
-    if (quizState.startTime) {
-      const q = quizState.questions[quizState.current];
-      if (q) {
-        quizState.answers.push({
-          characterId: q.characterId,
-          choiceRomaji: "__timeout__",
-          responseTimeMs: QUESTION_TIMEOUT_MS,
-        });
-        quizState.startTime = null;
-        quizState.streakDisplay = 0;
+    if (!quizState.startTime) return;
+    const q = quizState.questions[quizState.current];
+    if (!q) return;
 
-        // Show correct answer
-        document.querySelectorAll(".choice-btn").forEach((btn) => {
-          btn.disabled = true;
-          if (btn.dataset.correct === "1") btn.classList.add("correct-ans");
-        });
-        const feedbackEl = document.getElementById("quiz-feedback");
-        if (feedbackEl) {
-          feedbackEl.className = "quiz-feedback incorrect";
-          feedbackEl.textContent = `⏱ Time's up! Answer: "${q.romaji}"`;
-        }
+    quizState.answers.push({
+      characterId: q.characterId,
+      choiceRomaji: "__timeout__",
+      responseTimeMs: QUESTION_TIMEOUT_MS,
+    });
+    quizState.startTime = null;
+    quizState.streakDisplay = 0;
 
-        setTimeout(() => {
-          quizState.current++;
-          renderQuestion();
-        }, 1400);
-      }
+    document.querySelectorAll(".choice-btn").forEach((btn) => {
+      btn.disabled = true;
+      if (btn.dataset.correct === "1") btn.classList.add("correct-ans");
+    });
+
+    const feedbackEl = document.getElementById("quiz-feedback");
+    if (feedbackEl) {
+      feedbackEl.className = "quiz-feedback incorrect";
+      feedbackEl.textContent = `⏱ Hết giờ! Đáp án: "${q.correct_display}"`;
     }
+
+    setTimeout(() => {
+      quizState.current++;
+      renderQuestion();
+    }, 1400);
   }, QUESTION_TIMEOUT_MS);
 }
 
@@ -281,7 +351,7 @@ function stopQuestionTimer() {
   }
 }
 
-// ── Quiz finish ───────────────────────────────────────────────────
+// ── Quiz finish ──────────────────────────────────────────────────
 
 async function finishQuiz() {
   stopQuestionTimer();
@@ -297,79 +367,58 @@ async function finishQuiz() {
       answers: quizState.answers,
     });
 
-    // Save quiz session
-    await api.post("/structured-lessons/quiz/session", {
-      sessionType: "quick-quiz",
-      totalQuestions: data.results ? data.results.length : 0,
-      correctAnswers: data.results
-        ? data.results.filter((r) => r.isCorrect).length
-        : 0,
-      accuracy: data.accuracy,
-    });
+    // Save session summary
+    const correctCount = data.results
+      ? data.results.filter((r) => r.isCorrect).length
+      : 0;
+    await api
+      .post("/structured-lessons/quiz/session", {
+        sessionType: "quick-quiz",
+        totalQuestions: data.results ? data.results.length : 0,
+        correctAnswers: correctCount,
+        accuracy: data.accuracy,
+      })
+      .catch((e) => console.warn("[finishQuiz] session save failed:", e));
 
     showQuizSection("results");
     renderResults(data);
 
-    // Instant stats for quick quiz
+    // Store for stats view
     window.instantStats = {
-      source: `quick-quiz-${data.sessionId || Date.now()}`,
+      source: `quick-quiz`,
       type: "quick-quiz",
       accuracy: data.accuracy,
       totalQuestions: data.results ? data.results.length : 0,
-      correctAnswers: data.results
-        ? data.results.filter((r) => r.isCorrect).length
-        : 0,
-      wrongAnswers: data.results
-        ? data.results.filter((r) => !r.isCorrect).length
-        : 0,
+      correctAnswers: correctCount,
+      wrongAnswers: (data.results ? data.results.length : 0) - correctCount,
       results: data.results || [],
       completedAt: new Date().toISOString(),
     };
 
-    // Refresh nav score and home data
+    // Refresh user score in nav
     try {
       const { user } = await api.get("/auth/me");
       App.setAuth(App.token, user);
-      updateNavUser();
-      window.loadHomeData?.();
-
-      // If stats view is currently visible, refresh it too
-      if (
-        document.getElementById("view-stats") &&
-        !document.getElementById("view-stats").classList.contains("hidden")
-      ) {
-        window.loadStats?.();
-      }
-
-      // Update result area from latest stats (minor user feedback)
-      const miniAccuracy = document.getElementById("ms-accuracy");
-      const miniAttempts = document.getElementById("ms-attempts");
-      if (miniAccuracy && miniAttempts) {
-        miniAccuracy.textContent = `${data.accuracy}%`;
-        miniAttempts.textContent = `${data.results.length || 0}`;
-      }
+      updateNavUser?.();
     } catch (e) {
-      console.warn("Could not refresh stats after quiz:", e);
+      console.warn("[finishQuiz] nav refresh failed:", e);
     }
   } catch (err) {
-    console.error("Submit failed", err);
+    console.error("[finishQuiz] submit failed:", err);
     showQuizSection("lobby");
   }
 }
 
-// ── Results rendering ─────────────────────────────────────────────
+// ── Results rendering ────────────────────────────────────────────
 
 function renderResults({ results, accuracy, sessionScore }) {
-  // Score header
   setText("results-accuracy", `${accuracy}%`);
   setText("results-points", `+${sessionScore || 0} pts`);
 
-  // Calculate counts
   const correctCount = results ? results.filter((r) => r.isCorrect).length : 0;
   const incorrectCount = results
     ? results.filter((r) => !r.isCorrect).length
     : 0;
-  const totalCount = results ? results.length : 0;
 
   const emojiEl = document.getElementById("results-emoji");
   if (emojiEl) {
@@ -383,108 +432,51 @@ function renderResults({ results, accuracy, sessionScore }) {
         : "🌱";
   }
 
-  // Summary stats
   const summaryEl = document.getElementById("results-summary");
   if (summaryEl) {
     summaryEl.innerHTML = `
       <div class="stats-summary">
         <div class="stat-item correct">
           <div class="stat-number">${correctCount}</div>
-          <div class="stat-label">Correct</div>
+          <div class="stat-label">Đúng</div>
         </div>
         <div class="stat-item incorrect">
           <div class="stat-number">${incorrectCount}</div>
-          <div class="stat-label">Incorrect</div>
+          <div class="stat-label">Sai</div>
         </div>
         <div class="stat-item total">
           <div class="stat-number">${accuracy}%</div>
-          <div class="stat-label">Accuracy</div>
+          <div class="stat-label">Độ Chính Xác</div>
         </div>
       </div>
     `;
   }
 
-  // Per-question breakdown
   const breakdown = document.getElementById("results-breakdown");
   if (breakdown && results) {
     breakdown.innerHTML = results
-      .map(
-        (r, idx) => `
-      <div class="result-row ${r.isCorrect ? "correct" : "incorrect"}">
-        <span class="result-number">${idx + 1}.</span>
-        <span class="result-char">${_charFromId(r.characterId) || "?"}</span>
-        <span class="result-romaji">${r.correctRomaji}</span>
-        <span class="result-icon">${r.isCorrect ? "✓" : "✗"}</span>
-        <span class="result-cls ${r.difficultyClass}">${
+      .map((r, idx) => {
+        const q = quizState.questions.find(
+          (q) => q.characterId === r.characterId
+        );
+        const charDisplay = q ? q.character : "?";
+        return `
+        <div class="result-row ${r.isCorrect ? "correct" : "incorrect"}">
+          <span class="result-number">${idx + 1}.</span>
+          <span class="result-char">${charDisplay}</span>
+          <span class="result-romaji">${r.correctRomaji}</span>
+          <span class="result-icon">${r.isCorrect ? "✓" : "✗"}</span>
+          <span class="result-cls ${r.difficultyClass}">${
           r.difficultyClass
         }</span>
-      </div>
-    `
-      )
+        </div>
+      `;
+      })
       .join("");
   }
 }
 
-// Map characterId → character glyph from loaded questions
-function _charFromId(id) {
-  const q = quizState.questions.find((q) => q.characterId === id);
-  return q?.character || "";
-}
-
-function romajiToKana(romaji) {
-  const map = {
-    a: "あ",
-    i: "い",
-    u: "う",
-    e: "え",
-    o: "お",
-    ka: "か",
-    ki: "き",
-    ku: "く",
-    ke: "け",
-    ko: "こ",
-    sa: "さ",
-    shi: "し",
-    su: "す",
-    se: "せ",
-    so: "そ",
-    ta: "た",
-    chi: "ち",
-    tsu: "つ",
-    te: "て",
-    to: "と",
-    na: "な",
-    ni: "に",
-    nu: "ぬ",
-    ne: "ね",
-    no: "の",
-    ha: "は",
-    hi: "ひ",
-    fu: "ふ",
-    he: "へ",
-    ho: "ほ",
-    ma: "ま",
-    mi: "み",
-    mu: "む",
-    me: "め",
-    mo: "も",
-    ya: "や",
-    yu: "ゆ",
-    yo: "よ",
-    ra: "ら",
-    ri: "り",
-    ru: "る",
-    re: "れ",
-    ro: "ろ",
-    wa: "わ",
-    wo: "を",
-    n: "ん",
-    // Katakana not mapped, but can be extended as needed
-  };
-  return map[romaji.toLowerCase()] || null;
-}
-
-// ── Section switcher ──────────────────────────────────────────────
+// ── Section switcher ─────────────────────────────────────────────
 
 function showQuizSection(section) {
   ["lobby", "active", "results"].forEach((s) => {

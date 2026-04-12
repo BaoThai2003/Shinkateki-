@@ -1,10 +1,7 @@
-// js/learning.js — Structured Japanese learning system
+// js/learning.js — Structured Japanese learning system (FIXED)
 "use strict";
 
-// Use shared API helper from app.js (includes token, error handling)
-
 let currentLesson = null;
-let currentQuiz = null;
 let quizQuestions = [];
 let quizCurrentIndex = 0;
 let quizAnswers = [];
@@ -31,9 +28,9 @@ function _getSearchHistory() {
 }
 
 function _addSearchHistory(term) {
-  const list = _getSearchHistory();
   const trimmed = String(term || "").trim();
   if (!trimmed) return;
+  const list = _getSearchHistory();
   const updated = [trimmed, ...list.filter((x) => x !== trimmed)].slice(0, 10);
   localStorage.setItem("dictionaryHistory", JSON.stringify(updated));
   _renderSearchHistory(updated);
@@ -57,40 +54,43 @@ function _renderRecentlyViewed(items) {
   const recent =
     items || JSON.parse(localStorage.getItem("dictionaryViewed") || "[]");
   if (!recent.length) {
-    container.innerHTML = "<p>No recently viewed words yet.</p>";
+    container.innerHTML = "<p>Chưa có từ nào được xem gần đây.</p>";
     return;
   }
-
   container.innerHTML = `
-    <h4>Recently Viewed</h4>
+    <h4>Đã xem gần đây</h4>
     <ul class="recent-words">
       ${recent
         .slice(0, 10)
         .map(
-          (w) =>
-            `<li>${w.kanji || w.hiragana || w.katakana || "?"} <small>${
-              w.romaji
-            }</small> - ${w.meaning}</li>`
+          (w) => `
+        <li>
+          <strong>${w.kanji || w.hiragana || w.katakana || "?"}</strong>
+          <small>${w.romaji}</small> — ${w.meaning}
+        </li>
+      `
         )
         .join("")}
     </ul>
   `;
 }
 
-// ── Navigation ──────────────────────────────────────────────────
+// ── Navigation ────────────────────────────────────────────────────
 
 window.showLearningView = function () {
+  console.log("[showLearningView] opening learning view");
   showView("learning");
   loadChapters();
   loadProgress();
 };
 
 window.showDictionaryView = function () {
+  console.log("[showDictionaryView] opening dictionary view");
   showView("dictionary");
   loadDictionary();
 };
 
-// ── Progress Tracking ────────────────────────────────────────────
+// ── Progress ──────────────────────────────────────────────────────
 
 async function loadProgress() {
   try {
@@ -98,29 +98,20 @@ async function loadProgress() {
     if (!progressEl) return;
 
     const chapters = await api.request("GET", "/structured-lessons/chapters");
-
-    if (!Array.isArray(chapters) || chapters.length === 0) {
+    if (!Array.isArray(chapters) || !chapters.length) {
       progressEl.innerHTML = "";
       return;
     }
 
-    // Calculate progress across all lessons
-    let totalLessons = 0;
-    let completedLessons = 0;
-
+    let totalLessons = 0,
+      completedLessons = 0;
     chapters.forEach((chapter) => {
-      if (chapter.sections) {
-        chapter.sections.forEach((section) => {
-          if (section.lessons) {
-            section.lessons.forEach((lesson) => {
-              totalLessons++;
-              if (lesson.is_completed) {
-                completedLessons++;
-              }
-            });
-          }
+      (chapter.sections || []).forEach((section) => {
+        (section.lessons || []).forEach((lesson) => {
+          totalLessons++;
+          if (lesson.is_completed) completedLessons++;
         });
-      }
+      });
     });
 
     const percentage =
@@ -131,12 +122,12 @@ async function loadProgress() {
     progressEl.innerHTML = `
       <div class="progress-section">
         <div class="progress-header">
-          <h3>Your Progress</h3>
+          <h3>Tiến Độ Của Bạn</h3>
           <span class="progress-percent">${percentage}%</span>
         </div>
         <div class="progress-label">
-          <span>${completedLessons} completed</span>
-          <span>${totalLessons} total</span>
+          <span>${completedLessons} đã hoàn thành</span>
+          <span>${totalLessons} tổng cộng</span>
         </div>
         <div class="progress-bar">
           <div class="progress-fill" style="width: ${percentage}%"></div>
@@ -144,59 +135,48 @@ async function loadProgress() {
       </div>
     `;
   } catch (err) {
-    console.error("Failed to load progress:", err);
+    console.error("[loadProgress] failed:", err);
   }
 }
 
-// ── Chapters and Lessons ─────────────────────────────────────────
+// ── Chapters ──────────────────────────────────────────────────────
 
 async function loadChapters() {
+  console.log("[loadChapters] fetching chapters...");
   try {
     const chapters = await api.request("GET", "/structured-lessons/chapters");
-    console.log("LESSON DATA:", chapters);
-
     const container = document.getElementById("learning-content");
     container.innerHTML = "";
 
-    if (!Array.isArray(chapters) || chapters.length === 0) {
-      // FALLBACK: Show loading message with better UX
+    if (!Array.isArray(chapters) || !chapters.length) {
       container.innerHTML = `
         <div class="fallback-message">
-          <p>📚 No structured lessons available at the moment. Please check back soon!</p>
-          <p style="font-size: 0.9rem; color: var(--fog); margin-top: 1rem;">
-            In the meantime, you can explore the dictionary or review previous lessons.
-          </p>
+          <p>📚 Chưa có bài học nào. Vui lòng kiểm tra lại sau!</p>
         </div>
       `;
       return;
     }
 
+    console.log(`[loadChapters] rendering ${chapters.length} chapters`);
     chapters.forEach((chapter) => {
-      const chapterEl = createChapterElement(chapter);
-      container.insertAdjacentHTML("beforeend", chapterEl);
+      container.insertAdjacentHTML("beforeend", createChapterElement(chapter));
     });
   } catch (err) {
-    console.error("Failed to load chapters:", err);
+    console.error("[loadChapters] ERROR:", err);
     const container = document.getElementById("learning-content");
-    container.innerHTML = `
-      <div class="fallback-message">
-        <p>📚 Unable to load lessons. The server might be temporarily unavailable.</p>
-        <p style="font-size: 0.9rem; color: var(--fog); margin-top: 1rem;">
-          Please refresh the page or try again later.
-        </p>
-      </div>
-    `;
+    if (container) {
+      container.innerHTML = `
+        <div class="fallback-message">
+          <p>📚 Không thể tải bài học. Vui lòng thử lại.</p>
+        </div>
+      `;
+    }
   }
 }
 
 function normalizeText(text) {
-  if (typeof text !== "string") return text;
-  try {
-    // Safely normalize while preserving proper Unicode Japanese glyphs
-    return text.normalize ? text.normalize("NFC") : text;
-  } catch (_) {
-    return text;
-  }
+  if (typeof text !== "string") return text || "";
+  return text.normalize ? text.normalize("NFC") : text;
 }
 
 function createChapterElement(chapter) {
@@ -207,9 +187,7 @@ function createChapterElement(chapter) {
         <p class="chapter-description">${normalizeText(chapter.description)}</p>
       </div>
       <div class="sections-container">
-        ${chapter.sections
-          .map((section) => createSectionElement(section))
-          .join("")}
+        ${(chapter.sections || []).map((s) => createSectionElement(s)).join("")}
       </div>
     </div>
   `;
@@ -223,7 +201,7 @@ function createSectionElement(section) {
         <p class="section-description">${normalizeText(section.description)}</p>
       </div>
       <div class="lessons-grid">
-        ${section.lessons.map((lesson) => createLessonCard(lesson)).join("")}
+        ${(section.lessons || []).map((l) => createLessonCard(l)).join("")}
       </div>
     </div>
   `;
@@ -236,96 +214,111 @@ function createLessonCard(lesson) {
     ? "unlocked"
     : "locked";
   const statusText = lesson.is_completed
-    ? "✓ Completed"
+    ? "✓ Đã Hoàn Thành"
     : lesson.is_unlocked
-    ? "Available"
-    : "Locked";
+    ? "Có Thể Học"
+    : "🔒 Chưa Mở";
 
+  // FIX: Use onclick with a named global function; add console.log
   return `
-    <div class="lesson-card ${statusClass}" onclick="openLesson(${lesson.id})">
-      <div class="lesson-number">Lesson ${lesson.lesson_number}</div>
+    <div
+      class="lesson-card ${statusClass}"
+      onclick="openLesson(${lesson.id})"
+      role="button"
+      tabindex="0"
+      onkeypress="if(event.key==='Enter')openLesson(${lesson.id})"
+      style="cursor:${lesson.is_unlocked ? "pointer" : "not-allowed"}"
+    >
+      <div class="lesson-number">Bài ${lesson.lesson_number}</div>
       <h5 class="lesson-title">${normalizeText(lesson.title)}</h5>
       <div class="lesson-status">${statusText}</div>
     </div>
   `;
 }
 
-// ── Lesson View ─────────────────────────────────────────────────
+// ── Lesson View ───────────────────────────────────────────────────
 
-async function openLesson(lessonId) {
+// FIX: Make openLesson a global function (accessible from onclick)
+window.openLesson = async function openLesson(lessonId) {
+  console.log("[openLesson] Lesson clicked:", lessonId);
+
   try {
     currentLesson = await api.request("GET", `/structured-lessons/${lessonId}`);
-
-    // Allow access to lesson if it exists, regardless of unlock status
-    // (Backend will handle prerequisites)
+    console.log("[openLesson] loaded lesson:", currentLesson?.title);
 
     showView("lesson");
     renderLesson();
   } catch (err) {
-    console.error("Failed to load lesson:", err);
-    alert("Failed to load lesson. Please try again.");
+    console.error("[openLesson] ERROR:", err);
+    if (err.status === 403) {
+      alert("Bài học này chưa được mở khoá. Hãy hoàn thành các bài học trước.");
+    } else {
+      alert("Không thể tải bài học. Vui lòng thử lại.");
+    }
   }
-}
+};
 
 function renderLesson() {
-  document.getElementById(
-    "lesson-title"
-  ).textContent = `Lesson ${currentLesson.lesson_number}: ${currentLesson.title}`;
+  const titleEl = document.getElementById("lesson-title");
+  if (titleEl) {
+    titleEl.textContent = `Bài ${currentLesson.lesson_number}: ${currentLesson.title}`;
+  }
 
+  // Render markdown-ish content
   const contentEl = document.getElementById("lesson-content");
-
-  // Display lesson content with fallback
-  if (currentLesson.content && currentLesson.content.trim()) {
-    contentEl.innerHTML = currentLesson.content;
-  } else {
-    // FALLBACK: Display vocabulary list if no content
-    if (
+  if (contentEl) {
+    if (currentLesson.content && currentLesson.content.trim()) {
+      contentEl.innerHTML = parseMarkdown(currentLesson.content);
+    } else if (
       Array.isArray(currentLesson.vocabulary) &&
-      currentLesson.vocabulary.length > 0
+      currentLesson.vocabulary.length
     ) {
-      const vocabHTML = currentLesson.vocabulary
+      contentEl.innerHTML = currentLesson.vocabulary
         .map(
           (word) => `
-          <div class="vocab-item">
-            <strong>${
-              word.kanji || word.hiragana || word.katakana || "?"
-            }</strong>
-            <span class="romaji">${word.romaji}</span>
-            <span class="meaning">${word.meaning}</span>
-          </div>
-        `
+        <div class="vocab-item">
+          <strong>${
+            word.kanji || word.hiragana || word.katakana || "?"
+          }</strong>
+          <span class="romaji">${word.romaji}</span> —
+          <span class="meaning">${word.meaning}</span>
+        </div>
+      `
         )
         .join("");
-      contentEl.innerHTML = `<div class="vocabulary-section">${vocabHTML}</div>`;
     } else {
-      contentEl.innerHTML = `<p style="color: var(--fog); font-style: italic;">No content available for this lesson yet.</p>`;
+      contentEl.innerHTML = `<p style="color:var(--fog);font-style:italic">Chưa có nội dung cho bài học này.</p>`;
     }
   }
 
   const actionsEl = document.getElementById("lesson-actions");
-  actionsEl.innerHTML = "";
+  if (!actionsEl) return;
 
-  if (currentLesson.type === "reading") {
-    if (!currentLesson.is_completed) {
-      actionsEl.innerHTML = `
-        <button class="btn-primary" onclick="completeLesson()">Mark as Complete</button>
-      `;
-    } else {
-      actionsEl.innerHTML = `
-        <p class="lesson-status">✓ This reading lesson is completed.</p>
-      `;
-    }
-  } else if (currentLesson.type === "interactive") {
-    if (!currentLesson.is_completed) {
-      actionsEl.innerHTML = `
-        <button class="btn-primary" onclick="startLessonQuiz()">Start Review Quiz</button>
-      `;
-    } else {
-      actionsEl.innerHTML = `
-        <button class="btn-primary" onclick="startLessonQuiz()">Retake Quiz</button>
-      `;
-    }
+  if (!currentLesson.is_completed) {
+    actionsEl.innerHTML = `
+      <button class="btn-primary" onclick="startLessonQuiz()">Bắt Đầu Ôn Tập →</button>
+      <button class="btn-ghost" onclick="completeLesson()">Đánh Dấu Đã Đọc</button>
+    `;
+  } else {
+    actionsEl.innerHTML = `
+      <button class="btn-primary" onclick="startLessonQuiz()">Ôn Tập Lại →</button>
+      <p class="lesson-status" style="color:var(--gold)">✓ Đã Hoàn Thành</p>
+    `;
   }
+}
+
+/** Very minimal markdown-to-HTML converter for lesson content */
+function parseMarkdown(md) {
+  return md
+    .replace(/^#{3} (.+)$/gm, "<h3>$1</h3>")
+    .replace(/^#{2} (.+)$/gm, "<h2>$1</h2>")
+    .replace(/^#{1} (.+)$/gm, "<h1>$1</h1>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/\n\n/g, "</p><p>")
+    .replace(/\n/g, "<br>")
+    .replace(/^/, "<p>")
+    .replace(/$/, "</p>");
 }
 
 async function completeLesson() {
@@ -336,17 +329,18 @@ async function completeLesson() {
     );
     currentLesson.is_completed = true;
     renderLesson();
-    // Refresh chapters to show updated progress
     loadChapters();
+    console.log(`[completeLesson] lesson ${currentLesson.id} marked complete`);
   } catch (err) {
-    console.error("Failed to complete lesson:", err);
-    alert("Failed to complete lesson. Please try again.");
+    console.error("[completeLesson] ERROR:", err);
+    alert("Không thể đánh dấu hoàn thành. Vui lòng thử lại.");
   }
 }
 
-// ── Lesson Quiz ─────────────────────────────────────────────────
+// ── Lesson Quiz ───────────────────────────────────────────────────
 
 async function startLessonQuiz() {
+  console.log("[startLessonQuiz] loading quiz for lesson", currentLesson?.id);
   try {
     quizQuestions = await api.request(
       "GET",
@@ -356,11 +350,16 @@ async function startLessonQuiz() {
     quizAnswers = [];
     window.lessonQuizStartTime = Date.now();
 
+    if (!quizQuestions.length) {
+      alert("Bài học này chưa có câu hỏi ôn tập.");
+      return;
+    }
+
     showView("lesson-quiz");
     renderQuizQuestion();
   } catch (err) {
-    console.error("Failed to load quiz:", err);
-    alert("Failed to load quiz questions. Please try again.");
+    console.error("[startLessonQuiz] ERROR:", err);
+    alert("Không thể tải câu hỏi. Vui lòng thử lại.");
   }
 }
 
@@ -387,35 +386,31 @@ function renderQuizQuestion() {
       <div class="question-options">
         ${question.options
           .map(
-            (option, index) =>
-              `<label class="option">
+            (option) => `
+          <label class="option">
             <input type="radio" name="quiz-option" value="${option}" />
             ${option}
-          </label>`
+          </label>
+        `
           )
           .join("")}
       </div>
     </div>
   `;
 
-  const actionsEl = document.getElementById("lesson-quiz-actions");
-  actionsEl.innerHTML = `
-    <button class="btn-primary" onclick="submitQuizAnswer()" id="btn-submit-answer">
-      Submit Answer
-    </button>
+  document.getElementById("lesson-quiz-actions").innerHTML = `
+    <button class="btn-primary" onclick="submitLessonQuizAnswer()">Xác Nhận</button>
   `;
 }
 
-async function submitQuizAnswer() {
-  const selectedOption = document.querySelector(
-    'input[name="quiz-option"]:checked'
-  );
-  if (!selectedOption) {
-    alert("Please select an answer.");
+async function submitLessonQuizAnswer() {
+  const selected = document.querySelector('input[name="quiz-option"]:checked');
+  if (!selected) {
+    alert("Vui lòng chọn một đáp án.");
     return;
   }
 
-  const answer = selectedOption.value;
+  const answer = selected.value;
   quizAnswers.push({
     questionId: quizQuestions[quizCurrentIndex].id,
     selectedAnswer: answer,
@@ -429,45 +424,38 @@ async function submitQuizAnswer() {
         lessonId: currentLesson.id,
         questionId: quizQuestions[quizCurrentIndex].id,
         selectedAnswer: answer,
-        responseTimeMs: 1000, // TODO: track actual response time
+        responseTimeMs: 1000,
       }
     );
 
-    // Show feedback
-    const contentEl = document.getElementById("lesson-quiz-content");
     const isCorrect = result.is_correct;
-    const question = quizQuestions[quizCurrentIndex];
+    const explanation = quizQuestions[quizCurrentIndex].explanation || "";
 
-    contentEl.innerHTML += `
+    document.getElementById("lesson-quiz-content").innerHTML += `
       <div class="quiz-feedback ${isCorrect ? "correct" : "incorrect"}">
-        <p>${isCorrect ? "Correct!" : "Incorrect."}</p>
-        ${question.explanation ? `<p>${question.explanation}</p>` : ""}
+        <p>${isCorrect ? "✓ Đúng!" : "✗ Sai."}</p>
+        ${explanation ? `<p>${explanation}</p>` : ""}
       </div>
     `;
 
-    // Update actions
     const actionsEl = document.getElementById("lesson-quiz-actions");
     if (quizCurrentIndex < quizQuestions.length - 1) {
-      actionsEl.innerHTML = `
-        <button class="btn-primary" onclick="nextQuizQuestion()">Next Question</button>
-      `;
+      actionsEl.innerHTML = `<button class="btn-primary" onclick="nextLessonQuizQuestion()">Câu Tiếp →</button>`;
     } else {
-      actionsEl.innerHTML = `
-        <button class="btn-primary" onclick="finishQuiz()">Finish Quiz</button>
-      `;
+      actionsEl.innerHTML = `<button class="btn-primary" onclick="finishLessonQuiz()">Hoàn Thành →</button>`;
     }
   } catch (err) {
-    console.error("Failed to submit answer:", err);
-    alert("Failed to submit answer. Please try again.");
+    console.error("[submitLessonQuizAnswer] ERROR:", err);
+    alert("Không thể gửi đáp án. Vui lòng thử lại.");
   }
 }
 
-function nextQuizQuestion() {
+function nextLessonQuizQuestion() {
   quizCurrentIndex++;
   renderQuizQuestion();
 }
 
-async function finishQuiz() {
+async function finishLessonQuiz() {
   try {
     const sinceParam = window.lessonQuizStartTime
       ? `?since=${window.lessonQuizStartTime}`
@@ -478,103 +466,84 @@ async function finishQuiz() {
       `/structured-lessons/${currentLesson.id}/quiz/results${sinceParam}`
     );
 
-    // Save quiz session
-    await api.request("POST", "/structured-lessons/quiz/session", {
-      sessionType: "lesson-review",
-      lessonId: currentLesson.id,
-      totalQuestions: results.total_attempts,
-      correctAnswers: results.correct_answers,
-      accuracy: results.accuracy,
-    });
+    await api
+      .request("POST", "/structured-lessons/quiz/session", {
+        sessionType: "lesson-review",
+        lessonId: currentLesson.id,
+        totalQuestions: results.total_attempts,
+        correctAnswers: results.correct_answers,
+        accuracy: results.accuracy,
+      })
+      .catch((e) => console.warn("[finishLessonQuiz] session save:", e));
 
-    // Track instant lesson quiz stats for dashboard/quick look
     window.instantStats = {
       source: `lesson-${currentLesson.id}`,
       type: "lesson-review",
       accuracy: results.accuracy,
       totalQuestions: results.total_questions,
       correctAnswers: results.correct_answers,
-      wrongAnswers: results.total_attempts - results.correct_answers,
-      attempts: results.attempts || [],
+      wrongAnswers:
+        (results.total_attempts || 0) - (results.correct_answers || 0),
       completedAt: new Date().toISOString(),
     };
 
-    // Check if passed (75% accuracy)
     const passed = results.accuracy >= 75;
-    if (passed) {
-      // Mark lesson as completed if not already
-      if (!currentLesson.is_completed) {
-        await api.request(
-          "POST",
-          `/structured-lessons/${currentLesson.id}/complete`
-        );
-        currentLesson.is_completed = true;
-      }
+    if (passed && !currentLesson.is_completed) {
+      await api
+        .request("POST", `/structured-lessons/${currentLesson.id}/complete`)
+        .catch((e) => console.warn("[finishLessonQuiz] complete lesson:", e));
+      currentLesson.is_completed = true;
     }
 
-    // Show immediate stats
-    showView("lesson-quiz");
     const contentEl = document.getElementById("lesson-quiz-content");
     const actionsEl = document.getElementById("lesson-quiz-actions");
 
     contentEl.innerHTML = `
-      <div class="quiz-results">
-        <h3>${passed ? "Congratulations!" : "Keep practicing!"}</h3>
-        <div class="results-stats">
-          <div class="stat-item">
-            <span class="stat-label">Accuracy:</span>
-            <span class="stat-value">${results.accuracy}%</span>
+      <div class="quiz-results" style="text-align:center;padding:2rem">
+        <h3 style="color:var(--rice);margin-bottom:1rem">
+          ${passed ? "🎉 Chúc Mừng!" : "💪 Cần Luyện Thêm!"}
+        </h3>
+        <div class="stats-summary">
+          <div class="stat-item ${passed ? "correct" : "incorrect"}">
+            <div class="stat-number">${results.accuracy}%</div>
+            <div class="stat-label">Độ Chính Xác</div>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">Correct:</span>
-            <span class="stat-value">${results.correct_answers}/${
-      results.total_attempts
-    }</span>
+          <div class="stat-item correct">
+            <div class="stat-number">${results.correct_answers}</div>
+            <div class="stat-label">Đúng</div>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">Incorrect:</span>
-            <span class="stat-value">${
-              results.total_attempts - results.correct_answers
-            }/${results.total_attempts}</span>
+          <div class="stat-item incorrect">
+            <div class="stat-number">${
+              (results.total_attempts || 0) - (results.correct_answers || 0)
+            }</div>
+            <div class="stat-label">Sai</div>
           </div>
         </div>
-        ${
-          results.attempts &&
-          results.attempts.filter((a) => !a.is_correct).length > 0
-            ? `
-          <div class="incorrect-list">
-            <h4>Questions to review:</h4>
-            <ul>
-              ${results.attempts
-                .filter((a) => !a.is_correct)
-                .slice(0, 5)
-                .map((a) => `<li>${a.question_id || "Question"}</li>`)
-                .join("")}
-            </ul>
-          </div>
-        `
-            : ""
-        }
       </div>
     `;
 
     actionsEl.innerHTML = `
-      <button class="btn-primary" onclick="showView('learning'); loadChapters();">Back to Lessons</button>
-      <button class="btn-ghost" onclick="showView('stats'); window.loadStats?.();">View Full Stats</button>
+      <button class="btn-primary" onclick="showView('learning'); loadChapters();">
+        ← Quay Lại Bài Học
+      </button>
+      <button class="btn-ghost" onclick="showView('stats'); window.loadStats?.();">
+        Xem Thống Kê
+      </button>
     `;
 
-    // Refresh chapters to show updated progress
     loadChapters();
   } catch (err) {
-    console.error("Failed to get quiz results:", err);
+    console.error("[finishLessonQuiz] ERROR:", err);
     showView("learning");
   }
 }
 
-// ── Dictionary ──────────────────────────────────────────────────
+// ── Dictionary ────────────────────────────────────────────────────
 
 async function loadDictionary(searchTerm = "") {
   dictionaryQuery = String(searchTerm || "").trim();
+  console.log(`[loadDictionary] search="${dictionaryQuery}"`);
+
   const container = document.getElementById("dictionary-content");
   const suggestions = document.getElementById("dictionary-suggestions");
   if (suggestions) {
@@ -585,6 +554,7 @@ async function loadDictionary(searchTerm = "") {
   }
 
   try {
+    // FIX: Pass search param correctly
     const params = dictionaryQuery
       ? `?search=${encodeURIComponent(dictionaryQuery)}`
       : "";
@@ -592,40 +562,58 @@ async function loadDictionary(searchTerm = "") {
 
     container.innerHTML = "";
 
-    if (!Array.isArray(vocabulary) || vocabulary.length === 0) {
-      container.innerHTML = "<p>No vocabulary found.</p>";
+    if (!Array.isArray(vocabulary) || !vocabulary.length) {
+      container.innerHTML = `<p style="color:var(--fog);text-align:center;padding:2rem">
+        ${
+          dictionaryQuery
+            ? `Không tìm thấy từ nào cho "${dictionaryQuery}"`
+            : "Không có từ vựng nào."
+        }
+      </p>`;
       return;
     }
 
+    console.log(`[loadDictionary] rendering ${vocabulary.length} words`);
     vocabulary.forEach((word) => {
-      const wordEl = createVocabularyElement(word);
-      container.appendChild(wordEl);
+      container.appendChild(createVocabularyElement(word));
     });
+
     _renderRecentlyViewed();
-    await loadDictionarySuggestions(dictionaryQuery);
-  } catch (err) {
-    console.error("Failed to load dictionary:", err);
-    if (err.status === 401 || err.status === 403) {
-      container.innerHTML =
-        "<p>Please log in to view the dictionary, then reload the page.</p>";
-    } else {
-      container.innerHTML =
-        "<p>Error loading dictionary. Please try again.</p>";
+    if (dictionaryQuery.length >= 2) {
+      loadDictionarySuggestions(dictionaryQuery);
     }
+  } catch (err) {
+    console.error("[loadDictionary] ERROR:", err);
+    container.innerHTML =
+      err.status === 401
+        ? "<p>Vui lòng đăng nhập để xem từ điển.</p>"
+        : "<p>Lỗi tải từ điển. Vui lòng thử lại.</p>";
   }
 }
 
+/**
+ * FIX: Expandable vocabulary card with toggle
+ * Shows basic info by default; expands to show full detail
+ */
 function createVocabularyElement(word) {
   const query = dictionaryQuery || "";
-  const highlightedKanji = _highlight(word.kanji || word.hiragana || "", query);
-  const highlightedRomaji = _highlight(word.romaji || "", query);
-  const highlightedMeaning = _highlight(word.meaning || "", query);
-  const highlightedExample = _highlight(word.example_sentence || "", query);
+
+  // Primary display form
+  const japDisplay = word.kanji || word.hiragana || word.katakana || "?";
+  const meaning = word.meaning || "";
+  const romaji = word.romaji || "";
+
+  const highlightedDisplay = _highlight(japDisplay, query);
+  const highlightedMeaning = _highlight(meaning, query);
+  const highlightedRomaji = _highlight(romaji, query);
+
+  const uniqueId = `vocab-card-${word.id}`;
 
   const wordDiv = document.createElement("div");
   wordDiv.className = "vocabulary-entry";
-
   wordDiv.dataset.wordId = word.id;
+
+  // Track viewed
   wordDiv.addEventListener("click", () => {
     const viewed = JSON.parse(localStorage.getItem("dictionaryViewed") || "[]");
     const existing = viewed.filter((x) => x.id !== word.id);
@@ -635,8 +623,8 @@ function createVocabularyElement(word) {
         kanji: word.kanji,
         hiragana: word.hiragana,
         katakana: word.katakana,
-        romaji: word.romaji,
-        meaning: word.meaning,
+        romaji,
+        meaning,
       },
       ...existing,
     ].slice(0, 10);
@@ -646,15 +634,8 @@ function createVocabularyElement(word) {
 
   wordDiv.innerHTML = `
     <div class="vocab-header">
-      <div class="vocab-japanese">
-        ${normalizeText(highlightedKanji)}
-        ${
-          word.katakana && word.katakana !== word.hiragana
-            ? `(${normalizeText(word.katakana)})`
-            : ""
-        }
-      </div>
-      <div class="vocab-romaji">${normalizeText(word.romaji)}</div>
+      <div class="vocab-japanese">${normalizeText(highlightedDisplay)}</div>
+      <div class="vocab-romaji">${normalizeText(highlightedRomaji)}</div>
     </div>
     <div class="vocab-meaning">${normalizeText(highlightedMeaning)}</div>
     ${
@@ -662,46 +643,63 @@ function createVocabularyElement(word) {
         ? `<div class="vocab-pos">${normalizeText(word.part_of_speech)}</div>`
         : ""
     }
-    ${
-      word.example_sentence
-        ? `<div class="vocab-example">"${normalizeText(
-            highlightedExample
-          )}"</div>`
-        : ""
-    }
-    <div class="vocab-actions">
-      <button class="btn-toggle" onclick="toggleCard(${
-        word.id
-      })">↓ Show More</button>
-    </div>
-    <div class="vocab-expanded" id="expanded-${word.id}" style="display: none;">
-      <div class="vocab-kana">${normalizeText(
-        word.hiragana || word.katakana || ""
-      )}</div>
-      <div class="vocab-romaji">${normalizeText(word.romaji)}</div>
-      <div class="vocab-example">${normalizeText(
-        word.example_sentence || ""
-      )}</div>
-      <div class="vocab-detailed">${normalizeText(
-        word.detailed_explanation || ""
-      )}</div>
+    <button
+      class="btn-toggle"
+      onclick="toggleVocabCard('${uniqueId}', this)"
+      style="
+        background:none;border:1px solid var(--ink-4);color:var(--fog);
+        padding:.3rem .75rem;border-radius:var(--r);cursor:pointer;
+        font-size:.8rem;margin-top:.5rem;transition:color .2s
+      "
+    >↓ Chi Tiết</button>
+    <div id="${uniqueId}" class="vocab-expanded" style="display:none;margin-top:.75rem;border-top:1px solid var(--ink-4);padding-top:.75rem">
+      ${
+        word.hiragana && word.hiragana !== japDisplay
+          ? `<div style="color:var(--fog);font-size:.9rem">Hiragana: <strong>${normalizeText(
+              word.hiragana
+            )}</strong></div>`
+          : ""
+      }
+      ${
+        word.katakana && word.katakana !== japDisplay
+          ? `<div style="color:var(--fog);font-size:.9rem">Katakana: <strong>${normalizeText(
+              word.katakana
+            )}</strong></div>`
+          : ""
+      }
+      ${
+        romaji
+          ? `<div style="color:var(--fog);font-size:.9rem">Romaji: <strong>${romaji}</strong></div>`
+          : ""
+      }
+      ${
+        word.example_sentence
+          ? `<div class="vocab-example" style="margin-top:.5rem">"${normalizeText(
+              word.example_sentence
+            )}"</div>`
+          : ""
+      }
+      ${
+        word.lesson_number
+          ? `<div style="color:var(--fog);font-size:.75rem;margin-top:.4rem;font-family:var(--font-mono)">Bài ${word.lesson_number}</div>`
+          : ""
+      }
     </div>
   `;
 
   return wordDiv;
 }
 
-function toggleCard(id) {
-  const expanded = document.getElementById(`expanded-${id}`);
-  const btn = event.target;
-  if (expanded.style.display === "none") {
-    expanded.style.display = "block";
-    btn.textContent = "↑ Show Less";
-  } else {
-    expanded.style.display = "none";
-    btn.textContent = "↓ Show More";
-  }
-}
+/**
+ * FIX: Toggle expand/collapse for vocabulary card
+ */
+window.toggleVocabCard = function toggleVocabCard(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isExpanded = el.style.display !== "none";
+  el.style.display = isExpanded ? "none" : "block";
+  btn.textContent = isExpanded ? "↓ Chi Tiết" : "↑ Thu Gọn";
+};
 
 async function loadDictionarySuggestions(searchTerm = "") {
   const suggestions = document.getElementById("dictionary-suggestions");
@@ -709,7 +707,6 @@ async function loadDictionarySuggestions(searchTerm = "") {
   const q = String(searchTerm || "").trim();
   if (!q || q.length < 2) {
     suggestions.classList.add("hidden");
-    suggestions.innerHTML = "";
     return;
   }
 
@@ -718,33 +715,33 @@ async function loadDictionarySuggestions(searchTerm = "") {
       "GET",
       `/dictionary/search?q=${encodeURIComponent(q)}`
     );
-    if (!Array.isArray(data) || data.length === 0) {
-      suggestions.innerHTML = "<li>No suggestions found</li>";
+    if (!Array.isArray(data) || !data.length) {
+      suggestions.innerHTML = "<li>Không tìm thấy gợi ý nào</li>";
       suggestions.classList.remove("hidden");
       return;
     }
 
     suggestions.innerHTML = data
       .slice(0, 10)
-      .map(
-        (w) =>
-          `<li data-term="${w.romaji || w.kanji || w.hiragana || w.katakana}">${
-            w.kanji || w.hiragana || w.katakana
-          } (${w.romaji}) — ${w.meaning}</li>`
-      )
+      .map((w) => {
+        const display = w.kanji || w.hiragana || w.katakana || w.romaji;
+        const meaning = w.meaning || "";
+        return `<li data-term="${w.romaji || display}">${display} (${
+          w.romaji
+        }) — ${meaning}</li>`;
+      })
       .join("");
 
     suggestions.classList.remove("hidden");
   } catch (err) {
-    console.error("Failed to load dictionary suggestions", err);
+    console.error("[loadDictionarySuggestions] ERROR:", err);
     suggestions.classList.add("hidden");
-    suggestions.innerHTML = "";
   }
 }
-// ── Event Listeners ─────────────────────────────────────────────
+
+// ── Event Listeners ───────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Navigation buttons
   document
     .getElementById("btn-learning-japanese")
     ?.addEventListener("click", showLearningView);
@@ -752,7 +749,6 @@ document.addEventListener("DOMContentLoaded", () => {
     .getElementById("btn-dictionary")
     ?.addEventListener("click", showDictionaryView);
 
-  // Back buttons
   document
     .getElementById("btn-back-from-lesson")
     ?.addEventListener("click", () => {
@@ -767,20 +763,50 @@ document.addEventListener("DOMContentLoaded", () => {
       renderLesson();
     });
 
-  // Dictionary search
-  const debouncedLookup = debounce((value) => {
+  // Dictionary search with debounce
+  const debouncedSearch = debounce((value) => {
     dictionaryQuery = value.trim();
-    _addSearchHistory(value);
+    if (dictionaryQuery) _addSearchHistory(dictionaryQuery);
     loadDictionary(value);
-    loadDictionarySuggestions(value);
   }, DICTIONARY_DEBOUNCE_TIME);
 
   document
     .getElementById("dictionary-search")
     ?.addEventListener("input", (e) => {
-      debouncedLookup(e.target.value);
+      debouncedSearch(e.target.value);
     });
 
+  // Suggestion click
+  document
+    .getElementById("dictionary-suggestions")
+    ?.addEventListener("click", (e) => {
+      const item = e.target.closest("li[data-term]");
+      if (!item) return;
+      const term = item.dataset.term;
+      const input = document.getElementById("dictionary-search");
+      if (input) input.value = term;
+      dictionaryQuery = term;
+      _addSearchHistory(term);
+      loadDictionary(term);
+      document
+        .getElementById("dictionary-suggestions")
+        ?.classList.add("hidden");
+    });
+
+  // History link click
+  document
+    .getElementById("dictionary-recent")
+    ?.addEventListener("click", (e) => {
+      const link = e.target.closest("a[data-term]");
+      if (!link) return;
+      e.preventDefault();
+      const term = link.dataset.term;
+      const input = document.getElementById("dictionary-search");
+      if (input) input.value = term;
+      loadDictionary(term);
+    });
+
+  // Add vocabulary
   document
     .getElementById("btn-add-vocab")
     ?.addEventListener("click", async (e) => {
@@ -788,44 +814,31 @@ document.addEventListener("DOMContentLoaded", () => {
       await addVocabularyWord();
     });
 
-  document
-    .getElementById("dictionary-suggestions")
-    ?.addEventListener("click", (e) => {
-      const item = e.target.closest("li[data-term]");
-      if (item) {
-        const term = item.dataset.term;
-        const input = document.getElementById("dictionary-search");
-        if (input) input.value = term;
-        dictionaryQuery = term;
-        _addSearchHistory(term);
-        loadDictionary(term);
-        loadDictionarySuggestions(term);
-      }
-    });
-
-  // Show previous history at startup
   _renderSearchHistory();
 });
 
 async function addVocabularyWord() {
-  const lessonId = Number(document.getElementById("add-lesson-id").value);
-  const romaji = document.getElementById("add-romaji").value.trim();
-  const hiragana = document.getElementById("add-hiragana").value.trim();
-  const katakana = document.getElementById("add-katakana").value.trim();
-  const kanji = document.getElementById("add-kanji").value.trim();
-  const meaning = document.getElementById("add-meaning").value.trim();
-  const partOfSpeech = document.getElementById("add-pos").value.trim();
+  const lessonId = Number(document.getElementById("add-lesson-id")?.value);
+  const romaji = document.getElementById("add-romaji")?.value.trim();
+  const hiragana = document.getElementById("add-hiragana")?.value.trim();
+  const katakana = document.getElementById("add-katakana")?.value.trim();
+  const kanji = document.getElementById("add-kanji")?.value.trim();
+  const meaning = document.getElementById("add-meaning")?.value.trim();
+  const partOfSpeech = document.getElementById("add-pos")?.value.trim();
   const statusEl = document.getElementById("add-vocab-status");
 
+  console.log("[addVocabularyWord]", { lessonId, romaji, meaning });
+
   if (!lessonId || !romaji || !meaning) {
-    statusEl.textContent =
-      "Please provide Lesson ID, Romaji, and English meaning.";
-    statusEl.classList.remove("hidden");
+    if (statusEl) {
+      statusEl.textContent = "Vui lòng nhập ID Bài Học, Romaji và Nghĩa.";
+      statusEl.classList.remove("hidden");
+    }
     return;
   }
 
   try {
-    const body = {
+    await api.post("/dictionary", {
       lesson_id: lessonId,
       romaji,
       hiragana: hiragana || null,
@@ -834,30 +847,35 @@ async function addVocabularyWord() {
       english_meaning: meaning,
       vietnamese_meaning: meaning,
       part_of_speech: partOfSpeech || null,
-      example_sentence_en: `Practice: ${romaji}`,
-      example_sentence_vi: `Practice: ${romaji}`,
-    };
+    });
 
-    const resp = await api.post("/dictionary", body);
-    statusEl.textContent = "Vocabulary added successfully.";
-    statusEl.classList.remove("hidden");
-    statusEl.style.color = "#9de0b8";
+    if (statusEl) {
+      statusEl.textContent = "✓ Thêm từ vựng thành công!";
+      statusEl.style.color = "#9de0b8";
+      statusEl.classList.remove("hidden");
+    }
 
-    // Clear form and reload dictionary
-    document.getElementById("add-lesson-id").value = "";
-    document.getElementById("add-romaji").value = "";
-    document.getElementById("add-hiragana").value = "";
-    document.getElementById("add-katakana").value = "";
-    document.getElementById("add-kanji").value = "";
-    document.getElementById("add-meaning").value = "";
-    document.getElementById("add-pos").value = "";
+    // Clear form
+    [
+      "add-lesson-id",
+      "add-romaji",
+      "add-hiragana",
+      "add-katakana",
+      "add-kanji",
+      "add-meaning",
+      "add-pos",
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
 
     loadDictionary();
   } catch (err) {
-    console.error("Failed to add vocabulary:", err);
-    statusEl.textContent =
-      err.data?.error || "Could not add vocabulary. Check fields and retry.";
-    statusEl.classList.remove("hidden");
-    statusEl.style.color = "#ff8f8f";
+    console.error("[addVocabularyWord] ERROR:", err);
+    if (statusEl) {
+      statusEl.textContent = err.data?.error || "Không thể thêm từ vựng.";
+      statusEl.style.color = "#ff8f8f";
+      statusEl.classList.remove("hidden");
+    }
   }
 }

@@ -1841,6 +1841,117 @@ INSERT INTO examples (vocabulary_id, jp_sentence_hiragana, jp_sentence_kanji, ro
     'で sau phương tiện di chuyển = "bằng [phương tiện]". に chỉ điểm đến.',
     'で after transport = "by [vehicle]". に marks the destination.', 30);
 
+
+-- ===========================================================================
+-- FIX: Populate reading_kana for all 100 kanji characters
+-- Rule enforced: kanji answers ALWAYS use reading_kana (never romaji)
+-- ===========================================================================
+
+UPDATE characters SET reading_kana = 'いち'       WHERE kana = '一' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'に'         WHERE kana = '二' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'さん'       WHERE kana = '三' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'し'         WHERE kana = '四' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ご'         WHERE kana = '五' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ろく'       WHERE kana = '六' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'しち'       WHERE kana = '七' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'はち'       WHERE kana = '八' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'きゅう'     WHERE kana = '九' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'じゅう'     WHERE kana = '十' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ひゃく'     WHERE kana = '百' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'せん'       WHERE kana = '千' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'まん'       WHERE kana = '万' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'にち'       WHERE kana = '日' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'つき'       WHERE kana = '月' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'とし'       WHERE kana = '年' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'じ'         WHERE kana = '時' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'あいだ'     WHERE kana = '間' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'いま'       WHERE kana = '今' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'まえ'       WHERE kana = '前' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'あと'       WHERE kana = '後' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ひと'       WHERE kana = '人' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'こ'         WHERE kana = '子' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'おんな'     WHERE kana = '女' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'おとこ'     WHERE kana = '男' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ちち'       WHERE kana = '父' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'はは'       WHERE kana = '母' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'とも'       WHERE kana = '友' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'さき'       WHERE kana = '先' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'いきる'     WHERE kana = '生' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'くち'       WHERE kana = '口' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'め'         WHERE kana = '目' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'みみ'       WHERE kana = '耳' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'て'         WHERE kana = '手' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'あし'       WHERE kana = '足' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'やま'       WHERE kana = '山' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'かわ'       WHERE kana = '川' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'き'         WHERE kana = '木' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'はやし'     WHERE kana = '林' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'もり'       WHERE kana = '森' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ひ'         WHERE kana = '火' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'みず'       WHERE kana = '水' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'つち'       WHERE kana = '土' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'きん'       WHERE kana = '金' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'そら'       WHERE kana = '空' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'あめ'       WHERE kana = '雨' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'はな'       WHERE kana = '花' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'いし'       WHERE kana = '石' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'き'         WHERE kana = '気' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'うえ'       WHERE kana = '上' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'した'       WHERE kana = '下' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'なか'       WHERE kana = '中' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'みぎ'       WHERE kana = '右' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ひだり'     WHERE kana = '左' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ひがし'     WHERE kana = '東' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'にし'       WHERE kana = '西' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'みなみ'     WHERE kana = '南' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'きた'       WHERE kana = '北' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'そと'       WHERE kana = '外' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'うち'       WHERE kana = '内' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'くるま'     WHERE kana = '車' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'でん'       WHERE kana = '電' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ほん'       WHERE kana = '本' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'もん'       WHERE kana = '門' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'くに'       WHERE kana = '国' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ご'         WHERE kana = '語' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'じ'         WHERE kana = '字' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'な'         WHERE kana = '名' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'たべる'     WHERE kana = '食' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'のむ'       WHERE kana = '飲' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'まなぶ'     WHERE kana = '学' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'こう'       WHERE kana = '校' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'よむ'       WHERE kana = '読' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'かく'       WHERE kana = '書' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'きく'       WHERE kana = '聞' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'はなす'     WHERE kana = '話' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'みる'       WHERE kana = '見' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'いう'       WHERE kana = '言' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'いく'       WHERE kana = '行' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'くる'       WHERE kana = '来' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'でる'       WHERE kana = '出' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'はいる'     WHERE kana = '入' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'かう'       WHERE kana = '買' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'かえる'     WHERE kana = '帰' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'おきる'     WHERE kana = '起' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'たつ'       WHERE kana = '立' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'まつ'       WHERE kana = '待' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'つかう'     WHERE kana = '使' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'おおきい'   WHERE kana = '大' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ちいさい'   WHERE kana = '小' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'たかい'     WHERE kana = '高' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ながい'     WHERE kana = '長' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'あたらしい' WHERE kana = '新' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'ふるい'     WHERE kana = '古' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'しろい'     WHERE kana = '白' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'あかい'     WHERE kana = '赤' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'あおい'     WHERE kana = '青' AND type = 'kanji';
+UPDATE characters SET reading_kana = 'くろい'     WHERE kana = '黒' AND type = 'kanji';
+
+-- Fallback: for any kanji still missing reading_kana, copy from romaji
+UPDATE characters
+SET reading_kana = romaji
+WHERE type = 'kanji'
+  AND (reading_kana IS NULL OR reading_kana = '');
+
 -- ===========================================================================
 -- FUNCTIONS & TRIGGERS
 -- ===========================================================================
