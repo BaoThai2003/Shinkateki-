@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -139,7 +139,7 @@
           <button class="nav-btn" data-view="quiz">Kiểm Tra</button>
           <button class="nav-btn" data-view="stats">Thống Kê</button>
           <button class="nav-btn" data-view="profile">Hồ Sơ</button>
-          <button class="nav-btn" data-view="lessons">Bài Học</button>
+          <button class="nav-btn" data-view="learning">Bài Học</button>
         </div>
         <div class="nav-user">
           <span class="nav-score" id="nav-score">0 pts</span>
@@ -210,10 +210,10 @@
 
           <div class="home-card card-lessons">
             <div class="card-icon">文</div>
-            <h3>Bài Học Công Khai</h3>
-            <div id="public-lessons-list" class="rec-list">
-              Chưa có bài học công khai nào.
-            </div>
+            <h3>Các Bài Học</h3>
+            <p>
+              Truy cập tất cả bài học đã xây dựng sẵn trong phần Học Tiếng Nhật.
+            </p>
           </div>
 
           <div class="home-card card-learning">
@@ -340,100 +340,6 @@
             <h3 class="stats-section-title">Tốc Độ Học Tập</h3>
             <div class="velocity-card" id="velocity-card"></div>
           </div>
-        </div>
-      </div>
-
-      <!-- ── LESSONS VIEW ───────────────────────────────────────────── -->
-      <div id="view-lessons" class="view hidden">
-        <h2 class="section-title">Bài Học Của Tôi</h2>
-        <div class="lesson-grid" id="lesson-grid"></div>
-
-        <div class="lesson-card">
-          <h3>Tạo Bài Học Mới</h3>
-          <div class="input-group">
-            <label>Tiêu Đề Bài Học</label>
-            <input
-              type="text"
-              id="lesson-title"
-              placeholder="ví dụ: Cơ Bản Hiragana"
-            />
-          </div>
-          <div class="input-group">
-            <label>Nội Dung Bài Học</label>
-            <div class="formatting-toolbar">
-              <button
-                type="button"
-                class="format-btn"
-                title="In Đậm"
-                onclick="applyTextFormat('bold')"
-              >
-                <strong>B</strong>
-              </button>
-              <button
-                type="button"
-                class="format-btn"
-                title="In Nghiêng"
-                onclick="applyTextFormat('italic')"
-              >
-                <em>I</em>
-              </button>
-              <button
-                type="button"
-                class="format-btn"
-                title="Gạch Dưới"
-                onclick="applyTextFormat('underline')"
-              >
-                <u>U</u>
-              </button>
-              <div class="format-divider"></div>
-              <button
-                type="button"
-                class="format-btn"
-                title="Chữ Lớn"
-                onclick="applyTextFormat('large')"
-              >
-                L
-              </button>
-              <button
-                type="button"
-                class="format-btn"
-                title="Chữ Trung Bình"
-                onclick="applyTextFormat('medium')"
-              >
-                M
-              </button>
-              <button
-                type="button"
-                class="format-btn"
-                title="Chữ Nhỏ"
-                onclick="applyTextFormat('small')"
-              >
-                S
-              </button>
-            </div>
-            <textarea
-              id="lesson-content"
-              rows="6"
-              placeholder="Mô tả bài học này... (hỗ trợ định dạng)"
-            ></textarea>
-          </div>
-
-          <h4>Câu Hỏi Kiểm Tra (1-25)</h4>
-          <div id="question-form-list"></div>
-          <button class="btn-ghost" id="btn-add-question" type="button">
-            + Thêm Câu Hỏi
-          </button>
-
-          <div class="input-group">
-            <label>Quyền Riêng Tư</label>
-            <select id="lesson-visibility">
-              <option value="private" selected>Riêng Tư</option>
-              <option value="public">Công Khai</option>
-            </select>
-          </div>
-
-          <div class="form-error hidden" id="lesson-error"></div>
-          <button class="btn-primary" id="btn-save-lesson">Lưu Bài Học</button>
         </div>
       </div>
 

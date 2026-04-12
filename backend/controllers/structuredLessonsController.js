@@ -13,7 +13,7 @@ async function getChapters(req, res) {
       "Getting chapters for userId:",
       userId,
       "language:",
-      userLanguage
+      userLanguage,
     );
 
     // Get chapters with sections and lessons
@@ -33,7 +33,7 @@ async function getChapters(req, res) {
       LEFT JOIN user_progress up ON up.lesson_id = sl.id AND up.user_id = ?
       ORDER BY c.order_index, s.order_index, sl.lesson_number
     `,
-      [userId]
+      [userId],
     );
 
     // Group by chapters and sections
@@ -68,9 +68,7 @@ async function getChapters(req, res) {
         const prerequisites = row.prerequisite_lesson_id
           ? [row.prerequisite_lesson_id]
           : [];
-        const isFirstLesson = Number(row.lesson_number) === 1;
-        const isUnlocked =
-          isFirstLesson || prerequisites.length === 0 || row.is_completed === 1; // completed implies unlocked
+        const isUnlocked = true;
 
         result[row.id].sections[row.section_id].lessons.push({
           id: row.lesson_id,
@@ -119,7 +117,7 @@ async function getLesson(req, res) {
       LEFT JOIN user_progress up ON up.lesson_id = sl.id AND up.user_id = ?
       WHERE sl.id = ?
     `,
-      [userId, lessonId]
+      [userId, lessonId],
     );
 
     if (lessons.length === 0) {
@@ -137,38 +135,14 @@ async function getLesson(req, res) {
       }
     }
 
-    // Check if lesson is unlocked
-    const lessonNumber = lesson.lesson_number;
-    if (!lesson.is_unlocked && lessonNumber !== 1) {
-      if (Array.isArray(prerequisites) && prerequisites.length > 0) {
-        const completedPrerequisites = await query(
-          `
-        SELECT COUNT(*) as count FROM user_progress
-        WHERE user_id = ? AND lesson_id IN (?) AND completed = 1
-      `,
-          [userId, prerequisites]
-        );
-
-        if (completedPrerequisites[0].count < prerequisites.length) {
-          return res
-            .status(403)
-            .json({ error: "Lesson prerequisites not met." });
-        }
-      } else {
-        // Allow lessons with no prerequisites
-        lesson.is_unlocked = 1;
-      }
-    } else {
-      // Always allow lesson 1
-      lesson.is_unlocked = 1;
-    }
+    lesson.is_unlocked = true;
 
     // Get vocabulary for this lesson
     const vocabulary = await query(
       `
       SELECT * FROM vocabulary WHERE lesson_id = ? ORDER BY id
     `,
-      [lessonId]
+      [lessonId],
     );
 
     // Format vocabulary based on language
@@ -218,15 +192,15 @@ async function getReviewQuiz(req, res) {
       script === "hiragana"
         ? "AND (sl.script_type IN ('hiragana', 'both'))"
         : script === "katakana"
-        ? "AND (sl.script_type IN ('katakana', 'both'))"
-        : "";
+          ? "AND (sl.script_type IN ('katakana', 'both'))"
+          : "";
 
     const questions = await query(
       `SELECT qq.* FROM quiz_questions qq
        JOIN structured_lessons sl ON sl.id = qq.lesson_id
        WHERE sl.lesson_type IN ('review', 'final_quiz')
        ORDER BY RAND() LIMIT ${size}`,
-      []
+      [],
     );
 
     console.log("questions:", questions);
@@ -260,37 +234,14 @@ async function completeLesson(req, res) {
     const lessonId = req.params.id;
 
     await withTransaction(async (connection) => {
-      // Mark lesson as completed
       await connection.query(
         `
-        INSERT INTO user_lesson_progress (user_id, lesson_id, is_completed, completed_at)
-        VALUES (?, ?, 1, NOW())
-        ON DUPLICATE KEY UPDATE is_completed = 1, completed_at = NOW()
+        INSERT INTO user_progress (user_id, lesson_id, completed, last_attempt, is_unlocked)
+        VALUES (?, ?, 1, NOW(), 1)
+        ON DUPLICATE KEY UPDATE completed = 1, last_attempt = NOW(), is_unlocked = 1
       `,
-        [userId, lessonId]
+        [userId, lessonId],
       );
-
-      // Check if this unlocks other lessons
-      const lesson = await connection.query(
-        `
-        SELECT unlocks FROM structured_lessons WHERE id = ?
-      `,
-        [lessonId]
-      );
-
-      if (lesson.length > 0 && lesson[0].unlocks) {
-        const unlocks = JSON.parse(lesson[0].unlocks);
-        for (const unlockId of unlocks) {
-          await connection.query(
-            `
-            INSERT INTO user_lesson_progress (user_id, lesson_id, is_unlocked)
-            VALUES (?, ?, 1)
-            ON DUPLICATE KEY UPDATE is_unlocked = 1
-          `,
-            [userId, unlockId]
-          );
-        }
-      }
     });
 
     return res.json({ success: true });
@@ -312,7 +263,7 @@ async function getLessonQuiz(req, res) {
       `
       SELECT * FROM quiz_questions WHERE lesson_id = ? ORDER BY id
     `,
-      [lessonId]
+      [lessonId],
     );
 
     // Return empty array if no questions
@@ -328,8 +279,8 @@ async function getLessonQuiz(req, res) {
       options: Array.isArray(q.options_en)
         ? q.options_en
         : q.options_en
-        ? JSON.parse(q.options_en)
-        : [],
+          ? JSON.parse(q.options_en)
+          : [],
       correct_answer:
         userLanguage === "vi" ? q.correct_answer_vi : q.correct_answer_en,
       explanation: userLanguage === "vi" ? q.explanation_vi : q.explanation_en,
@@ -353,7 +304,7 @@ async function submitQuizAttempt(req, res) {
       `
       SELECT correct_answer FROM quiz_questions WHERE id = ?
     `,
-      [questionId]
+      [questionId],
     );
 
     if (!question.length) {
@@ -368,7 +319,7 @@ async function submitQuizAttempt(req, res) {
       INSERT INTO user_quiz_attempts (user_id, lesson_id, question_id, selected_answer, is_correct, response_time_ms)
       VALUES (?, ?, ?, ?, ?, ?)
     `,
-      [userId, lessonId, questionId, selectedAnswer, isCorrect, responseTimeMs]
+      [userId, lessonId, questionId, selectedAnswer, isCorrect, responseTimeMs],
     );
 
     return res.json({ is_correct: isCorrect });
@@ -408,7 +359,7 @@ async function getQuizResults(req, res) {
       `
       SELECT COUNT(*) as count FROM quiz_questions WHERE lesson_id = ?
     `,
-      [lessonId]
+      [lessonId],
     );
 
     const correctCount = attempts.filter((a) => a.is_correct).length;
@@ -448,7 +399,7 @@ async function saveQuizSession(req, res) {
         totalQuestions,
         correctAnswers,
         accuracy,
-      ]
+      ],
     );
 
     return res.json({ success: true });

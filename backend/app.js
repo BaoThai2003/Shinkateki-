@@ -11,7 +11,6 @@ const authRoutes = require("./routes/auth");
 const quizRoutes = require("./routes/quiz");
 const statsRoutes = require("./routes/stats");
 const profileRoutes = require("./routes/profile");
-const lessonRoutes = require("./routes/lessons");
 const structuredLessonsRoutes = require("./routes/structuredLessons");
 const dictionaryRoutes = require("./routes/dictionary");
 const structuredLessonsController = require("./controllers/structuredLessonsController");
@@ -27,7 +26,7 @@ app.use(
   cors({
     origin: process.env.FRONTEND_ORIGIN || "*",
     credentials: true,
-  })
+  }),
 );
 
 app.use(express.json({ limit: "1mb" }));
@@ -48,7 +47,6 @@ app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api/lessons", lessonRoutes);
 app.use("/api/structured-lessons", structuredLessonsRoutes);
 app.use("/api/dictionary", dictionaryRoutes);
 
@@ -56,7 +54,7 @@ app.use("/api/dictionary", dictionaryRoutes);
 app.get(
   "/api/chapters",
   authMiddleware.authenticate,
-  structuredLessonsController.getChapters
+  structuredLessonsController.getChapters,
 );
 
 // ── Health check ──────────────────────────────────────────────────

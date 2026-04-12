@@ -17,9 +17,20 @@ window.loadProfile = async function () {
     const gradeBreakdown = await api.get("/profile/grade-breakdown");
     renderGradeBreakdown(gradeBreakdown);
 
-    // Load user's lessons
-    const myLessons = await api.get("/lessons/my");
-    renderProfileLessons(myLessons);
+    // Load structured lessons progress
+    const chapters = await api.get("/structured-lessons/chapters");
+    const lessonList = (chapters || []).flatMap((chapter) =>
+      (chapter.sections || []).flatMap((section) =>
+        (section.lessons || []).map((lesson) => ({
+          id: lesson.id,
+          title: `Bài ${lesson.lesson_number}: ${lesson.title}`,
+          content: lesson.content || "",
+          is_completed: lesson.is_completed,
+          lesson_number: lesson.lesson_number,
+        })),
+      ),
+    );
+    renderProfileLessons(lessonList);
   } catch (err) {
     console.error("Profile load failed", err);
     // Show default profile
@@ -63,7 +74,7 @@ function renderQuizHistory(history) {
       (quiz) => `
     <div class="history-item">
       <div class="history-date">${new Date(
-        quiz.date
+        quiz.date,
       ).toLocaleDateString()}</div>
       <div class="history-details">
         <span class="history-questions">${quiz.questions_count} questions</span>
@@ -72,7 +83,7 @@ function renderQuizHistory(history) {
       </div>
       <div class="history-grade">${getGradeLetter(quiz.accuracy)}</div>
     </div>
-  `
+  `,
     )
     .join("");
 }
@@ -115,7 +126,7 @@ function renderProfileLessons(lessons) {
 
   if (!lessons || !lessons.length) {
     container.innerHTML =
-      "<p style='color:var(--fog)'>No lessons created yet.</p>";
+      "<p style='color:var(--fog)'>Không có bài học nào trong hồ sơ. Vui lòng truy cập trang Học Tiếng Nhật để tiếp tục.</p>";
     return;
   }
 
@@ -124,18 +135,15 @@ function renderProfileLessons(lessons) {
       (lesson) => `
     <div class="profile-lesson-item">
       <h4>${escapeHtml(lesson.title)}</h4>
-      <p>${escapeHtml(lesson.content.substring(0, 100))}...</p>
+      <p>${escapeHtml((lesson.content || "").substring(0, 100))}...</p>
       <div class="lesson-meta">
-        <span class="lesson-visibility">${
-          lesson.is_public ? "Public" : "Private"
+        <span class="lesson-status">${
+          lesson.is_completed ? "Hoàn thành" : "Chưa hoàn thành"
         }</span>
-        <span class="lesson-questions">${lesson.question_count} questions</span>
-        <span class="lesson-date">${new Date(
-          lesson.created_at
-        ).toLocaleDateString()}</span>
+        <span class="lesson-number">Bài ${lesson.lesson_number}</span>
       </div>
     </div>
-  `
+  `,
     )
     .join("");
 }

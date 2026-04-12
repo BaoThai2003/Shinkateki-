@@ -21,7 +21,7 @@ function _levenshtein(a, b) {
       matrix[i][j] = Math.min(
         matrix[i - 1][j] + 1,
         matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost
+        matrix[i - 1][j - 1] + cost,
       );
     }
   }
@@ -49,7 +49,7 @@ function _fuzzyMatch(word, query) {
 
   const closeEnough = normalizedWord.some(
     (source) =>
-      _levenshtein(source, key) <= Math.max(2, Math.floor(key.length * 0.2))
+      _levenshtein(source, key) <= Math.max(2, Math.floor(key.length * 0.2)),
   );
 
   return closeEnough;
@@ -72,7 +72,9 @@ async function getDictionary(req, res) {
 
     let searchTerm;
     if (search) {
-      sql += ` AND (v.romaji LIKE ? OR v.hiragana LIKE ? OR v.katakana LIKE ? OR v.kanji LIKE ? OR v.meaning_en LIKE ? OR v.meaning_vi LIKE ?)`;
+      sql += ` AND (
+        v.romaji LIKE ? OR v.word_hiragana LIKE ? OR v.word_katakana LIKE ? OR v.word_kanji LIKE ? OR v.meaning_en LIKE ? OR v.meaning_vi LIKE ?
+      )`;
       searchTerm = `%${search}%`;
       params.push(
         searchTerm,
@@ -80,7 +82,7 @@ async function getDictionary(req, res) {
         searchTerm,
         searchTerm,
         searchTerm,
-        searchTerm
+        searchTerm,
       );
     }
 
@@ -100,7 +102,7 @@ async function getDictionary(req, res) {
          FROM vocabulary v
          LEFT JOIN structured_lessons sl ON sl.id = v.lesson_id
          ORDER BY sl.lesson_number, v.id
-         LIMIT 500`
+         LIMIT 500`,
       );
 
       vocabulary = allVocab.filter((word) => _fuzzyMatch(word, search));
@@ -110,6 +112,7 @@ async function getDictionary(req, res) {
       id: word.id,
       lesson_number: word.lesson_number,
       lesson_title: userLanguage === "vi" ? word.title_vi : word.title_en,
+      source: userLanguage === "vi" ? word.title_vi : word.title_en,
       romaji: word.romaji,
       hiragana: word.word_hiragana,
       katakana: word.word_katakana,
@@ -126,15 +129,16 @@ async function getDictionary(req, res) {
         SELECT v.*, sl.lesson_number, sl.title_en, sl.title_vi
         FROM vocabulary v
         LEFT JOIN structured_lessons sl ON sl.id = v.lesson_id
-        ORDER BY v.id
-        LIMIT 200
-      `
+        ORDER BY sl.lesson_number, v.id
+        LIMIT 500
+      `,
       );
       if (allWords) {
         formattedVocabulary = allWords.map((word) => ({
           id: word.id,
           lesson_number: word.lesson_number,
           lesson_title: userLanguage === "vi" ? word.title_vi : word.title_en,
+          source: userLanguage === "vi" ? word.title_vi : word.title_en,
           romaji: word.romaji,
           hiragana: word.word_hiragana,
           katakana: word.word_katakana,
@@ -156,30 +160,14 @@ async function getDictionary(req, res) {
 // Get vocabulary by lesson
 async function getVocabularyByLesson(req, res) {
   try {
-    const userId = req.user.id;
     const lessonId = req.params.lessonId;
     const userLanguage = req.user.language || "en";
-
-    // Check if lesson is completed
-    const progress = await query(
-      `
-      SELECT is_completed FROM user_lesson_progress
-      WHERE user_id = ? AND lesson_id = ?
-    `,
-      [userId, lessonId]
-    );
-
-    if (!progress.length || !progress[0].is_completed) {
-      return res
-        .status(403)
-        .json({ error: "Lesson must be completed to view vocabulary." });
-    }
 
     const vocabulary = await query(
       `
       SELECT * FROM vocabulary WHERE lesson_id = ? ORDER BY id
     `,
-      [lessonId]
+      [lessonId],
     );
 
     const formattedVocabulary = vocabulary.map((word) => ({
@@ -215,24 +203,22 @@ async function searchVocabulary(req, res) {
 
     let vocabulary = await query(
       `
-      SELECT v.*, sl.lesson_number
+      SELECT v.*, sl.lesson_number, sl.title_en, sl.title_vi
       FROM vocabulary v
-      JOIN structured_lessons sl ON sl.id = v.lesson_id
-      JOIN user_lesson_progress ulp ON ulp.lesson_id = sl.id AND ulp.user_id = ? AND ulp.is_completed = 1
+      LEFT JOIN structured_lessons sl ON sl.id = v.lesson_id
       WHERE v.romaji LIKE ? OR v.word_hiragana LIKE ? OR v.word_katakana LIKE ? OR v.word_kanji LIKE ?
          OR v.meaning_en LIKE ? OR v.meaning_vi LIKE ?
       ORDER BY sl.lesson_number, v.id
       LIMIT 50
     `,
       [
-        userId,
         `%${searchTerm}%`,
         `%${searchTerm}%`,
         `%${searchTerm}%`,
         `%${searchTerm}%`,
         `%${searchTerm}%`,
         `%${searchTerm}%`,
-      ]
+      ],
     );
 
     if (!vocabulary.length) {
@@ -241,7 +227,7 @@ async function searchVocabulary(req, res) {
          FROM vocabulary v
          JOIN structured_lessons sl ON sl.id = v.lesson_id
          ORDER BY sl.lesson_number, v.id
-         LIMIT 1000`
+         LIMIT 1000`,
       );
       vocabulary = allVocab.filter((word) => _fuzzyMatch(word, searchTerm));
     }
@@ -249,6 +235,8 @@ async function searchVocabulary(req, res) {
     const formattedVocabulary = vocabulary.map((word) => ({
       id: word.id,
       lesson_number: word.lesson_number,
+      lesson_title: userLanguage === "vi" ? word.title_vi : word.title_en,
+      source: userLanguage === "vi" ? word.title_vi : word.title_en,
       romaji: word.romaji,
       hiragana: word.word_hiragana,
       katakana: word.word_katakana,
@@ -304,7 +292,7 @@ async function addVocabulary(req, res) {
         part_of_speech || null,
         example_sentence_en || null,
         example_sentence_vi || null,
-      ]
+      ],
     );
 
     const created = await query(`SELECT * FROM vocabulary WHERE id = ?`, [

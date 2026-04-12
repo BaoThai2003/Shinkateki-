@@ -27,7 +27,7 @@ async function getTimeOfDayInsights(userId) {
      FROM time_of_day_stats
      WHERE user_id = ? AND total_attempts >= 3
      ORDER BY accuracy_rate DESC`,
-    [userId]
+    [userId],
   );
 
   return rows.map((r) => ({
@@ -73,7 +73,7 @@ async function getWeeklyTrend(userId, days = 7) {
        AND created_at >= NOW() - INTERVAL ? DAY
      GROUP BY DATE(created_at)
      ORDER BY day ASC`,
-    [userId, days]
+    [userId, days],
   );
 
   return rows.map((r) => ({
@@ -102,7 +102,7 @@ async function getWeakestCharacters(userId, limit = 10) {
      WHERE ps.user_id = ?
      ORDER BY ps.weakness_score DESC
      LIMIT ${limit}`,
-    [userId]
+    [userId],
   );
 }
 // ── Learning Velocity ─────────────────────────────────────────────
@@ -114,7 +114,7 @@ async function getWeakestCharacters(userId, limit = 10) {
 async function getLearningVelocity(userId) {
   const countRow = await queryOne(
     `SELECT COUNT(*) AS total FROM attempts WHERE user_id = ?`,
-    [userId]
+    [userId],
   );
   const total = countRow?.total ?? 0;
   if (total < 10) return { status: "insufficient_data", improvementPct: null };
@@ -125,13 +125,13 @@ async function getLearningVelocity(userId) {
     `SELECT AVG(is_correct) AS acc FROM (
        SELECT is_correct FROM attempts WHERE user_id = ? ORDER BY created_at ASC LIMIT ?
      ) t`,
-    [userId, half]
+    [userId, half],
   );
   const secondHalf = await queryOne(
     `SELECT AVG(is_correct) AS acc FROM (
        SELECT is_correct FROM attempts WHERE user_id = ? ORDER BY created_at DESC LIMIT ?
      ) t`,
-    [userId, half]
+    [userId, half],
   );
 
   const first = parseFloat(firstHalf?.acc ?? 0) * 100;
@@ -192,7 +192,7 @@ async function getLongTermStats(userId) {
     `SELECT COUNT(*) AS total_attempts, SUM(is_correct) AS total_correct
      FROM attempts
      WHERE user_id = ?`,
-    [userId]
+    [userId],
   );
 
   const totalAttempts = overallRow?.total_attempts ?? 0;
@@ -211,7 +211,7 @@ async function getLongTermStats(userId) {
      HAVING attempts >= 3
      ORDER BY accuracy DESC, attempts DESC
      LIMIT 5`,
-    [userId]
+    [userId],
   );
 
   const topMiss = await query(
@@ -225,7 +225,7 @@ async function getLongTermStats(userId) {
      HAVING attempts >= 3
      ORDER BY accuracy ASC, attempts DESC
      LIMIT 5`,
-    [userId]
+    [userId],
   );
 
   const habitTime = await query(
@@ -235,7 +235,7 @@ async function getLongTermStats(userId) {
      GROUP BY HOUR(created_at)
      ORDER BY total DESC
      LIMIT 8`,
-    [userId]
+    [userId],
   );
 
   const habitWeek = await query(
@@ -245,7 +245,7 @@ async function getLongTermStats(userId) {
      GROUP BY DAYOFWEEK(created_at)
      ORDER BY total DESC
      LIMIT 7`,
-    [userId]
+    [userId],
   );
 
   return {
@@ -287,7 +287,7 @@ async function getQuizHistoryStats(userId) {
      FROM quiz_sessions
      WHERE user_id = ?
      GROUP BY session_type`,
-    [userId]
+    [userId],
   );
 
   // Most correct/incorrect questions
@@ -301,7 +301,7 @@ async function getQuizHistoryStats(userId) {
      WHERE uqa.user_id = ?
      GROUP BY qq.id
      ORDER BY accuracy DESC`,
-    [userId]
+    [userId],
   );
 
   const mostCorrectQuestions = questionStats.slice(0, 5);
@@ -309,21 +309,21 @@ async function getQuizHistoryStats(userId) {
 
   // User behavior for quizzes
   const dayOfWeekStats = await query(
-    `SELECT DAYOFWEEK(completed_at) as day, COUNT(*) as count
+    `SELECT DAYOFWEEK(created_at) as day, COUNT(*) as count
      FROM quiz_sessions
      WHERE user_id = ?
-     GROUP BY DAYOFWEEK(completed_at)
+     GROUP BY DAYOFWEEK(created_at)
      ORDER BY day`,
-    [userId]
+    [userId],
   );
 
   const timeOfDayStats = await query(
-    `SELECT HOUR(completed_at) as hour, COUNT(*) as count
+    `SELECT HOUR(created_at) as hour, COUNT(*) as count
      FROM quiz_sessions
      WHERE user_id = ?
-     GROUP BY HOUR(completed_at)
+     GROUP BY HOUR(created_at)
      ORDER BY hour`,
-    [userId]
+    [userId],
   );
 
   return {
@@ -357,7 +357,7 @@ async function _getOverallStats(userId) {
        MAX(created_at)    AS last_attempt
      FROM attempts
      WHERE user_id = ?`,
-    [userId]
+    [userId],
   );
 
   const total = row?.total_attempts ?? 0;
@@ -366,7 +366,7 @@ async function _getOverallStats(userId) {
   const masteredRow = await queryOne(
     `SELECT COUNT(*) AS count FROM performance_stats
      WHERE user_id = ? AND difficulty_class = 'strong'`,
-    [userId]
+    [userId],
   );
 
   return {
